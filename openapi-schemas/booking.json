@@ -1,0 +1,3484 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Booking",
+    "version": "3.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://book.liteapi.travel/v3.0"
+    }
+  ],
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Make bookings",
+      "description": "The **Book API V3** provides the relevant methods m book a specific room rate of a hotel."
+    },
+    {
+      "name": "Manage bookings",
+      "description": "The **Booking Management API** collection provides different methods to retrieve an existing booking by the booking Id and also by guest Id, It also provides a method to cancel an existing booking Id if it exists and when cancellation policies are met"
+    }
+  ],
+  "paths": {
+    "/rates/prebook": {
+      "post": {
+        "tags": ["Make bookings"],
+        "summary": "1. Create a checkout session (PREBOOK)",
+        "description": "This endpoint is used to generate a checkout session for a specific `offerId`. The input to the endpoint is the specific `offerId` coming from [Retrieve rates for hotels](https://docs.liteapi.travel/v3.0.0/reference/post_hotels-rates) endpoint.\r\n\r\nThe response will include a `prebookId` which is used to confirm the booking in the next step.\n\nThe `usePaymentSdk` parameter is used to determine if the payment form will be displayed using the client-side [Payment SDK](payment-sdk) or not.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["offerId", "usePaymentSdk"],
+                "properties": {
+                  "offerId": {
+                    "type": "string",
+                    "description": "The unique identifier of the selected offer from the search results."
+                  },
+                  "usePaymentSdk": {
+                    "type": "boolean",
+                    "description": "Specifies whether the fields needed to call the payment processing SDK are returned. Set to true if using the SDK for payment processing."
+                  },
+                  "voucherCode": {
+                    "type": "string",
+                    "description": "An optional voucher code to apply discounts to the booking. The vouchers API allows creation of these discounts"
+                  },
+                  "addons": {
+                    "type": "array",
+                    "description": "A list of additional services or extras that can be added to the booking. For example, adding an Uber voucher or an esim card. The final booking amount is the sum of the offer's total price and the cost of any addons. Each addon’s price is added individually to reflect all extras in the billed total. ",
+                    "items": {
+                      "type": "object",
+                      "required": ["adults"],
+                      "properties": {
+                        "addon": {
+                          "type": "string",
+                          "description": "The type of addon service (e.g., uber, esimply).",
+                          "example": "uber"
+                        },
+                        "value": {
+                          "type": "number",
+                          "description": "The monetary cost of the addon service",
+                          "example": 50
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "The currency in which the addon service is charged",
+                          "example": "USD"
+                        },
+                        "addonDetails": {
+                          "type": "object",
+                          "properties": {
+                            "package_id": {
+                              "type": "integer",
+                              "description": "Unique identifier of the addon package",
+                              "example": 1
+                            },
+                            "destination_code": {
+                              "type": "string",
+                              "description": " Short code representing the destination or country (e.g., ES for Spain)",
+                              "example": "ES"
+                            },
+                            "start_date": {
+                              "type": "string",
+                              "description": "The start date for the add-on service (YYYY-MM-DD format)",
+                              "example": "2025-12-05"
+                            },
+                            "end_date": {
+                              "type": "string",
+                              "description": "The end date for the add-on service (YYYY-MM-DD format)",
+                              "example": "2025-12-10"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "examples": {
+                "Prebook request": {
+                  "value": {
+                    "offerId": "GE5ESNBSIZKVEQ2OJRFEURSPKRFVUR2OIRKVGVCLKVEVERCVKNLUWRKJGVDVKVKVGJEESRK2KVHVES2PJNFE4RKPK5JVIS2SI5KTIV2TKRETKQKUI5JEGRSKLJFEMTKSGJNEOSSFIZJVIS2LJFJEIVKTK5FUKSKWJBCUKVKLJFEVMTKVJFIVUWCJJJFFKT2RJMZESUSFKUZFCUZSJE2UCVSVK5BVUTCKI5CTMVCCKZFE4TCFJ5HDERCLLJDFKNCOKNDUUTSLKRCVES2RJNDE2VSLKEZE4SKOINCU2TSDGJEVMQSVGJJTERKJGVBVMU2XINNEUVSKIZDVGQ2CJRFE2RSTKZJUWS2OIZLFKVCLJFEVKM2VIVKVGSCHKJGVMSKUGJIESSSMIVIVCSZSJNJEGVJUK5JTESSCIFKEOVSLLJGEUQ2GI5KFGUSLJJFUKR2UJNBUWNKEKVFVOS2FJFHEKVSVKVJUQSSFLJKUOTKTJZFEUSKVJ5LUWWSLKJAVKMSUIJKUUTSGIVEVESSVI42UERSHKIZEETCKINCVGVCLINGEMRCVKNHEGVKJJZDVKRKVJNEESSJTIVEVCWSYJFFE2RKPKFFFGSKSINKTEU2TIVFE4RSFKFKTESCLKZFFKT2TKNNEWSSLIVFVIS2DJNHEIVSDKYZFKSKGJBDEKVCTJBEUKWSVI5IUWTSKJJEVKUKTJNNESUSBLBMU4QSRJBAVQRCJJUZTIUCSJJCTMOZSHJETIMSGKVJEGTSMJJFEMT2UJNNEOTSEKVJVIS2VJFJEIVKTK5FUKSJVI5KVKVJSJBEUKWSVJ5JEWT2LJJHEKT2XKNKEWUSHKU2FOU2UJE2UCVCHKJBUMSS2JJDE2URSLJDUURKGKNKEWU2JKJCFKU2XJNCUSVSIIVCVKS2JJFLE2VKJKFNFQSKKJJKU6UKLGJEVERKVGJIVGMSJGVAVMVKXINNEYSSHIU3FIQSWJJHEYRKPJYZEIS22IZKTITSTI5FE4S2UIVJEWUKLIZGVMS2RGJHESTSDIVGU4QZSJFLEEVJSKMZEKSJVINLFGV2DLJFFMSSGI5JUGQSMJJGUMU2WKNFUWTSGKZKVIS2JJFKTGVKFKVJUQR2SJVLESVBSKBEUUTCFKFIUWMSLKJBVKNCXKMZEUQSBKRDVMS22JRFEGRSHKRJVES2KJNCUOVCLINFTKRCVJNLUWRKJJZCVMVKVKNEEURK2KVDU2U2OJJFESVKPK5FVUS2SIFKTEVCCKVFE4RSFJFJEUVKHGVBEMR2SGJBEYSSDIVJVIS2DJRDEIVKTJZBVKSKOI5KUKVKLJBEUSM2FJFIVUWCJJJGUKT2RJJJUSUSDKUZFGU2FJJHEMRKRKUZEQS2WJJKU6U2TLJFUUS2FJNKEWQ2LJZCFMQ2WGJKUSRSIIZCVIU2IJFCVUVKHKFFU4SSKJFKVCU2LLJEVEQKYLFHEEUKIIFMEISKNGM2FAUSKIU3HYMJQGYYTAML4GJ6GY4BRHFSTONL4GEWTWMRNGEYXYVKTIR6FKU34GIYDENBNGA4S2MBRPQZDAMRUFUYDSLJQGN6A",
+                    "usePaymentSdk": true,
+                    "voucherCode": "example-voucher-1234",
+                    "addons": [
+                      {
+                        "addon": "uber",
+                        "value": 50,
+                        "currency": "USD"
+                      },
+                      {
+                        "addon": "uber",
+                        "value": 70,
+                        "currency": "USD"
+                      },
+                      {
+                        "addon": "esimply",
+                        "value": 30,
+                        "currency": "USD",
+                        "addonDetails": {
+                          "package_id": 1,
+                          "destination_code": "US",
+                          "start_date": "2025-12-05",
+                          "end_date": "2025-12-10"
+                        }
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 30
+          }
+        ],
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "prebookId": {
+                          "type": "string",
+                          "description": "The pre-booking ID is required to confirm a booking and is reusable for multiple bookings. It’s the only required field unless using our payment SDK, which also requires transactionId and secretKey."
+                        },
+                        "offerId": {
+                          "type": "string",
+                          "description": "The offer ID passed during the prebook call, provided again here for reference."
+                        },
+                        "hotelId": {
+                          "type": "string",
+                          "description": "The unique identifier for the hotel related to this pre-booking. Used along with the hotel content endpoint."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "The currency in which prices and fees are displayed."
+                        },
+                        "termsAndConditions": {
+                          "type": "string",
+                          "description": "The terms and conditions that apply to this booking, provided as a string."
+                        },
+                        "roomTypes": {
+                          "type": "array",
+                          "description": "An array of objects containing all the requested rooms/rates. This is not the type of room being booked.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rates": {
+                                "type": "array",
+                                "description": "An array of objects detailing the pricing and availability of the selected room rates. There will be a number of rates equal to the occupancies request.",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "rateId": {
+                                      "type": "string",
+                                      "description": "The unique identifier for a specific rate within the offer."
+                                    },
+                                    "occupancyNumber": {
+                                      "type": "integer",
+                                      "description": "The number identifying which guest is associated with each room in a multi-room booking."
+                                    },
+                                    "name": {
+                                      "type": "string",
+                                      "description": "The name of the room type booked, including key attributes."
+                                    },
+                                    "maxOccupancy": {
+                                      "type": "integer",
+                                      "description": "The maximum number of guests allowed in this room."
+                                    },
+                                    "adultCount": {
+                                      "type": "integer",
+                                      "description": "The number of adults included in this booking."
+                                    },
+                                    "childCount": {
+                                      "type": "integer",
+                                      "description": "The number of children included in this booking."
+                                    },
+                                    "boardType": {
+                                      "type": "string",
+                                      "description": "A short code representing the meal plan included with the booking."
+                                    },
+                                    "boardName": {
+                                      "type": "string",
+                                      "description": "The full name of the meal plan included in the booking."
+                                    },
+                                    "remarks": {
+                                      "type": "string",
+                                      "description": "Any special remarks related to the booking or room type."
+                                    },
+                                    "priceType": {
+                                      "type": "string",
+                                      "description": "Defines how pricing is structured. Only commission currently used. It can be set to 0 for net rates."
+                                    },
+                                    "commission": {
+                                      "type": "array",
+                                      "description": "An array of objects specifying commission details for the booking.",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "amount": {
+                                            "type": "number",
+                                            "description": "The amount of commission included in the total price."
+                                          },
+                                          "currency": {
+                                            "type": "string",
+                                            "description": "The currency the commission is in."
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "retailRate": {
+                                      "type": "object",
+                                      "description": "An object containing details of the final price, including taxes and fees.",
+                                      "properties": {
+                                        "total": {
+                                          "type": "array",
+                                          "description": "An array containing the total price due for this room.",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "amount": {
+                                                "type": "number",
+                                                "description": "The total cost amount due to book this room. This is what the end user will pay."
+                                              },
+                                              "currency": {
+                                                "type": "string",
+                                                "description": "The currency the total is in."
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "suggestedSellingPrice": {
+                                          "type": "array",
+                                          "description": "This field represents the recommended price at which the booking should be offered.",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "amount": {
+                                                "type": "number",
+                                                "description": "The minmum amount the room can be sold for publicly."
+                                              },
+                                              "currency": {
+                                                "type": "string",
+                                                "description": "The currency the SSP is in."
+                                              },
+                                              "source": {
+                                                "type": "string",
+                                                "description": "The source of the SSP if we have it. "
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "initialPrice": {
+                                          "type": "array",
+                                          "description": "This object represents the hotel’s standard listed price for the room. It is always equal to or higher than the total price. If higher, it indicates a hotel discount is applied."
+                                        },
+                                        "taxesAndFees": {
+                                          "type": "array",
+                                          "description": "Breakdown of taxes and additional charges:",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "included": {
+                                                "type": "boolean",
+                                                "description": "Indicates whether the tax or fee is already included in the total price (true) or if it must be paid separately at check-in (false)."
+                                              },
+                                              "description": {
+                                                "type": "string",
+                                                "description": "A brief explanation of the tax or fee (e.g., “Hotel Tax Rate” or “Daily Facilities Fee”)."
+                                              },
+                                              "amount": {
+                                                "type": "number",
+                                                "description": "The monetary value of the tax or fee."
+                                              },
+                                              "currency": {
+                                                "type": "string",
+                                                "description": "The currency the tax is in."
+                                              }
+                                            }
+                                          }
+                                        }
+                                      }
+                                    },
+                                    "cancellationPolicies": {
+                                      "type": "object",
+                                      "description": "An object containing the cancellation rules and conditions for the booking.",
+                                      "properties": {
+                                        "cancelPolicyInfos": {
+                                          "type": "array",
+                                          "description": "An array of objects detailing specific cancellation penalties and deadlines.",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {
+                                              "cancelTime": {
+                                                "type": "string",
+                                                "description": "The deadline to cancel before incurring a fee (ISO datetime format)."
+                                              },
+                                              "amount": {
+                                                "type": "number",
+                                                "description": "The monetary penalty applied if the booking is canceled after the deadline. Can be 0 which means its fully refundable."
+                                              },
+                                              "currency": {
+                                                "type": "string",
+                                                "description": "The currency of the cancellation fee."
+                                              },
+                                              "type": {
+                                                "type": "string",
+                                                "description": "The type of cancellation penalty (e.g., 'amount' for a fixed fee)."
+                                              },
+                                              "timezone": {
+                                                "type": "string",
+                                                "description": "The timezone in which the cancellation policy applies. Always GMT, even if not listed."
+                                              }
+                                            }
+                                          }
+                                        },
+                                        "hotelRemarks": {
+                                          "type": "array",
+                                          "description": "An array of additional remarks from the hotel regarding cancellations.",
+                                          "items": {
+                                            "type": "object",
+                                            "properties": {}
+                                          }
+                                        },
+                                        "refundableTag": {
+                                          "type": "string",
+                                          "description": "Indicates whether the booking is refundable, Either 'NRFN' for non-refundable or RFN for refundable."
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "suggestedSellingPrice": {
+                          "type": "number",
+                          "description": "The minimum public selling price for all the rooms combined. This is used for pricing control."
+                        },
+                        "commission": {
+                          "type": "number",
+                          "description": "The total commission earned for all rooms being booked."
+                        },
+                        "price": {
+                          "type": "number",
+                          "description": "The final price of the booking for all rooms after applicable calculations."
+                        },
+                        "priceType": {
+                          "type": "string",
+                          "description": "Defines how pricing is structured. Only commission currently used. It can be set to 0 for net rates."
+                        },
+                        "priceDifferencePercent": {
+                          "type": "integer",
+                          "description": "This is one of the three important fields to check. This should be 0. But if a rate has sold out, a similar alternate rate may be found and this field tells how much is the percentage difference between the original and final price."
+                        },
+                        "cancellationChanged": {
+                          "type": "boolean",
+                          "description": "This is one of the three important fields to check. Boolean indicating if cancellation policies have changed since the initial offer."
+                        },
+                        "boardChanged": {
+                          "type": "boolean",
+                          "description": "This is one of the three important fields to check. Boolean indicating if the board (meal plan) has changed since the initial offer."
+                        },
+                        "supplier": {
+                          "type": "string",
+                          "description": "The supplier providing the inventory for this booking. By default this will always be Nuitee."
+                        },
+                        "supplierId": {
+                          "type": "integer",
+                          "description": "The numerical identifier of the supplier. By default Nuitee's ID is always 2."
+                        },
+                        "transactionId": {
+                          "type": "string",
+                          "description": "A unique transaction identifier for this booking request. Only returned is using the payment SDK."
+                        },
+                        "secretKey": {
+                          "type": "string",
+                          "description": "A key used for calling the paymentSDK to secure booking-related payments. Only returned is using the payment SDK."
+                        },
+                        "voucherCode": {
+                          "type": "string",
+                          "description": "Represents the unique code used to redeem a voucher during the transaction."
+                        },
+                        "voucherTotalAmount": {
+                          "type": "string",
+                          "description": "Specifies the total monetary value or discount amount provided by the voucher."
+                        },
+                        "addonsRequest": {
+                          "type": "array",
+                          "description": "An array of objects specifying additional services or extras requested for the booking.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "addon": {
+                                "type": "string",
+                                "description": "The name or type of the additional service requested."
+                              },
+                              "value": {
+                                "type": "number",
+                                "description": "The price of the addon in the specified currency."
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "The currency in which the addon is priced."
+                              },
+                              "addonDetails": {
+                                "type": "object",
+                                "description": "An object containing additional details about the requested addon.",
+                                "properties": {
+                                  "package_id": {
+                                    "type": "integer",
+                                    "description": " Unique package ID for the addon"
+                                  },
+                                  "destination_code": {
+                                    "type": "string",
+                                    "description": "Destination location code (e.g., US)"
+                                  },
+                                  "start_date": {
+                                    "type": "string",
+                                    "description": "Start date of the addon service"
+                                  },
+                                  "end_date": {
+                                    "type": "string",
+                                    "description": "End date of the addon service"
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "guestLevel": {
+                      "type": "integer",
+                      "description": "Used with loyalty programs to determine the guests level of cost reduction."
+                    }
+                  }
+                },
+                "examples": {
+                  "Prebook response": {
+                    "value": {
+                      "data": {
+                        "prebookId": "zzWkJcdgk",
+                        "offerId": "GE5ESNBSIZKVMQ2QJJNEERSPKIZEMR2OIRKVOVCTKNFVMRCWKNLUWVKKGVDVMRKWGJEEWRSOIVEVCS2PJNJEEVKPK5FFKS2SI5LFKU2TLBETIMSGKVJEGQSKLJHEMR2SGIZEWUSDIUZFOU2TJM2UOVSFJZJUKSKOIVLFKVJSJBEUMTSFJFJTETSJJJFVKT2RJNNEYQSNKUZFKU2SJE2UKVCFKZBUESS2IJDEGURSJNDVURCVK5GTEVCHGVDFMTKTKNMUYRSMIVLVMQ2RJNFEMVSNKIZFGSKRGJCU6U2TIJFVEQKWINGVUVKJGVCVMVKSINJEUVK2KREVGMSWJRFEIRJSKYZEKS2OJFDEGV2LKVFDKSCFIVKUWSCHKFNEKSKRJNHESSSNIVHVCSSTJFJECVJUKEZESSS2JJDEWUSLLJFEMTSGJ5JDESSHKJFUKV2TJMZEWVSEKZFU2MSUI5FEQRSFKUZESSKVLJDFCV2LKZFU4RCVKVLVEV2JKJBVKMSRKNKESNKLKZJVEQ2IJJLE4RSDKIZEETCKINCUGVCLIVDVERCVJVHFGRSJGQZVKR2VGJEESVSNKZEVKS2OJFITERKPKJFFGS2SJBKTEV2TLFEVMSCFKVJEUV2KIVNEMR2TJMZEUQSCKVHVIS2TJNDEIVKTJVJVIR2KI5KUKVSDI5FVMTSGJFIUWSSJJJEVKT2TJJLESUSBKUZFCTBUI5CTGRCHJRJFOR22GZCEKTKCKNDVKV2UIFGVUTSHJVMUGQKNIJJUQSKZIRAU6USRI5BDMRSFKRMXYNRSHE2XYMT4NRYDCOBZG56DELL4KVJUI7CVKN6DEMBSGUWTANBNGAYXYMRQGI2S2MBUFUYDE7D4GQXDAMA",
+                        "hotelId": "lp1897",
+                        "currency": "USD",
+                        "termsAndConditions": "",
+                        "roomTypes": [
+                          {
+                            "rates": [
+                              {
+                                "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22KRCE2WSSK5GVENSEINEVUU2HIFNEIS2NIJKUOQKZLBMU2USRI5ETEVCBJZBFCR2KGZDUWM2TG5FVMSSYLFLEWVCQKJFVMR2SIQ2EOSSBKRAVCMZUI5EVURCRJUZTIS2VLJDE2V2EKNIFCWKUJ5HEEUKHGQZEIQKNIJMEOQJSIRAU4Q2IJZJFKRKZJFNFOR2JGRKEWSK2KVDVKM2TGJHFEU2IIUZFQWKVKNDUUWRWIRCU2QSTI5KVSRCHJVNFCR2BLJCECTKEGRDUMNSFI43UGU2HIVMVIUKNIQ2EORJSKRHU2WSYIVHEURJWJEZFGSK2JBBUOTKSKFDUSMSTGJGUEVCGKVNFIQKJIJIUOSJVIRAU2QL4GE3DGLRWGZ6DEMBSGUWTAMZNGMYCAMBSHIYDAORQGB6FETY",
+                                "occupancyNumber": 1,
+                                "name": "Standard King Room - Room only",
+                                "maxOccupancy": 2,
+                                "adultCount": 2,
+                                "childCount": 0,
+                                "boardType": "RO",
+                                "boardName": "Room Only",
+                                "remarks": "<br/><br/>A Resort Fee totaling USD43.61 will be charged for the stay. The Manhattan at Times Square Hotel has a mandatory Facilities Fee of $40.16 per room per night provides guests with the following inclusive services, amenities and added value offerings: \n All local, long distance and international phone calls \n Premium high-speed wireless internet access for unlimited devices \n An eco-friendly, collapsible 16 oz. water bottle to use at the hotel?s water filtration stations \n Unlimited use of our Business Center \n Unlimited use of our 24/7 Fitness Center with treadmills, bikes, elliptical machines and free weights \n*The Facilities Fee does not include service gratuity . Hotel Check In Policy: Major credit card required at check-in for deposit and incidentals. Any additional fees such as parking, pet fees, etc. are solely at the discretion of the hotel, are subject to change at any point and should be paid directly by the guest.. Minimum adult age at check in is 21 years.<br/>",
+                                "priceType": "commission",
+                                "commission": [
+                                  {
+                                    "amount": 6.28,
+                                    "currency": "USD"
+                                  }
+                                ],
+                                "retailRate": {
+                                  "total": [
+                                    {
+                                      "amount": 163.66,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "suggestedSellingPrice": [
+                                    {
+                                      "amount": 185.7,
+                                      "currency": "USD",
+                                      "source": ""
+                                    }
+                                  ],
+                                  "initialPrice": null,
+                                  "taxesAndFees": [
+                                    {
+                                      "included": true,
+                                      "description": "NYC Javits Center Fee",
+                                      "amount": 1.62,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NYC Occupancy Tax",
+                                      "amount": 2.16,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NY State Tax",
+                                      "amount": 11.88,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NY City Tax",
+                                      "amount": 7.87,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": false,
+                                      "description": "Facility Fee",
+                                      "amount": 43.61,
+                                      "currency": "USD"
+                                    }
+                                  ]
+                                },
+                                "cancellationPolicies": {
+                                  "cancelPolicyInfos": [
+                                    {
+                                      "cancelTime": "2025-03-30 02:00:00",
+                                      "amount": 163.66,
+                                      "currency": "USD",
+                                      "type": "amount",
+                                      "timezone": "GMT"
+                                    }
+                                  ],
+                                  "hotelRemarks": [],
+                                  "refundableTag": "RFN"
+                                }
+                              }
+                            ]
+                          }
+                        ],
+                        "suggestedSellingPrice": 185.7,
+                        "isPackageRate": null,
+                        "commission": 6.28,
+                        "addonsTotalAmount": 70,
+                        "price": 213.66,
+                        "priceType": "commission",
+                        "priceDifferencePercent": 0,
+                        "cancellationChanged": false,
+                        "boardChanged": false,
+                        "supplier": "nuitee",
+                        "supplierId": 2,
+                        "transactionId": "tr_ct_NjePtG_-HHUDCeQ_LrTOS",
+                        "secretKey": "pi_3QxSJ8A4FXPoRk9Y14cv6f1G_secret_psA870CD4S17fSh58skN1TWaG",
+                        "voucherCode": "createvoucher83",
+                        "voucherTotalAmount": 20,
+                        "addonsRequest": [
+                          {
+                            "addon": "uber",
+                            "value": 70,
+                            "currency": "USD"
+                          }
+                        ]
+                      },
+                      "guestLevel": 0
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Detailed message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "invalid offerId": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "invalid offerId",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "string",
+                  "example": "47"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Detailed message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Unauthorized": {
+                    "value": {
+                      "error": {
+                        "code": 401,
+                        "message": "Unauthorized"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rates/book": {
+      "post": {
+        "tags": ["Make bookings"],
+        "summary": "2. Complete a booking",
+        "description": "This API confirms a booking when the `prebookId` and the rate Id from the prebook stage along with the guest and payment information are passed.\n\nThe guest information is an object that should include the guest first name, last name and email.\n\nThe payment information can be two different options:\n\n- `TRANSACTION` method: when using the Payment SDK, you should use this method and provide the relevant `transactionId` to confirm.\n- `ACC_CREDIT_CARD`, `WALLET`, `NONE` for all other usages. See our docs for more details.\n\nThe response will confirm the booking along with a booking Id and a hotel confirmation code. It will also include the booking details including the dates, price and the cancellation policies.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "x-examples": {
+                  "Example 1": {
+                    "prebookId": "len80MPr_",
+                    "holder": {
+                      "firstName": "John",
+                      "lastName": "Doe",
+                      "email": "john.doe@example.com"
+                    },
+                    "guests": [
+                      {
+                        "occupancyNumber": 1,
+                        "remarks": "quiet room please",
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "email": "john.doe@example.com"
+                      },
+                      {
+                        "occupancyNumber": 2,
+                        "remarks": "non smoking room please",
+                        "firstName": "John",
+                        "lastName": "Doe",
+                        "email": "john.doe@example.com"
+                      }
+                    ],
+                    "payment": {
+                      "method": "TRANSACTION_ID",
+                      "transactionId": "tr_ct_ELlwT7nqeZCKSysxZq1Vr"
+                    }
+                  }
+                },
+                "required": ["prebookId", "holder", "guests", "payment"],
+                "properties": {
+                  "prebookId": {
+                    "type": "string",
+                    "description": "This identifier from the pre-booking step is used to confirm a booking rate"
+                  },
+                  "clientReference": {
+                    "type": "string",
+                    "description": "An optional client-defined reference ID for tracking the booking"
+                  },
+                  "holder": {
+                    "type": "object",
+                    "description": "Information on the person responsible for making the payment. This may not necessarily be the traveler",
+                    "required": ["firstName", "lastName", "email", "phone"],
+                    "properties": {
+                      "firstName": {
+                        "type": "string",
+                        "description": "The first name of the payer"
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "description": "The last name of the payer"
+                      },
+                      "email": {
+                        "type": "string",
+                        "description": "The email address of the payer"
+                      },
+                      "phone": {
+                        "type": "string",
+                        "description": "The phone number of the payer, if available"
+                      }
+                    }
+                  },
+                  "guests": {
+                    "type": "array",
+                    "description": "This represents a list of all individuals included in the hotel reservation",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "occupancyNumber",
+                        "firstName",
+                        "lastName",
+                        "email",
+                        "phone"
+                      ],
+                      "properties": {
+                        "occupancyNumber": {
+                          "type": "integer",
+                          "description": "An array where each object represents the primary guest assigned to a specific booked room. There is a 1:1 mapping between guests and rooms, meaning each guest object corresponds to a single room in the booking.  (Doc for more details: https://docs.liteapi.travel/docs/adding-guests-durring-the-booking-step)"
+                        },
+                        "remarks": {
+                          "type": "string",
+                          "description": "Special requests or remarks for the guest’s stay (not guaranteed)"
+                        },
+                        "firstName": {
+                          "type": "string",
+                          "description": "The first name of the primary guest staying in this assigned room"
+                        },
+                        "lastName": {
+                          "type": "string",
+                          "description": "The last name of the primary guest staying in the assigned room"
+                        },
+                        "email": {
+                          "type": "string",
+                          "description": "The email of the primary guest staying in the assigned room"
+                        },
+                        "phone": {
+                          "type": "string",
+                          "description": "The guest’s contact number for verification and hotel communication"
+                        }
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Encapsulates essential metadata for fraud detection and compliance, including IP, location, language, device details, and marketing parameters.",
+                    "required": [
+                      "occupancyNumber",
+                      "firstName",
+                      "lastName",
+                      "email",
+                      "phone"
+                    ],
+                    "properties": {
+                      "ip": {
+                        "type": "string",
+                        "description": " ip String (or derived) IPv4/IPv6 of the requester"
+                      },
+                      "country": {
+                        "type": "string",
+                        "description": "The country inferred from the requester’s IP, aiding in regional compliance."
+                      },
+                      "language": {
+                        "type": "string",
+                        "description": "The preferred language from the user’s browser settings."
+                      },
+                      "platform": {
+                        "type": "string",
+                        "description": "The operating system or device platform from which the request originates."
+                      },
+                      "device_id": {
+                        "type": "string",
+                        "description": "A unique identifier for the user's device, useful for tracking and security."
+                      },
+                      "user_agent": {
+                        "type": "string",
+                        "description": "The browser/OS user agent string for verifying request authenticity."
+                      },
+                      "utm_medium": {
+                        "type": "string",
+                        "description": "The marketing medium (e.g., email, ad) through which the service was accessed."
+                      },
+                      "utm_source": {
+                        "type": "string",
+                        "description": "The source of the traffic, such as a search engine or social network."
+                      },
+                      "utm_campaign": {
+                        "type": "string",
+                        "description": "An identifier for the specific marketing campaign that led to the request."
+                      }
+                    }
+                  },
+                  "guestPayment": {
+                    "type": "object",
+                    "description": "The payment method used for the transaction. This determines where the money for the booking comes from",
+                    "required": [
+                      "method",
+                      "phone",
+                      "last_4_digits",
+                      "payee_last_name",
+                      "payee_first_name"
+                    ],
+                    "properties": {
+                      "phone": {
+                        "type": "string",
+                        "description": "Contact number associated with the payment"
+                      },
+                      "method": {
+                        "type": "string",
+                        "description": "Payment method used (e.g., ACC_CREDIT_CARD, WALLET)."
+                      },
+                      "address": {
+                        "type": "object",
+                        "description": " Billing address details of the payee",
+                        "properties": {
+                          "city": {
+                            "type": "string",
+                            "description": "City of the billing address"
+                          },
+                          "address": {
+                            "type": "string",
+                            "description": "Street address"
+                          },
+                          "country": {
+                            "type": "string",
+                            "description": "Country of the billing address"
+                          },
+                          "postal_code": {
+                            "type": "string",
+                            "description": "Postal or ZIP code"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "payment": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "TRANSACTION_ID method",
+                        "required": ["method", "transactionId"],
+                        "properties": {
+                          "method": {
+                            "enum": ["TRANSACTION_ID"],
+                            "description": "The payment method used for the transaction. This determines where the money for the booking comes from."
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "description": "The unique identifier for the transaction from the prebook step and only used with the payment SDK and the TRANSACTION method"
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "WALLET and ACC_CREDIT_CARD methods",
+                        "required": ["method"],
+                        "properties": {
+                          "method": {
+                            "enum": ["WALLET", "ACC_CREDIT_CARD", "NONE"],
+                            "description": "The payment method used for the transaction. This determines where the money for the booking comes from."
+                          }
+                        }
+                      }
+                    ],
+                    "description": "Specifies the payment method for completing the booking"
+                  }
+                }
+              },
+              "examples": {
+                "Book request": {
+                  "value": {
+                    "prebookId": "len80MPr_",
+                    "holder": {
+                      "firstName": "Steve",
+                      "lastName": "Doe",
+                      "email": "s.doe@liteapi.travel",
+                      "phone": "0200923695"
+                    },
+                    "guests": [
+                      {
+                        "occupancyNumber": 1,
+                        "remarks": "quiet room please",
+                        "firstName": "Sunny",
+                        "lastName": "Mars",
+                        "email": "s.mars@liteapi.travel",
+                        "phone": "0200923695"
+                      },
+                      {
+                        "occupancyNumber": 2,
+                        "remarks": "non smokong room please",
+                        "firstName": "James",
+                        "lastName": "Smith",
+                        "email": "j.smith@liteapi.travel",
+                        "phone": "0343108276"
+                      }
+                    ],
+                    "metadata": {
+                      "ip": "203.112.45.67",
+                      "country": "FR",
+                      "language": "fr-FR",
+                      "platform": "Windows",
+                      "device_id": "device-abc-789",
+                      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                      "utm_medium": "organic",
+                      "utm_source": "bing",
+                      "utm_campaign": "spring_2025"
+                    },
+                    "guestPayment": {
+                      "method": "CREDIT_CARD",
+                      "phone": "0200923695",
+                      "last_4_digits": "1111",
+                      "payee_last_name": "john",
+                      "payee_first_name": "doe",
+                      "adress": {
+                        "city": "New York",
+                        "adress": "123 Main Street",
+                        "country": "US",
+                        "postal_code": "10001"
+                      }
+                    },
+                    "payment": {
+                      "method": "TRANSACTION_ID",
+                      "transactionId": "tr_ct_ELlwT7nqeZCKsxZq1Vr"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "parameters": [
+          {
+            "name": "timeout",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "example": 30
+          }
+        ],
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "bookingId": {
+                          "type": "string",
+                          "description": "The unique identifier for the confirmed booking. This is used to reference the booking later via the API or calls for support."
+                        },
+                        "clientReference": {
+                          "type": "string",
+                          "description": "A reference ID provided by the client (you) for tracking purposes."
+                        },
+                        "supplierBookingId": {
+                          "type": "string",
+                          "description": "The booking ID assigned by the supplier. Not needed, use bookingId instead."
+                        },
+                        "supplierBookingName": {
+                          "type": "string",
+                          "description": "The name associated with the booking in the supplier's system. By default, Nuitee."
+                        },
+                        "supplier": {
+                          "type": "string",
+                          "description": "The supplier handling this booking. By default, Nuitee."
+                        },
+                        "supplierId": {
+                          "type": "integer",
+                          "description": "The unique numerical identifier for the supplier. By default, 2 for Nuitee."
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "The current status of the booking. At this point it will be CONFIRMED, the other option for this field is CANCELED."
+                        },
+                        "hotelConfirmationCode": {
+                          "type": "string",
+                          "description": "The confirmation code issued by the hotel for the booking. Not available at booking time. Nuitee performs a manual process to to contact the hotel and get the confirmation number."
+                        },
+                        "checkin": {
+                          "type": "string",
+                          "description": "The check-in date for the booking (ISO format)."
+                        },
+                        "checkout": {
+                          "type": "string",
+                          "description": "The check-out date for the booking (ISO format)."
+                        },
+                        "hotel": {
+                          "type": "object",
+                          "description": "An object containing details about the booked hotel.",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "The name of the hotel."
+                            },
+                            "hotelId": {
+                              "type": "string",
+                              "description": "The unique identifier of the hotel."
+                            }
+                          }
+                        },
+                        "bookedRooms": {
+                          "type": "array",
+                          "description": "An array of objects containing details about each booked room.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "rate": {
+                                "type": "object",
+                                "description": "An object containing rate information for the booked room.",
+                                "properties": {
+                                  "retailRate": {
+                                    "type": "object",
+                                    "description": "An object with details about the retail price of the booking.",
+                                    "properties": {
+                                      "total": {
+                                        "type": "object",
+                                        "description": "an object containing the total cost of the rate",
+                                        "properties": {
+                                          "amount": {
+                                            "type": "integer",
+                                            "description": "The total cost amount due to book this room. This is what the end user will pay."
+                                          },
+                                          "currency": {
+                                            "type": "string",
+                                            "description": "The currency the total is in."
+                                          }
+                                        }
+                                      }
+                                    }
+                                  },
+                                  "maxOccupancy": {
+                                    "type": "integer",
+                                    "description": "The maximum number of guests allowed in the booked room."
+                                  }
+                                }
+                              },
+                              "adults": {
+                                "type": "integer",
+                                "description": "The number of adults in the booking."
+                              },
+                              "children": {
+                                "type": "integer",
+                                "description": "The number of children in the booking."
+                              },
+                              "roomType": {
+                                "type": "object",
+                                "description": "An object containing details about the booked room type.",
+                                "properties": {
+                                  "name": {
+                                    "type": "string",
+                                    "description": "The name of the booked room type."
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "holder": {
+                          "type": "object",
+                          "description": "An object containing details of the person responsible for the booking.",
+                          "properties": {
+                            "firstName": {
+                              "type": "string",
+                              "description": "The first name of the person responsible for the booking."
+                            },
+                            "lastName": {
+                              "type": "string",
+                              "description": "The last name of the person responsible for the booking."
+                            },
+                            "email": {
+                              "type": "string",
+                              "description": "The email address of the person responsible for the booking."
+                            },
+                            "phone": {
+                              "type": "string",
+                              "description": "The phone number of the person responsible for the booking."
+                            }
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "description": "The timestamp when the booking was created."
+                        },
+                        "cancellationPolicies": {
+                          "type": "object",
+                          "description": "An object detailing the cancellation rules and penalties for the booking.",
+                          "properties": {
+                            "hotelRemarks": {
+                              "type": "array",
+                              "description": "An array of additional remarks from the hotel about the booking.",
+                              "items": {
+                                "type": "object",
+                                "properties": {}
+                              }
+                            },
+                            "refundableTag": {
+                              "type": "string",
+                              "description": "Indicates whether the booking is refundable (e.g., 'NRFN' for non-refundable)."
+                            },
+                            "cancelPolicyInfos": {
+                              "type": "array",
+                              "description": "An array of objects listing specific cancellation policies and penalties.",
+                              "items": {
+                                "type": "object",
+                                "properties": {
+                                  "type": {
+                                    "type": "string",
+                                    "description": "The type of cancellation penalty (e.g., 'amount' for a fixed fee)."
+                                  },
+                                  "amount": {
+                                    "type": "number",
+                                    "description": "The monetary penalty applied if the booking is canceled after the deadline. Can be 0 which means its fully refundable."
+                                  },
+                                  "cancelTime": {
+                                    "type": "string",
+                                    "description": "The deadline to cancel before incurring a fee (ISO datetime format)."
+                                  },
+                                  "timezone": {
+                                    "type": "string",
+                                    "description": "The timezone in which the cancellation policy applies. Always GMT, even if not listed."
+                                  },
+                                  "currency": {
+                                    "type": "string",
+                                    "description": "The currency of the cancellation fee."
+                                  }
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "price": {
+                          "type": "integer",
+                          "description": "The final total price of all rooms on the booking."
+                        },
+                        "commission": {
+                          "type": "number",
+                          "description": "The total commission amount associated with all rooms on the booking."
+                        },
+                        "addonsTotalAmount": {
+                          "type": "number",
+                          "description": "The total amount charged for any additional services or extras."
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "The currency in which the booking price is displayed."
+                        },
+                        "remarks": {
+                          "type": "string",
+                          "description": "Any additional notes related to the booking."
+                        },
+                        "addon": {
+                          "type": "array",
+                          "description": "An array of objects specifying additional services or extras included in the booking.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "addon": {
+                                "type": "string",
+                                "description": "The name or type of the additional service or extra."
+                              },
+                              "value": {
+                                "type": "number",
+                                "description": "The price of the addon in the specified currency."
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "The currency in which the addon is priced."
+                              },
+                              "originalValue": {
+                                "type": "number",
+                                "description": "The original price of the addon before any discounts."
+                              },
+                              "originalCurrency": {
+                                "type": "string",
+                                "description": "The original currency of the addon price."
+                              },
+                              "expiryDate": {
+                                "type": "string",
+                                "description": "The expiration date of the addon, if applicable."
+                              },
+                              "addonVoucherCode": {
+                                "type": "string",
+                                "description": "A code associated with the addon voucher, if applicable."
+                              },
+                              "addonVoucherId": {
+                                "type": "integer",
+                                "description": "A unique identifier for the addon voucher."
+                              },
+                              "status": {
+                                "type": "string",
+                                "description": "The current status of the addon (e.g., active, expired)."
+                              }
+                            }
+                          }
+                        }
+                      }
+                    },
+                    "guestLevel": {
+                      "type": "integer",
+                      "description": "The guest's loyalty or membership level, if applicable."
+                    },
+                    "sandbox": {
+                      "type": "boolean",
+                      "description": "Indicates whether this booking is in a test/sandbox environment (true/false)."
+                    }
+                  }
+                },
+                "examples": {
+                  "confirmed booking": {
+                    "value": {
+                      "data": {
+                        "bookingId": "cZL0RwX",
+                        "clientReference": "",
+                        "supplierBookingId": "38000",
+                        "supplierBookingName": "nuitee",
+                        "supplier": "nuitee",
+                        "supplierId": 2,
+                        "status": "CONFIRMED",
+                        "hotelConfirmationCode": "",
+                        "checkin": "2024-07-20",
+                        "checkout": "2024-07-21",
+                        "hotel": {
+                          "name": "Hotel Villafranca",
+                          "hotelId": "210011"
+                        },
+                        "bookedRooms": [
+                          {
+                            "rate": {
+                              "retailRate": {
+                                "total": {
+                                  "amount": 194,
+                                  "currency": "USD"
+                                }
+                              },
+                              "maxOccupancy": 2
+                            },
+                            "adults": 2,
+                            "children": 0,
+                            "roomType": {
+                              "name": "Double Room"
+                            }
+                          }
+                        ],
+                        "holder": {
+                          "firstName": "Steve",
+                          "lastName": "Doe",
+                          "email": "s.doe@liteapi.travel",
+                          "phone": ""
+                        },
+                        "guestInfo": {
+                          "guestEmail": "dupont.s@hotmail.com",
+                          "guestLastName": "Dupont",
+                          "guestFirstName": "Steve"
+                        },
+                        "createdAt": "2024-06-24T22:19:04Z",
+                        "cancellationPolicies": {
+                          "hotelRemarks": [],
+                          "refundableTag": "RFN",
+                          "cancelPolicyInfos": [
+                            {
+                              "type": "amount",
+                              "amount": 168.7,
+                              "cancelTime": "2024-07-17 06:00:00",
+                              "timezone": ""
+                            }
+                          ]
+                        },
+                        "price": 194,
+                        "commission": 25.3,
+                        "addonsTotalAmount": 8313.73,
+                        "currency": "USD",
+                        "remarks": "<ul><li>Free breakfast</li><li>Free WiFi</li></ul><br/><br/>You will be charged 16.04 USD  upon arrival by the hotel (Charges may be applied in local currency).<p><b>Check-in/Check-out</b><ul><li>Check-in starts at 2 PM</li><li>Check-out ends at noon </li></ul></p><p><b>Know Before You Go</b> <br /><ul>  <li>All guests, including children, must be present at check-in and show their government-issued photo ID card or passport.</li> <li>Cash transactions at this property cannot exceed EUR 2999.99, due to national regulations. For further details, please contact the property using information in the booking confirmation. </li> </ul></p><p><b>Fees</b> <br /><p>The following fees and deposits are charged by the property at time of service, check-in, or check-out. </p> <ul>           <li>Nearby parking fee: EUR 23 per 24 hours</li>                    </ul> <p>The above list may not be comprehensive. Fees and deposits may not include tax and are subject to change. </p></p><p><b>Mandatory Fees and Taxes</b> <br /><p>You'll be asked to pay the following charges at the property:</p> <ul><li>A tax is imposed by the city: EUR 6 per person, per night, up to 10 nights. This tax does not apply to children under 10 years of age. </li></ul> <p>We have included all charges provided to us by the property. However, charges can vary, for example, based on length of stay or the room you book. </p></p>",
+                        "addons": [
+                          {
+                            "addon": "uber",
+                            "value": 50,
+                            "currency": "USD",
+                            "originalValue": 50,
+                            "originalCurrency": "USD",
+                            "expiryDate": "2025-11-19",
+                            "addonVoucherCode": "https://r.uber.com/rjuwpo5UUau",
+                            "addonVoucherId": 1300,
+                            "status": "SUCCESS"
+                          }
+                        ]
+                      },
+                      "guestLevel": 0,
+                      "sandbox": true
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request errors",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Contains details about the encountered error",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Detailed message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Invalid prebookId, rate not found": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "invalid prebookId, rate not found",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "prebookId data retrieval failed": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "prebookId data retrieval failed",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "empty request body": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "empty request body",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "[request body validation message]": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "[request body validation message]",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "invalid prebookId, invalid rate": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "invalid prebookId, invalid rate",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "prebookId invalid data": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "prebookId invalid data",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "prebookId data validation failed, please check your request fields": {
+                    "value": {
+                      "error": {
+                        "code": 4010,
+                        "description": "prebookId data validation failed, please check your request fields",
+                        "message": "wrong rate id"
+                      }
+                    }
+                  },
+                  "missing or empty transaction id": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "missing or empty transaction id",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "missing or empty token": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "missing or empty token",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "missing or not supported payment method": {
+                    "value": {
+                      "error": {
+                        "code": 4000,
+                        "description": "missing or not supported payment method",
+                        "message": "bad request"
+                      }
+                    }
+                  },
+                  "booking unique id generation failure, please try again": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "missing or not supported payment method",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "booking initial save failed, please try again": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "booking initial save failed, please try again",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "payment retrieval failed": {
+                    "value": {
+                      "error": {
+                        "code": 2014,
+                        "description": "payment retrieval failed",
+                        "message": "booking incomplete"
+                      }
+                    }
+                  },
+                  "payment metadata retrieval failed": {
+                    "value": {
+                      "error": {
+                        "code": 2014,
+                        "description": "payment metadata retrieval failed",
+                        "message": "booking incomplete"
+                      }
+                    }
+                  },
+                  "prebookId is not associated to the requested transactionId": {
+                    "value": {
+                      "error": {
+                        "code": 2014,
+                        "description": "prebookId is not associated to the requested transactionId",
+                        "message": "booking incomplete"
+                      }
+                    }
+                  },
+                  "payment status save failed": {
+                    "value": {
+                      "error": {
+                        "code": 2014,
+                        "description": "payment status save failed",
+                        "message": "booking incomplete"
+                      }
+                    }
+                  },
+                  "payment not completed": {
+                    "value": {
+                      "error": {
+                        "code": 2014,
+                        "description": "payment not completed",
+                        "message": "booking incomplete"
+                      }
+                    }
+                  },
+                  "please check if you have provided a payment method for your account": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "please check if you have provided a payment method for your account",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "payment transaction id save failed": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "payment transaction id save failed",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "payment failed please check your provided payment information": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "payment failed please check your provided payment information",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
+                  "booking not confirmed": {
+                    "value": {
+                      "error": {
+                        "code": 2010,
+                        "description": "booking not confirmed",
+                        "message": "booking is not confirmed"
+                      }
+                    }
+                  },
+                  "booking failed provider response was unsuccessful": {
+                    "value": {
+                      "error": {
+                        "code": 2013,
+                        "description": "booking not confirmed",
+                        "message": "booking failed"
+                      }
+                    }
+                  },
+                  "booking failed, provider booking response is invalid": {
+                    "value": {
+                      "error": {
+                        "code": 2013,
+                        "description": "booking failed, provider booking response is invalid",
+                        "message": "booking failed"
+                      }
+                    }
+                  },
+                  "booking incomplete, booking data was not updated": {
+                    "value": {
+                      "error": {
+                        "code": 2014,
+                        "description": "booking incomplete, booking data was not updated",
+                        "message": "booking incomplete"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "string",
+                  "example": "47"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Contains details about the encountered error",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Detailed message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings": {
+      "get": {
+        "tags": ["Manage bookings"],
+        "operationId": "listBookings",
+        "summary": "List bookings",
+        "description": "The API returns the list of booking Id's for a given guest Id.",
+        "parameters": [
+          {
+            "name": "clientReference",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "JOHNDOE-TRIP"
+          },
+          {
+            "name": "guestId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "example": "4"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "default": 4,
+              "format": "float"
+            },
+            "in": "query",
+            "name": "timeout",
+            "description": "request timeout in seconds",
+            "example": 1.5
+          }
+        ],
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 27 Jan 2023 21:43:40 GMT"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              },
+              "Access-Control-Max-Age": {
+                "schema": {
+                  "type": "integer",
+                  "example": 10
+                }
+              },
+              "Access-Control-Allow-Credentials": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bookingId": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 3321904,
+                      "checkin": "2025-05-23",
+                      "checkout": "2025-05-24",
+                      "firstName": "First",
+                      "lastName": "Last",
+                      "adults": 2,
+                      "children": "",
+                      "childrenCount": 0,
+                      "supplierId": 2,
+                      "supplierBookingId": "9EjIcpy7K",
+                      "hotelConfirmationCode": "9348208430284093",
+                      "bookingId": "9EjIcpy7K",
+                      "prebookId": "U86A3mC6G",
+                      "status": "CANCELLED",
+                      "paymentStatus": "",
+                      "paymentTransactionId": "",
+                      "sellingPrice": "388.37",
+                      "exchangeRate": 0.9612858754482988,
+                      "exchangeRateUsd": 1,
+                      "email": "example-holder@liteapi.travel",
+                      "cancelPolicies": "{\"cancelPolicyInfos\":[{\"cancelTime\":\"2025-05-23 23:59:59\",\"amount\":356.31,\"type\":\"amount\",\"timezone\":\"\"}],\"hotelRemarks\":null}",
+                      "tag": "",
+                      "lastFreeCancellationDate": "2025-05-24T02:59:59+03:00",
+                      "currency": "USD",
+                      "apiCommission": 32.06,
+                      "userId": 869595,
+                      "nationality": "GR",
+                      "holderTitle": "",
+                      "hotelId": "lp19f3a",
+                      "hotelName": "",
+                      "createdAt": "2025-03-05T13:37:20+02:00",
+                      "updatedAt": "2025-03-05T17:41:06+02:00",
+                      "cancelledAt": "2025-03-05T17:41:05+02:00",
+                      "refundedAt": "2025-03-05T17:41:05+02:00",
+                      "guestId": "102",
+                      "loyaltyGuestId": 102,
+                      "remarks": "quiet room please",
+                      "clientReference": "6b462947-b183-450b-8113-098a674f7f86",
+                      "sandbox": 1,
+                      "clientCommission": 32.06,
+                      "voucherId": null,
+                      "voucherTotalAmount": 0,
+                      "voucherTransationId": null,
+                      "processingFee": 0,
+                      "amountRefunded": 0,
+                      "refundType": "full",
+                      "paymentScheduledAt": null,
+                      "addonsTotalAmount": null,
+                      "addonsRedemptions": null,
+                      "rebookFrom": "",
+                      "rooms": [
+                        {
+                          "room_id": "HQTX7FHWARP8R55FMQ9D7UN6DCLS9B7WXGNGRL6SFTZI1MG0GQH4TQE93EGSY1964F5PXF9HCX7JEZCW60K91QNXEXZ9Z6BY2Q0M",
+                          "occupancy_number": 1,
+                          "amount": 356.31,
+                          "currency": "USD",
+                          "adults": 2,
+                          "children_count": 0,
+                          "remarks": "quiet room please",
+                          "guests": [
+                            {
+                              "firstName": "Sunny",
+                              "lastName": "Mars",
+                              "email": "s.mars@liteapi.travel",
+                              "phone": "759834795387",
+                              "remarks": "quiet room please",
+                              "occupancyNumber": 1
+                            }
+                          ]
+                        }
+                      ],
+                      "guestPayment": null,
+                      "agentId": null,
+                      "rebookRequestId": null,
+                      "trackingId": "ucn048ucr04ru09",
+                      "cancelledBy": 8459483
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 27 Jan 2023 21:43:40 GMT"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              },
+              "Access-Control-Max-Age": {
+                "schema": {
+                  "type": "integer",
+                  "example": 10
+                }
+              },
+              "Access-Control-Allow-Credentials": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bookingId": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 204,
+                    "message": "Guest Id not found"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 27 Jan 2023 21:43:40 GMT"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              },
+              "Access-Control-Max-Age": {
+                "schema": {
+                  "type": "integer",
+                  "example": 10
+                }
+              },
+              "Access-Control-Allow-Credentials": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bookingId": {
+                            "type": "string"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/{bookingId}": {
+      "get": {
+        "tags": ["Manage bookings"],
+        "summary": "Retrieve a booking",
+        "description": "The API returns the status and the details for the a specific booking Id.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "description": "(Required) The unique identifier of the booking you would like to update.",
+            "example": "V8mglw-im"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "default": 4,
+              "format": "float"
+            },
+            "in": "query",
+            "name": "timeout",
+            "description": "request timeout in seconds",
+            "example": 1.5
+          }
+        ],
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 27 Jan 2023 21:40:18 GMT"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 359
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "x-amzn-RequestId": {
+                "schema": {
+                  "type": "string",
+                  "example": "063d1a7e-0677-4cec-997f-e0575c36017d"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+              "x-amzn-Remapped-Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 560
+                }
+              },
+              "x-amz-apigw-id": {
+                "schema": {
+                  "type": "string",
+                  "example": "fa-ucH-iIAMFu5Q="
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              },
+              "Access-Control-Expose-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+              "x-amzn-Remapped-Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 27 Jan 2023 21:40:18 GMT"
+                }
+              },
+              "Access-Control-Max-Age": {
+                "schema": {
+                  "type": "integer",
+                  "example": 10
+                }
+              },
+              "Access-Control-Allow-Credentials": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bookingId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "hotelConfirmationCode": {
+                            "type": "string"
+                          },
+                          "start": {
+                            "type": "string"
+                          },
+                          "end": {
+                            "type": "string"
+                          },
+                          "bookedRooms": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "roomType": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "adults": {
+                                  "type": "integer"
+                                },
+                                "childCount": {
+                                  "type": "integer"
+                                },
+                                "rate": {
+                                  "type": "object",
+                                  "properties": {
+                                    "maxOccupancy": {
+                                      "type": "integer"
+                                    },
+                                    "retailRate": {
+                                      "type": "object",
+                                      "properties": {
+                                        "total": {
+                                          "type": "object",
+                                          "properties": {
+                                            "amount": {
+                                              "type": "number"
+                                            },
+                                            "currency": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "guestInfo": {
+                            "type": "object",
+                            "properties": {
+                              "guestFirstName": {
+                                "type": "string"
+                              },
+                              "guestLastName": {
+                                "type": "string"
+                              },
+                              "guestEmail": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "cancellationPolicies": {
+                            "type": "object",
+                            "properties": {
+                              "cancelPolicyInfos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "cancelTime": {
+                                      "type": "string"
+                                    },
+                                    "amount": {
+                                      "type": "number"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "hotelRemarks": {
+                                "type": "string"
+                              },
+                              "refundableTag": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "example-0": {
+                    "summary": "Retrieve a booking",
+                    "value": {
+                      "data": {
+                        "bookingId": "hSq2gVDrf",
+                        "status": "CONFIRMED",
+                        "hotelConfirmationCode": "hSq2gVDrf",
+                        "start": "2024-11-15",
+                        "end": "2024-11-16",
+                        "bookedRooms": [
+                          {
+                            "roomType": {
+                              "name": "Test rate"
+                            },
+                            "adults": 1,
+                            "childCount": 2,
+                            "rate": {
+                              "maxOccupancy": 0,
+                              "retailRate": {
+                                "total": {
+                                  "amount": 115,
+                                  "currency": "USD"
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        "guestInfo": {
+                          "guestFirstName": "John",
+                          "guestLastName": "Doe",
+                          "guestEmail": "johndoe@liteapi.travel"
+                        },
+                        "createdAt": "2024-01-27T21:38:48",
+                        "cancellationPolicies": {
+                          "cancelPolicyInfos": [
+                            {
+                              "cancelTime": "2024-11-15",
+                              "amount": 100,
+                              "type": "amount"
+                            }
+                          ],
+                          "hotelRemarks": null,
+                          "refundableTag": "RFN"
+                        }
+                      }
+                    }
+                  },
+                  "example-1": {
+                    "summary": "Retrieve booking canceled",
+                    "value": {
+                      "data": {
+                        "bookingId": "GmRZ9XR4y",
+                        "status": "CANCELLED",
+                        "hotelConfirmationCode": "891349",
+                        "start": "2022-09-08",
+                        "end": "2024-09-09",
+                        "bookedRooms": [
+                          {
+                            "roomType": {
+                              "name": "Studio, 1 King Bed"
+                            },
+                            "adults": 2,
+                            "childCount": 0,
+                            "rate": {
+                              "maxOccupancy": 0,
+                              "retailRate": {
+                                "total": {
+                                  "amount": 83.38,
+                                  "currency": "EUR"
+                                }
+                              }
+                            }
+                          }
+                        ],
+                        "contact": {
+                          "firstName": "John",
+                          "lastName": "KARI",
+                          "email": "john.doe@example.com"
+                        },
+                        "createdAt": "2022-08-16T10:11:16",
+                        "cancellationPolicies": {
+                          "cancelPolicyInfos": null,
+                          "hotelRemarks": null
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "Access-Control-Allow-Credentials": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              },
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Access-Control-Expose-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+              "Access-Control-Max-Age": {
+                "schema": {
+                  "type": "integer",
+                  "example": 10
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Tue, 20 Sep 2022 10:59:59 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 56
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "bookingId": {
+                            "type": "string"
+                          },
+                          "status": {
+                            "type": "string"
+                          },
+                          "hotelConfirmationCode": {
+                            "type": "string"
+                          },
+                          "start": {
+                            "type": "string"
+                          },
+                          "end": {
+                            "type": "string"
+                          },
+                          "bookedRooms": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "roomType": {
+                                  "type": "object",
+                                  "properties": {
+                                    "name": {
+                                      "type": "string"
+                                    }
+                                  }
+                                },
+                                "adults": {
+                                  "type": "integer"
+                                },
+                                "childCount": {
+                                  "type": "integer"
+                                },
+                                "rate": {
+                                  "type": "object",
+                                  "properties": {
+                                    "maxOccupancy": {
+                                      "type": "integer"
+                                    },
+                                    "retailRate": {
+                                      "type": "object",
+                                      "properties": {
+                                        "total": {
+                                          "type": "object",
+                                          "properties": {
+                                            "amount": {
+                                              "type": "number"
+                                            },
+                                            "currency": {
+                                              "type": "string"
+                                            }
+                                          }
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "guestInfo": {
+                            "type": "object",
+                            "properties": {
+                              "guestFirstName": {
+                                "type": "string"
+                              },
+                              "guestLastName": {
+                                "type": "string"
+                              },
+                              "guestEmail": {
+                                "type": "string"
+                              }
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string"
+                          },
+                          "cancellationPolicies": {
+                            "type": "object",
+                            "properties": {
+                              "cancelPolicyInfos": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "cancelTime": {
+                                      "type": "string"
+                                    },
+                                    "amount": {
+                                      "type": "number"
+                                    },
+                                    "type": {
+                                      "type": "string"
+                                    }
+                                  }
+                                }
+                              },
+                              "hotelRemarks": {
+                                "type": "string"
+                              },
+                              "refundableTag": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 204,
+                    "message": "Booking Id not found"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Access-Control-Allow-Credentials": {
+                "schema": {
+                  "type": "boolean",
+                  "example": true
+                }
+              },
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+              "Access-Control-Expose-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+              "Access-Control-Max-Age": {
+                "schema": {
+                  "type": "integer",
+                  "example": 10
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Tue, 20 Sep 2022 10:59:59 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 56
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": ["Manage bookings"],
+        "summary": "Cancel a booking",
+        "description": "<!-- theme: danger -->\nThis API is used to request a cancellation of an existing confirmed booking. Cancellation policies and conditions will be used to determine the success of the cancellation. For example a booking with non-refundable (NRFN) tag or a booking with a cancellation policy that was requested past the cancellation date will not be able to cancel the confirmed booking.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true,
+            "example": "crzhK9Lrm"
+          },
+          {
+            "schema": {
+              "type": "number",
+              "default": 4,
+              "format": "float"
+            },
+            "in": "query",
+            "name": "timeout",
+            "description": "request timeout in seconds",
+            "example": 1.5
+          }
+        ],
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 133
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "bookingId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "cancellation_fee": {
+                          "type": "number"
+                        },
+                        "refund_amount": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "sandbox": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "bookingId": "hSq2gVDrf",
+                    "status": "CANCELLED",
+                    "cancellation_fee": 0,
+                    "refund_amount": 0,
+                    "currency": "USD"
+                  },
+                  "sandbox": true
+                }
+              }
+            }
+          },
+          "204": {
+            "description": "No Content",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 133
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "bookingId": {
+                          "type": "string"
+                        },
+                        "status": {
+                          "type": "string"
+                        },
+                        "cancellation_fee": {
+                          "type": "number"
+                        },
+                        "refund_amount": {
+                          "type": "number"
+                        },
+                        "currency": {
+                          "type": "string"
+                        }
+                      }
+                    },
+                    "sandbox": {
+                      "type": "boolean"
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 204,
+                    "message": "booking id not found"
+                  }
+                }
+              }
+            }
+          },
+          "304": {
+            "description": "Not Modified",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 133
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 304,
+                    "message": "unable to process request"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": 133
+                }
+              },
+              "Connection": {
+                "schema": {
+                  "type": "string",
+                  "example": "keep-alive"
+                }
+              },
+              "Access-Control-Allow-Origin": {
+                "schema": {
+                  "type": "string",
+                  "example": "*"
+                }
+              },
+
+              "Access-Control-Allow-Headers": {
+                "schema": {
+                  "type": "string",
+                  "example": "Content-Type, Content-Length, Accept-Encoding, X-CSRF-Token, Authorization, accept, origin, Cache-Control, X-Requested-With, Content-Disposition"
+                }
+              },
+
+              "Access-Control-Allow-Methods": {
+                "schema": {
+                  "type": "string",
+                  "example": "POST, HEAD, PATCH, OPTIONS, GET, PUT, DELETE"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/": {
+      "get": {
+        "tags": ["Manage bookings"],
+        "summary": "Retrieve all bookings",
+        "description": "Provides a list of bookings linked to a specific API key.",
+        "parameters": [
+          {
+            "name": "startDate",
+            "in": "query",
+            "description": "Start date of the booking range.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2024-08-30"
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "description": "End date of the booking range.",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2024-10-31"
+          },
+          {
+            "name": "status",
+            "in": "query",
+            "description": "Status of the bookings.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["confirmed", "cancelled"]
+            },
+            "example": "confirmed"
+          },
+          {
+            "name": "paymentStatus",
+            "in": "query",
+            "description": "Filter by payment status.",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["succeeded", "requires_capture"]
+            },
+            "example": "succeeded"
+          },
+          {
+            "name": "Sandbox",
+            "in": "query",
+            "description": "Indicates if the request was made in a sandbox (test) environment",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": ["0", "1"]
+            },
+            "example": "1"
+          }
+        ],
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The total number of bookings retrieved",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "count": {
+                      "type": "integer",
+                      "description": "The total number of bookings returned in the response."
+                    },
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "The unique identifier for the booking record."
+                          },
+                          "checkin": {
+                            "type": "string",
+                            "description": "The check-in date for the booking (YYYY-MM-DD)."
+                          },
+                          "checkout": {
+                            "type": "string",
+                            "description": "The check-out date for the booking (YYYY-MM-DD)."
+                          },
+                          "firstName": {
+                            "type": "string",
+                            "description": "The first name of the person responsible for the booking."
+                          },
+                          "lastName": {
+                            "type": "string",
+                            "description": "The last name of the person responsible for the booking."
+                          },
+                          "adults": {
+                            "type": "integer",
+                            "description": "The number of adult guests in the booking."
+                          },
+                          "children": {
+                            "type": "string",
+                            "description": "A comma delimited string of children's ages included in the booking. Can be empty if no children are included."
+                          },
+                          "hotel_confirmation_code": {
+                            "type": "string",
+                            "description": "A unique confirmation code issued by the hotel."
+                          },
+                          "bookingId": {
+                            "type": "string",
+                            "description": "The unique identifier for this booking"
+                          },
+                          "prebook_Id": {
+                            "type": "string",
+                            "description": "The prebook ID used to confirm the booking."
+                          },
+                          "status": {
+                            "type": "string",
+                            "description": "The current status of the booking (e.g., CONFIRMED, CANCELED)."
+                          },
+                          "payment_status": {
+                            "type": "string",
+                            "description": "The status of the payment for this booking."
+                          },
+                          "payment_transaction_id": {
+                            "type": "string",
+                            "description": "The transaction ID for the payment processed for this booking."
+                          },
+                          "retail_rate": {
+                            "type": "string",
+                            "description": "The total cost of the booking in the specified currency."
+                          },
+                          "exchange_rate": {
+                            "type": "number",
+                            "description": "The exchange rate used for converting to EUR"
+                          },
+                          "exchange_rate_usd": {
+                            "type": "number",
+                            "description": "The exchange rate used for converting to USD."
+                          },
+                          "email": {
+                            "type": "string",
+                            "description": "The email address associated with the booking."
+                          },
+                          "cancelPolicies": {
+                            "type": "string",
+                            "description": "A JSON string containing the cancellation policy details, including penalties and deadlines."
+                          },
+                          "tag": {
+                            "type": "string",
+                            "description": "Indicates if the booking is refundable ('RFN' for refundable, 'NRFN' for non-refundable)."
+                          },
+                          "last_free_cancellation_date": {
+                            "type": "string",
+                            "description": "The latest date/time when the booking can be canceled without penalties (ISO 8601 format)."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "The currency in which the booking was processed."
+                          },
+                          "api_commission": {
+                            "type": "number",
+                            "description": "The commission amount received by the API for this booking."
+                          },
+                          "nationality": {
+                            "type": "string",
+                            "description": "The nationality of the primary guest, represented in ISO 2-letter country code format."
+                          },
+                          "holder_title": {
+                            "type": "string",
+                            "description": "The title (Mr, Ms, Dr, etc.) of the person holding the booking. Can be empty."
+                          },
+                          "hotelId": {
+                            "type": "string",
+                            "description": "The unique identifier for the hotel associated with this booking."
+                          },
+                          "Hotel_name": {
+                            "type": "string",
+                            "description": "The name of the hotel associated with this booking."
+                          },
+                          "payment_data": {
+                            "type": "string",
+                            "description": "A JSON string containing additional payment details. Can be empty."
+                          },
+                          "created_at": {
+                            "type": "string",
+                            "description": "The timestamp when the booking was created (ISO 8601 format)."
+                          },
+                          "updated_at": {
+                            "type": "string",
+                            "description": "The timestamp when the booking details were last updated (ISO 8601 format)."
+                          },
+                          "cancelled_at": {
+                            "type": "string",
+                            "description": "The timestamp when the booking was canceled. Null if not canceled."
+                          },
+                          "refunded_at": {
+                            "type": "string",
+                            "description": "The timestamp when the booking was refunded. Null if not refunded."
+                          },
+                          "amount_refunded": {
+                            "type": "number",
+                            "description": "The total amount refunded for this booking, if applicable."
+                          },
+                          "refund_type": {
+                            "type": "string",
+                            "description": "The type of refund issued, if applicable."
+                          },
+                          "guestId": {
+                            "type": "string",
+                            "description": "The unique identifier for the guest associated with the booking."
+                          },
+                          "reqId": {
+                            "type": "string",
+                            "description": "The request ID associated with this booking request."
+                          },
+                          "remarks": {
+                            "type": "string",
+                            "description": "Any additional remarks or notes related to the booking."
+                          },
+                          "client_reference": {
+                            "type": "string",
+                            "description": "A reference string provided by the client for tracking the booking."
+                          },
+                          "IP": {
+                            "type": "number",
+                            "description": "The IP address from which the booking request was made."
+                          },
+                          "sandbox": {
+                            "type": "number",
+                            "description": "Indicates if this booking was made in a test/sandbox environment (0 for false, 1 for true)."
+                          },
+                          "version": {
+                            "type": "number",
+                            "description": "The API version used for this booking request."
+                          },
+                          "link": {
+                            "type": "number",
+                            "description": "A tracking or reference link related to the booking. Can be 0 if not applicable."
+                          },
+                          "client_commission": {
+                            "type": "number",
+                            "description": "The commission amount received by the client for this booking."
+                          },
+                          "voucher_id": {
+                            "type": "string",
+                            "description": "The unique identifier for any voucher applied to this booking."
+                          },
+                          "voucher_total_amount": {
+                            "type": "number",
+                            "description": "The total amount covered by the voucher, if applicable."
+                          },
+                          "voucher_transation_id": {
+                            "type": "string",
+                            "description": "The transaction ID associated with the voucher used for payment."
+                          },
+                          "processing_fee": {
+                            "type": "number",
+                            "description": "The processing fee charged for this booking."
+                          },
+                          "supplier_Booking_Id": {
+                            "type": "string",
+                            "description": "The unique booking ID assigned by the supplier."
+                          },
+                          "tracking_id": {
+                            "type": "string",
+                            "description": "The campaign ID passed in from the client."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "count": 3,
+                  "data": [
+                    {
+                      "id": 3320020,
+                      "checkin": "2024-09-01",
+                      "checkout": "2024-09-03",
+                      "firstName": "Steve",
+                      "lastName": "Doe",
+                      "adults": 3,
+                      "children": "11",
+                      "hotel_confirmation_code": "dLcN7migy",
+                      "booking_Id": "Rb5JVigyN",
+                      "prebook_Id": "0dLcN7mVX",
+                      "status": "CONFIRMED",
+                      "payment_status": "succeeded",
+                      "payment_transaction_id": "tr_cts_vlpBFTjSK7ifl3t_0dGqQ",
+                      "retail_rate": "654.84",
+                      "exchange_rate": 0.9187300518,
+                      "exchange_rate_usd": 1,
+                      "email": "s.doe@liteapi.travel",
+                      "cancelPolicies": "{\"cancelPolicyInfos\":null,\"hotelRemarks\":null}",
+                      "tag": "",
+                      "last_free_cancellation_date": "0001-01-01T00:00:00Z",
+                      "currency": "USD",
+                      "api_commission": 64.88999999999999,
+                      "nationality": "US",
+                      "holder_title": "",
+                      "hotelId": "lp19e75",
+                      "Hotel_name": "",
+                      "payment_data": "{}",
+                      "created_at": "2024-08-18T18:39:14Z",
+                      "updated_at": "2024-08-18T18:39:16Z",
+                      "cancelled_at": null,
+                      "refunded_at": null,
+                      "amount_refunded": 0,
+                      "refund_type": "",
+                      "guestId": "",
+                      "reqId": "IMuclrVuu14wwkxTGXaZi",
+                      "remarks": "quiet room please",
+                      "client_reference": "",
+                      "IP": 0,
+                      "sandbox": 1,
+                      "version": 30,
+                      "link": 0,
+                      "client_commission": 58.995000000000005,
+                      "voucher_id": null,
+                      "voucher_total_amount": 0,
+                      "voucher_transation_id": null,
+                      "processing_fee": 0,
+                      "supplier_Booking_Id": "Rb5JVigyN",
+                      "tracking_id": ""
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized access.",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "Unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request, missing or invalid parameters.",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "string",
+                  "example": "47"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 400,
+                    "message": "Invalid startDate or endDate"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-readme": {
+    "explorer-enabled": true,
+    "proxy-enabled": true,
+    "samples-enabled": true
+  }
+}

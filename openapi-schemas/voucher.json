@@ -1,0 +1,873 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Vouchers",
+    "version": "1.0.0",
+    "description": "API for managing vouchers"
+  },
+  "servers": [
+    {
+      "url": "https://da.liteapi.travel",
+      "description": "Main API server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key",
+        "description": "API key required for authorization"
+      }
+    }
+  },
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Vouchers",
+      "description": "Operations related to managing discount vouchers, including creating, updating, and retrieving vouchers."
+    }
+  ],
+  "paths": {
+    "/vouchers": {
+      "post": {
+        "tags": ["Vouchers"],
+        "summary": "Create a new voucher",
+        "description": "Create a new voucher with the specified details, including the voucher code, discount type, value, and validity period. This voucher can then be used by customers.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "voucher_code": {
+                    "type": "string",
+                    "description": "A unique code for the new voucher. e.g. manhattan-holidays-100"
+                  },
+                  "discount_type": {
+                    "type": "string",
+                    "description": "Type of discount, such as percentage, or points_redemption"
+                  },
+                  "discount_value": {
+                    "type": "number",
+                    "description": "Value of the discount applied by the voucher. For percentage discounts, a value of 10 represents a 10% discount. For points_redemption, it indicates the fixed amount of points to be redeemed e.g. 10 equals 10 points"
+                  },
+                  "minimum_spend": {
+                    "type": "number",
+                    "description": "Minimum rate to apply the discount voucher in the voucher currency. e.g. a minimum_spend of USD$100 will only apply for bookings with a price USD$100 or more"
+                  },
+                  "maximum_discount_amount": {
+                    "type": "number",
+                    "description": "Maximum discount amount that can be applied using the voucher in voucher currency. e.g. a with a maximum_discount_amount of 50 in USD, will discount from 0 to USD$50"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency in which the discount is offered"
+                  },
+                  "validity_start": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date from which the voucher becomes valid"
+                  },
+                  "validity_end": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Date until which the voucher remains valid"
+                  },
+                  "usages_limit": {
+                    "type": "number",
+                    "description": "Maximum number of times the voucher can be redeemed"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Current status of the voucher (e.g., active, inactive)"
+                  },
+                  "guest_id": {
+                    "type": "string",
+                    "description": "The unique identifier of the guest associated with the voucher"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "A brief description of the voucher, detailing its purpose or offer"
+                  },
+                  "terms_and_conditions": {
+                    "type": "string",
+                    "description": "Terms and conditions associated with the voucher"
+                  }
+                },
+                "required": [
+                  "voucher_code",
+                  "discount_type",
+                  "discount_value",
+                  "minimum_spend",
+                  "maximum_discount_amount",
+                  "usages_limit",
+                  "currency",
+                  "validity_start",
+                  "validity_end",
+                  "status"
+                ]
+              },
+              "example": {
+                "id": 120,
+                "voucher_code": "HELLOHOLIDAYS",
+                "discount_type": "percentage",
+                "discount_value": 30,
+                "minimum_spend": 60,
+                "maximum_discount_amount": 20,
+                "currency": "USD",
+                "validity_start": "2024-06-03",
+                "validity_end": "2024-07-30",
+                "usages_limit": 10,
+                "status": "active",
+                "created_at": "2024-12-10T09:41:43.000Z",
+                "updated_at": "2024-12-10T09:41:43.000Z",
+                "deleted_at": null,
+                "user_id": 961,
+                "terms_and_conditions": null,
+                "remaining_uses": 10,
+                "guest_id": 394,
+                "description": "Holiday season voucher"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Voucher created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "voucher": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "Unique identifier for the voucher"
+                        },
+                        "voucher_code": {
+                          "type": "string",
+                          "description": "A unique code for the new voucher. e.g. manhattan-holidays-100"
+                        },
+                        "discount_type": {
+                          "type": "string",
+                          "description": "Type of discount, such as percentage or fixed_amount"
+                        },
+                        "discount_value": {
+                          "type": "number",
+                          "description": "Represents the discount amount. For percentage discounts, it indicates the percentage (e.g., 10 for 10%). For fixed amount discounts, it represents the fixed amount in the specified currency (e.g., 10 represents US$10 or €10)"
+                        },
+                        "minimum_spend": {
+                          "type": "number",
+                          "description": "Minimum rate to apply the discount voucher in the voucher currency. e.g. a minimum_spend of USD$100 will only apply for bookings with a price USD$100 or more"
+                        },
+                        "maximum_discount_amount": {
+                          "type": "number",
+                          "description": "Maximum discount amount that can be applied using the voucher in voucher currency. e.g. a with a maximum_discount_amount of 50 in USD, will discount from 0 to USD$50"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "Currency in which the discount is offered"
+                        },
+                        "validity_start": {
+                          "type": "string",
+                          "format": "date",
+                          "description": "Date from which the voucher becomes valid"
+                        },
+                        "validity_end": {
+                          "type": "string",
+                          "format": "date",
+                          "description": "Date until which the voucher remains valid"
+                        },
+                        "usages_limit": {
+                          "type": "number",
+                          "description": "Maximum number of times the voucher can be redeemed"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Current status of the voucher (e.g., active, inactive)"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Timestamp when the voucher was created"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Timestamp when the voucher was last updated"
+                        },
+                        "deleted_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Timestamp when the voucher was deleted, if applicable"
+                        },
+                        "user_id": {
+                          "type": "integer",
+                          "description": "ID of the user associated with the voucher, if applicable"
+                        },
+                        "remaining_uses": {
+                          "type": "number",
+                          "description": "Number of times the voucher can still be redeemed"
+                        },
+                        "guest_id": {
+                          "type": "string",
+                          "description": "The unique identifier of the guest associated with the voucher"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "A brief description of the voucher, detailing its purpose or offer"
+                        },
+                        "terms_and_conditions": {
+                          "type": "string",
+                          "description": "Terms and conditions associated with the voucher"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "voucher": [
+                    {
+                      "id": 120,
+                      "voucher_code": "HELLOHOLIDAYS",
+                      "discount_type": "percentage",
+                      "discount_value": 30,
+                      "minimum_spend": 60,
+                      "maximum_discount_amount": 20,
+                      "currency": "USD",
+                      "validity_start": "2024-06-03",
+                      "validity_end": "2024-07-30",
+                      "usages_limit": 10,
+                      "status": "active",
+                      "created_at": "2024-12-10T09:41:43.000Z",
+                      "updated_at": "2024-12-10T09:41:43.000Z",
+                      "deleted_at": null,
+                      "user_id": 961,
+                      "terms_and_conditions": null,
+                      "remaining_uses": 10,
+                      "guest_id": 394,
+                      "description": "Holiday season voucher"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Vouchers"],
+        "summary": "Retrieve all vouchers",
+        "description": "Fetch a list of all available vouchers. This endpoint provides details such as the voucher code, discount type and value, validity period, and other relevant information.",
+        "responses": {
+          "200": {
+            "description": "A list of all vouchers with their details",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "voucher": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "Unique identifier for the voucher"
+                        },
+                        "voucher_code": {
+                          "type": "string",
+                          "description": "Code used to redeem the voucher"
+                        },
+                        "discount_type": {
+                          "type": "string",
+                          "description": "Type of discount provided, e.g., percentage or fixed amount"
+                        },
+                        "discount_value": {
+                          "type": "number",
+                          "description": "Value of the discount applied by the voucher"
+                        },
+                        "minimum_spend": {
+                          "type": "number",
+                          "description": "Minimum spending required to apply the voucher"
+                        },
+                        "maximum_discount_amount": {
+                          "type": "number",
+                          "description": "Maximum discount amount that can be applied"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "Currency in which the discount is applied"
+                        },
+                        "validity_start": {
+                          "type": "string",
+                          "format": "date",
+                          "description": "Start date from when the voucher is valid"
+                        },
+                        "validity_end": {
+                          "type": "string",
+                          "format": "date",
+                          "description": "End date after which the voucher is no longer valid"
+                        },
+                        "usages_limit": {
+                          "type": "number",
+                          "description": "Maximum number of times the voucher can be used"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Current status of the voucher (e.g., active, inactive, expired)"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Timestamp when the voucher was created"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Timestamp when the voucher was last updated"
+                        },
+                        "deleted_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Timestamp when the voucher was deleted, if applicable"
+                        },
+                        "user_id": {
+                          "type": "integer",
+                          "description": "ID of the user associated with the voucher, if applicable"
+                        },
+                        "terms_and_conditions": {
+                          "type": "string",
+                          "description": "Terms and conditions associated with the voucher"
+                        },
+                        "remaining_uses": {
+                          "type": "number",
+                          "description": "Number of times the voucher can still be redeemed"
+                        },
+                        "guest_id": {
+                          "type": "string",
+                          "description": "The unique identifier of the guest associated with the voucher"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "A brief description of the voucher, detailing its purpose or offer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "voucher": [
+                    {
+                      "id": 32,
+                      "voucher_code": "DISCOUNT_40",
+                      "discount_type": "percentage",
+                      "discount_value": 30,
+                      "minimum_spend": 60,
+                      "maximum_discount_amount": 20,
+                      "currency": "USD",
+                      "validity_start": "2024-06-03",
+                      "validity_end": "2024-06-30",
+                      "usages_limit": 100,
+                      "status": "active",
+                      "created_at": "2024-07-24T14:42:48.000Z",
+                      "updated_at": "2024-07-25T10:48:24.000Z",
+                      "deleted_at": null,
+                      "user_id": 898,
+                      "terms_and_conditions": null,
+                      "remaining_uses": 80,
+                      "guest_id": null,
+                      "description": "40% offer"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vouchers/{voucherID}": {
+      "get": {
+        "tags": ["Vouchers"],
+        "summary": "Retrieve a specific voucher",
+        "description": "Fetch detailed information about a specific voucher using its unique identifier. This includes the voucher code, discount details, usage limits, and more.",
+        "parameters": [
+          {
+            "name": "voucherID",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 46,
+            "description": "Unique identifier of the voucher to retrieve"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voucher details retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "voucher": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "Unique identifier for the voucher"
+                        },
+                        "voucher_code": {
+                          "type": "string",
+                          "description": "Code used to redeem the voucher"
+                        },
+                        "discount_type": {
+                          "type": "string",
+                          "description": "Type of discount provided by the voucher"
+                        },
+                        "discount_value": {
+                          "type": "number",
+                          "description": "Value of the discount"
+                        },
+                        "minimum_spend": {
+                          "type": "number",
+                          "description": "Minimum amount required to use the voucher"
+                        },
+                        "maximum_discount_amount": {
+                          "type": "number",
+                          "description": "Maximum discount amount that can be applied"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "Currency in which the discount is applied"
+                        },
+                        "validity_start": {
+                          "type": "string",
+                          "format": "date",
+                          "description": "Date from which the voucher is valid"
+                        },
+                        "validity_end": {
+                          "type": "string",
+                          "format": "date",
+                          "description": "Date until which the voucher is valid"
+                        },
+                        "usages_limit": {
+                          "type": "number",
+                          "description": "Maximum number of times the voucher can be used"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Current status of the voucher (e.g., active, inactive)"
+                        },
+                        "created_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Date and time when the voucher was created"
+                        },
+                        "updated_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "description": "Date and time when the voucher was last updated"
+                        },
+                        "deleted_at": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "Date and time when the voucher was deleted, if applicable"
+                        },
+                        "user_id": {
+                          "type": "integer",
+                          "description": "ID of the user associated with the voucher, if applicable"
+                        },
+                        "terms_and_conditions": {
+                          "type": "string",
+                          "description": "Terms and conditions associated with the voucher"
+                        },
+                        "remaining_uses": {
+                          "type": "number",
+                          "description": "Number of times the voucher can still be redeemed"
+                        },
+                        "guest_id": {
+                          "type": "string",
+                          "description": "The unique identifier of the guest associated with the voucher"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "A brief description of the voucher, detailing its purpose or offer"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "voucher": [
+                    {
+                      "id": 37,
+                      "voucher_code": "SUPER60",
+                      "discount_type": "percentage",
+                      "discount_value": 30,
+                      "minimum_spend": 60,
+                      "maximum_discount_amount": 20,
+                      "currency": "USD",
+                      "validity_start": "2024-06-03",
+                      "validity_end": "2024-06-30",
+                      "usages_limit": 100,
+                      "remaining_uses": 80,
+                      "status": "active",
+                      "created_at": "2024-07-25T15:10:56.000Z",
+                      "updated_at": "2024-07-25T16:56:22.000Z",
+                      "deleted_at": null,
+                      "user_id": 898,
+                      "guest_id": null,
+                      "description": "60% offer"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Voucher not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Voucher not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vouchers/{id}": {
+      "put": {
+        "tags": ["Vouchers"],
+        "summary": "Update a voucher",
+        "description": "Update the details of an existing voucher, including the voucher code, discount value, validity period, and more.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 46,
+            "description": "Unique identifier of the voucher to update"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "voucher_code": {
+                    "type": "string",
+                    "description": "A unique code for the new voucher. e.g. manhattan-holidays-100"
+                  },
+                  "discount_type": {
+                    "type": "string",
+                    "description": "Type of discount, such as percentage or points redemption"
+                  },
+                  "discount_value": {
+                    "type": "number",
+                    "description": "Value of the discount applied by the voucher. For percentage discounts, a value of 10 represents a 10% discount. For points_redemption, it indicates the fixed amount of points to be redeemed e.g. 10 equals 10 points"
+                  },
+                  "minimum_spend": {
+                    "type": "number",
+                    "description": "Minimum rate to apply the discount voucher in the voucher currency. e.g. a minimum_spend of USD$100 will only apply for bookings with a price USD$100 or more"
+                  },
+                  "maximum_discount_amount": {
+                    "type": "number",
+                    "description": "Maximum discount amount that can be applied using the voucher in voucher currency. e.g. a with a maximum_discount_amount of 50 in USD, will discount from 0 to USD$50"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency of the discount"
+                  },
+                  "validity_start": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Updated start date of the voucher's validity"
+                  },
+                  "validity_end": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Updated end date of the voucher's validity"
+                  },
+                  "usages_limit": {
+                    "type": "number",
+                    "description": "Updated usage limit for the voucher"
+                  },
+                  "status": {
+                    "type": "string",
+                    "description": "Updated status of the voucher (e.g., active, inactive)"
+                  }
+                },
+                "required": [
+                  "voucher_code",
+                  "discount_type",
+                  "discount_value",
+                  "minimum_spend",
+                  "maximum_discount_amount",
+                  "usages_limit",
+                  "currency",
+                  "validity_start",
+                  "validity_end",
+                  "status"
+                ]
+              },
+              "example": {
+                "voucher_code": "e58d5d73",
+                "discount_type": "percentage",
+                "discount_value": 13,
+                "minimum_spend": 60,
+                "maximum_discount_amount": 20,
+                "currency": "USD",
+                "validity_start": "2024-06-03",
+                "validity_end": "2024-06-30",
+                "usages_limit": 100,
+                "status": "active"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Voucher updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Voucher updated successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Voucher not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Voucher not found"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Voucher is used in a booking, read-only access allowed",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Voucher not found"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vouchers/{id}/status": {
+      "put": {
+        "tags": ["Vouchers"],
+        "summary": "Update voucher status",
+        "description": "Update the status of a voucher, typically to activate or deactivate it.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 46,
+            "description": "Unique identifier of the voucher for which the status is being updated"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "enum": ["active", "inactive"],
+                    "description": "New status of the voucher"
+                  }
+                },
+                "required": ["status"]
+              },
+              "example": {
+                "status": "active"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Voucher status updated successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Voucher status updated successfully"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vouchers/history": {
+      "get": {
+        "tags": ["Vouchers"],
+        "summary": "Retrieve voucher usage history",
+        "description": "Fetch the usage history for all vouchers. This includes details of each booking where the voucher was applied, such as the booking date and applied discount amount.",
+        "responses": {
+          "200": {
+            "description": "Voucher updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "history": {
+                      "type": "array",
+                      "description": "List of voucher usage details.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer",
+                            "description": "Unique identifier for the voucher usage history entry.",
+                            "example": 120
+                          },
+                          "voucher_code": {
+                            "type": "string",
+                            "description": "The code of the voucher used.",
+                            "example": "voucher-20"
+                          },
+                          "guest_email": {
+                            "type": "string",
+                            "description": "Email address of the guest who used the voucher.",
+                            "example": "guest@email.com"
+                          },
+                          "hotel_name": {
+                            "type": "string",
+                            "description": "Name of the hotel where the voucher was used.",
+                            "example": "Villa Rosa"
+                          },
+                          "booking_id": {
+                            "type": "string",
+                            "description": "Unique identifier for the booking associated with the voucher.",
+                            "example": "YxsYhO17z"
+                          },
+                          "voucher_total_amount": {
+                            "type": "number",
+                            "description": "Total amount of the voucher used.",
+                            "example": 12.25
+                          },
+                          "usage_date": {
+                            "type": "string",
+                            "format": "date-time",
+                            "description": "Date and time when the voucher was used.",
+                            "example": "2024-09-28T08:18:39.000Z"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "history": [
+                    {
+                      "id": 120,
+                      "voucher_code": "DISCOUNT_50",
+                      "guest_email": "guest@email.com",
+                      "hotel_name": "Hotel Jadran",
+                      "booking_id": "YxsYhO17z",
+                      "voucher_total_amount": 12.25,
+                      "usage_date": "2024-09-28T08:18:39.000Z"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/vouchers/{id}/": {
+      "delete": {
+        "tags": ["Vouchers"],
+        "operationId": "delete Voucher",
+        "summary": "Delete a voucher",
+        "description": "Deletes a voucher from the system using its unique identifier.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "example": 46,
+            "description": "Unique identifier of the voucher to be deleted"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Voucher deleted successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Voucher deleted successfully"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request parameters",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "Invalid voucher ID"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Voucher not found",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "Voucher with the specified ID not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "example": {
+                  "error": "An unexpected error occurred"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

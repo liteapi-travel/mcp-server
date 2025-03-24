@@ -1,0 +1,1294 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Loyalty",
+    "version": "3.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Loyalty Program"
+    }
+  ],
+  "paths": {
+    "/guests": {
+      "get": {
+        "tags": ["Loyalty Program"],
+        "summary": "Fetch all guests",
+        "description": "Fetches a list of all guests along with their loyalty program information, including accumulated points and booking history.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720776092"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "nHhcc446LDkRA8OFy2xNC"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 12 Jul 2024 09:21:34 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "278"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "integer"
+                          },
+                          "email": {
+                            "type": "string"
+                          },
+                          "firstName": {
+                            "type": "string"
+                          },
+                          "lastName": {
+                            "type": "string"
+                          },
+                          "phoneNumber": {
+                            "type": "string"
+                          },
+                          "points": {
+                            "type": "integer"
+                          },
+                          "upcomingPoints": {
+                            "type": "integer"
+                          },
+                          "bookings": {
+                            "type": "array",
+                            "items": {
+                              "type": "string"
+                            }
+                          },
+                          "createdAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "updatedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          },
+                          "deletedAt": {
+                            "type": "string",
+                            "format": "date-time"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 5,
+                      "email": "joe@nuitee.com",
+                      "firstName": "Joe",
+                      "lastName": "Doe",
+                      "phoneNumber": "+330000000",
+                      "points": 3172,
+                      "upcomingPoints": 11,
+                      "bookings": [
+                        "MKDW0OjCT",
+                        "H1VRQCX5o",
+                        "Ibuf4Gic-",
+                        "lwhsHu2rK",
+                        "7AupH1yBo",
+                        "ylwxGDLC1",
+                        "9Tv--Ijct",
+                        "U9BsCF8Ih",
+                        "8dBdQjAqn",
+                        "W7L3ozN0p",
+                        "lWidEnw_b"
+                      ],
+                      "createdAt": "2024-07-08T13:50:55+02:00",
+                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 6,
+                      "email": "joe+bar@example.com",
+                      "firstName": "Joe",
+                      "lastName": "Doe",
+                      "phoneNumber": "+3300000000",
+                      "points": 30,
+                      "upcomingPoints": 11,
+                      "bookings": [
+                        "MKDW0OjCT",
+                        "H1VRQCX5o"
+                      ],
+                      "createdAt": "2024-07-08T13:52:25+02:00",
+                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 7,
+                      "email": "joe+foo@example.com",
+                      "firstName": "Joe",
+                      "lastName": "Doe",
+                      "phoneNumber": "+3300000000",
+                      "points": 350,
+                      "upcomingPoints": 11,
+                      "bookings": [
+                        "MKDW0OjCT",
+                        "H1VRQCX5o"
+                      ],
+                      "createdAt": "2024-07-08T13:52:25+02:00",
+                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "deletedAt": null
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+    },
+    "/guests/{guestId}": {
+      "get": {
+        "tags": ["Loyalty Program"],
+        "summary": "Fetch a specific guest",
+        "description": "Fetches detailed information about a guest, including personal data, loyalty points, and booking history.",
+        "parameters": [
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Numeric ID of the guest to fetch",
+            "example": "1234"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720770455"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "WVXep1RNS-njCHDWhyRxx"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 12 Jul 2024 07:47:34 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "226"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": { "type": "integer" },
+                        "email": { "type": "string" },
+                        "firstName": { "type": "string" },
+                        "lastName": { "type": "string" },
+                        "phoneNumber": { "type": "string" },
+                        "points": { "type": "integer" },
+                        "upcomingPoints": { "type": "integer" },
+                        "bookings": {
+                          "type": "array",
+                          "items": { "type": "string" }
+                        },
+                        "createdAt": { "type": "string", "format": "date-time" },
+                        "updatedAt": { "type": "string", "format": "date-time" },
+                        "deletedAt": { "type": "string", "format": "date-time" }
+                      }
+                    }}
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 5,
+                      "email": "joe@nuitee.com",
+                      "firstName": "Joe",
+                      "lastName": "Doe",
+                      "phoneNumber": "+330000000",
+                      "points": 3180,
+                      "upcomingPoints": 11,
+                      "bookings": [
+                        "MKDW0OjCT",
+                        "H1VRQCX5o",
+                        "Ibuf4Gic-",
+                        "lwhsHu2rK",
+                        "7AupH1yBo",
+                        "ylwxGDLC1",
+                        "9Tv--Ijct",
+                        "U9BsCF8Ih",
+                        "8dBdQjAqn",
+                        "W7L3ozN0p",
+                        "lWidEnw_b"
+                      ],
+                      "createdAt": "2024-07-08T13:50:55+02:00",
+                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "deletedAt": null
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720770620"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "NVv3adjtDpIx-o5Ld5asG"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 12 Jul 2024 07:50:20 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "92"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "error": {
+                    "code": 4003,
+                    "message": "request field is invalid or wrong"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+    },
+    "/guests/{guestId}/bookings": {
+      "get": {
+        "tags": ["Loyalty Program"],
+        "summary": "Fetch a guest's bookings",
+        "description": "Retrieves a list of all bookings associated with a specific guest, including details about the points earned and cashback applied for each booking.",
+        "parameters": [
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Numeric ID of the guest to fetch",
+            "example": "1234"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720713191"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "iN2FRInfRFzFx9unb5qty"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Thu, 11 Jul 2024 15:53:10 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "390"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 12,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 30,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-08T13:50:55+02:00",
+                      "updatedAt": "2024-07-08T13:50:55+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 13,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 30,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-08T13:51:20+02:00",
+                      "updatedAt": "2024-07-08T13:51:20+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 14,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 30,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-08T13:51:47+02:00",
+                      "updatedAt": "2024-07-08T13:51:47+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 18,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 30,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-08T17:09:01+02:00",
+                      "updatedAt": "2024-07-08T17:09:01+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 19,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 60,
+                      "cashbackRateUsed": 0.02,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-08T15:40:09+02:00",
+                      "updatedAt": "2024-07-08T15:40:09+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 20,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 3040,
+                      "cashbackRateUsed": 1,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-08T15:41:08+02:00",
+                      "updatedAt": "2024-07-08T15:41:08+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 21,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 4,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-09T11:43:59+02:00",
+                      "updatedAt": "2024-07-09T11:43:59+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 22,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 4,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-09T15:02:50+02:00",
+                      "updatedAt": "2024-07-09T15:02:50+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 23,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 4,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-09T15:04:28+02:00",
+                      "updatedAt": "2024-07-09T15:04:28+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 24,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 4,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-11T11:39:51+02:00",
+                      "updatedAt": "2024-07-11T11:39:51+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 25,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": 4,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-11T12:18:36+02:00",
+                      "updatedAt": "2024-07-11T12:18:36+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 26,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": -30,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-11T12:26:57+02:00",
+                      "updatedAt": "2024-07-11T12:26:57+02:00",
+                      "deletedAt": null
+                    },
+                    {
+                      "id": 27,
+                      "guestID": 5,
+                      "bookingID": "MKDW0OjCT",
+                      "points": -30,
+                      "cashbackRateUsed": 0.01,
+                      "expirationDate": null,
+                      "createdAt": "2024-07-11T13:11:00+02:00",
+                      "updatedAt": "2024-07-11T13:11:00+02:00",
+                      "deletedAt": null
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+    },
+    "/guests/{guestId}/vouchers": {
+      "get": {
+        "tags": ["Loyalty Program"],
+        "summary": "Fetch a guest's vouchers",
+        "description": "Retrieves a list of all vouchers associated with a specific guest, including voucher details like discount type, amount, and validity.",
+        "parameters": [
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "example": 1
+            },
+            "description": "Numeric ID of the guest to fetch vouchers for"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "List of vouchers",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": { "type": "integer" },
+                          "voucher_code": { "type": "string" },
+                          "user_id": { "type": "integer" },
+                          "guest_id": { "type": "integer" },
+                          "discount_type": { "type": "string" },
+                          "discount_value": { "type": "number" },
+                          "minimum_spend": { "type": "number" },
+                          "maximum_discount_amount": { "type": "number" },
+                          "currency": { "type": "string" },
+                          "validity_start": { "type": "string", "format": "date-time" },
+                          "validity_end": { "type": "string", "format": "date-time" },
+                          "usages": { "type": "integer" },
+                          "usages_limit": { "type": "integer" },
+                          "status": { "type": "string" },
+                          "terms_and_conditions": { "type": "string" },
+                          "category": { "type": "string" },
+                          "created_at": { "type": "string", "format": "date-time" },
+                          "updated_at": { "type": "string", "format": "date-time" },
+                          "deleted_at": { "type": "string", "format": "date-time" }
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": [
+                      {
+                        "id": 1,
+                        "voucher_code": "0193f948",
+                        "user_id": 1,
+                        "guest_id": 1,
+                        "discount_type": "fixed_amount",
+                        "discount_value": 0.1,
+                        "minimum_spend": 0,
+                        "maximum_discount_amount": 0,
+                        "currency": "USD",
+                        "validity_start": "2024-12-24T00:00:00+01:00",
+                        "validity_end": "2026-12-24T00:00:00+01:00",
+                        "usages": 6,
+                        "usages_limit": 1,
+                        "status": "active",
+                        "terms_and_conditions": "",
+                        "category": "",
+                        "created_at": "2024-12-24T19:28:49+01:00",
+                        "updated_at": "2024-12-24T19:28:52+01:00",
+                        "deleted_at": null
+                      },
+                      {
+                        "id": 2,
+                        "voucher_code": "0193f969",
+                        "user_id": 1,
+                        "guest_id": 1,
+                        "discount_type": "fixed_amount",
+                        "discount_value": 0.1,
+                        "minimum_spend": 0,
+                        "maximum_discount_amount": 0,
+                        "currency": "USD",
+                        "validity_start": "2024-12-24T00:00:00+01:00",
+                        "validity_end": "2026-12-24T00:00:00+01:00",
+                        "usages": 0,
+                        "usages_limit": 1,
+                        "status": "active",
+                        "terms_and_conditions": "",
+                        "category": "redemption",
+                        "created_at": "2024-12-24T20:04:14+01:00",
+                        "updated_at": "2024-12-24T20:04:14+01:00",
+                        "deleted_at": null
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "message": { "type": "string" }
+                      }
+                    }
+                  },
+                  "example": {
+                    "error": {
+                      "code": 4003,
+                      "message": "Invalid guest ID"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+
+  },
+
+    "/loyalties": {
+      "put": {
+        "tags": ["Loyalty Program"],
+        "summary": "Update the loyalty program",
+        "description": "Updates the loyalty program settings, including status and cashback rates.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["status", "cashbackRate"],
+                "properties": {
+                  "status": {
+                    "type": "string",
+                    "description": "Loyalty program status, either enabled or disabled",
+                    "enum": ["enabled", "disabled"]
+                  },
+                  "cashbackRate": {
+                    "type": "number",
+                    "format": "float",
+                    "description": "Cashback rate in percentage, e.g. 0.1 = 10%",
+                    "default": 0.03
+                  }
+                },
+                "example": {
+                  "status": "enabled",
+                  "cashbackRate": 0.1
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720770325"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "hm_OabSbEGDlUIZuVlRVt"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 12 Jul 2024 07:45:25 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "92"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "cashbackRate": 0.1,
+                      "cashbackCurrency": "USD",
+                      "status": "enabled"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720770745"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "VEabOj-V7yPjX6KqufJM4"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 12 Jul 2024 07:52:24 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "71"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "error": {
+                    "code": 4000,
+                    "message": "bad request"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "get": {
+        "tags": ["Loyalty Program"],
+        "summary": "Get the loyalty program settings",
+        "description": "Retrieves information about current loyalty program settings, including status and cashback rates.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              },
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Vary": {
+                "schema": {
+                  "type": "string",
+                  "example": "Accept-Encoding"
+                }
+              },
+              "X-Ratelimit-Limit": {
+                "schema": {
+                  "type": "integer",
+                  "example": "5"
+                }
+              },
+              "X-Ratelimit-Remaining": {
+                "schema": {
+                  "type": "integer",
+                  "example": "4"
+                }
+              },
+              "X-Ratelimit-Reset": {
+                "schema": {
+                  "type": "integer",
+                  "example": "1720770399"
+                }
+              },
+              "X-Request-Id": {
+                "schema": {
+                  "type": "string",
+                  "example": "bx83fWe6J8z-BrqF1cLQB"
+                }
+              },
+              "Date": {
+                "schema": {
+                  "type": "string",
+                  "example": "Fri, 12 Jul 2024 07:46:39 GMT"
+                }
+              },
+              "Content-Length": {
+                "schema": {
+                  "type": "integer",
+                  "example": "93"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object"
+                },
+                "example": {
+                  "data": [
+                    {
+                      "cashbackRate": 0.1,
+                      "cashbackCurrency": "USD",
+                      "status": "disabled"
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+    },
+    "/guests/{guestId}/loyalty-points": {
+      "get": {
+        "tags": ["Loyalty Program"],
+        "summary": "Fetch a guest's loyalty points",
+        "description": "Fetches the current and upcoming loyalty points for a guest.",
+        "parameters": [
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Numeric ID of the guest to fetch",
+            "example": "1234"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "currentPoints": { "type": "integer" },
+                        "upcomingPoints": { "type": "integer" }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": {
+                      "currentPoints": 1540,
+                      "upcomingPoints": 900
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "message": { "type": "string" }
+                      }
+                    }
+                  },
+                  "example": {
+                    "error": {
+                      "code": 50049,
+                      "message": "guest id is invalid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+    },
+    "/guests/{guestId}/loyalty-points/redeem": {
+      "post": {
+        "tags": ["Loyalty Program"],
+        "summary": "Redeem a guest's loyalty points",
+        "description": "Redeems a guest's loyalty points for a voucher type fixed amount with the specified currency and the points converted using the following rule; 10 points = $1 USD. The voucher returned is a fixed amount voucher allowed to be shared with other guest.",
+        "parameters": [
+          {
+            "name": "guestId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer"
+            },
+            "description": "Numeric ID of the guest to fetch",
+            "example": "1234"
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["points", "currency"],
+                "properties": {
+                  "points": {
+                    "type": "integer",
+                    "description": "Amount of points to redeem. 10 points = $1 USD.",
+                    "example": 100
+
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "Currency in which the voucher value will be calculated.",
+                    "example": "USD"
+                  }
+                },
+                "example": {
+                  "points": 100,
+                  "currency": "USD"
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "voucherCode": { "type": "string" },
+                        "userID": { "type": "integer" },
+                        "guestID": { "type": "integer" },
+                        "discountType": { "type": "string" },
+                        "discountValue": { "type": "number" },
+                        "minimumSpend": { "type": "number" },
+                        "maximumDiscountAmount": { "type": "number" },
+                        "currency": { "type": "string" },
+                        "validityStart": { "type": "string", "format": "date" },
+                        "validityEnd": { "type": "string", "format": "date" },
+                        "usages": { "type": "integer" },
+                        "usagesLimit": { "type": "integer" },
+                        "status": { "type": "string" },
+                        "termsAndConditions": { "type": "string" },
+                        "category": { "type": "string" },
+                        "createdAt": { "type": "string", "format": "date-time" },
+                        "updatedAt": { "type": "string", "format": "date-time" },
+                        "deletedAt": { "type": "string", "format": "date-time" }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": {
+                      "voucherCode": "0193f986",
+                      "userID": 633,
+                      "guestID": 1,
+                      "discountType": "fixed_amount",
+                      "discountValue": 90.95,
+                      "minimumSpend": 0,
+                      "maximumDiscountAmount": 9,
+                      "currency": "USD",
+                      "validityStart": "2024-12-24",
+                      "validityEnd": "2026-12-24",
+                      "usages": 0,
+                      "usagesLimit": 1,
+                      "status": "active",
+                      "termsAndConditions": "",
+                      "category": "redemption",
+                      "createdAt": "2024-12-24T16:36:19.820824Z",
+                      "updatedAt": "2024-12-24T20:36:20.002+04:00",
+                      "deletedAt": null
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "message": { "type": "string" }
+                      }
+                    }
+                  },
+                  "example": {
+                    "error": {
+                      "code": 50049,
+                      "message": "guest id is invalid"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ]
+      }
+    }
+  }
+}

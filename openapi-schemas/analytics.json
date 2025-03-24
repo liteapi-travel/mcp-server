@@ -1,0 +1,365 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Analytics",
+    "version": "1.0.0",
+    "description": "API for retrieving various analytics reports"
+  },
+  "servers": [
+    {
+      "url": "https://da.liteapi.travel",
+      "description": "LiteAPI Dashboard API base URL"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key",
+        "description": "API key required for authorization"
+      }
+    }
+  },
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Analytics",
+      "description": "Operations related to retrieving analytics reports."
+    }
+  ],
+  "paths": {
+    "/analytics/weekly": {
+      "post": {
+        "tags": ["Analytics"],
+        "summary": "Retrieve weekly analytics",
+        "description": "Fetch weekly analytics data for the specified date range.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date for the analytics data YYYY-MM-DD (ISO 8601)"
+                  },
+                  "to": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date for the analytics data YYYY-MM-DD (ISO 8601)"
+                  }
+                },
+                "required": ["from", "to"]
+              },
+              "example": {
+                "from": "2024-01-01",
+                "to": "2024-01-07"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Weekly analytics data retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Weekly analytics data retrieved successfully",
+                  "data": {
+                    "success": true,
+                    "data": {
+                      "arr": [
+                        {
+                          "weeks": "week 12",
+                          "sales": 112828
+                        },
+                        {
+                          "weeks": "week 13",
+                          "sales": 275628
+                        },
+                        {
+                          "weeks": "week 14",
+                          "sales": 235668
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/report": {
+      "post": {
+        "tags": ["Analytics"],
+        "summary": "Retrieve detailed analytics report",
+        "description": "Fetch a detailed analytics report for the specified date range.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date for the report YYYY-MM-DD (ISO 8601)"
+                  },
+                  "to": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date for the report YYYY-MM-DD (ISO 8601)"
+                  }
+                },
+                "required": ["from", "to"]
+              },
+              "example": {
+                "from": "2024-01-01",
+                "to": "2024-01-31"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Detailed analytics report retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Detailed analytics report retrieved successfully",
+                  "data": {
+                    "success": true,
+                    "data": {
+                      "salesRevenue": [
+                        {
+                          "salesRevenue": 41293.76,
+                          "currency": "EUR",
+                          "date": "2024-08-16T00:00:00.000Z"
+                        },
+                        {
+                          "salesRevenue": 41406.99,
+                          "currency": "EUR",
+                          "date": "2024-08-17T00:00:00.000Z"
+                        }
+                      ],
+                      "uniqueDates": [
+                        "2024-08-16T00:00:00.000Z",
+                        "2024-08-17T00:00:00.000Z"
+                      ],
+                      "confirmed_booking": [
+                        {
+                          "confirmed_booking": 144,
+                          "date": "2024-08-16T00:00:00.000Z"
+                        },
+                        {
+                          "confirmed_booking": 144,
+                          "date": "2024-08-17T00:00:00.000Z"
+                        }
+                      ],
+                      "sales": [
+                        {
+                          "sales": 41293.76,
+                          "currency": "EUR",
+                          "date": "2024-08-16T00:00:00.000Z"
+                        },
+                        {
+                          "sales": 41406.99,
+                          "currency": "EUR",
+                          "date": "2024-08-17T00:00:00.000Z"
+                        }
+                      ],
+                      "commission": [
+                        {
+                          "commission": 3753.43,
+                          "currency": "EUR",
+                          "date": "2024-08-16T00:00:00.000Z"
+                        },
+                        {
+                          "commission": 3763.39,
+                          "currency": "EUR",
+                          "date": "2024-08-17T00:00:00.000Z"
+                        }
+                      ],
+                      "revenue": [
+                        {
+                          "revenue": 4129.38,
+                          "currency": "EUR",
+                          "date": "2024-08-16T00:00:00.000Z"
+                        },
+                        {
+                          "revenue": 4140.7,
+                          "currency": "EUR",
+                          "date": "2024-08-17T00:00:00.000Z"
+                        }
+                      ],
+                      "totalRevenue": 62356,
+                      "bookings": [
+                        {
+                          "date": "2024-08-16T00:00:00.000Z",
+                          "booking": 144
+                        },
+                        {
+                          "date": "2024-08-17T00:00:00.000Z",
+                          "booking": 144
+                        }
+                      ],
+                      "cancelled_booking": [
+                        {
+                          "cancelled_booking": 1,
+                          "date": "2024-08-22T00:00:00.000Z"
+                        }
+                      ],
+                      "totalSales": 623562,
+                      "totalCommission": 56729,
+                      "totalBooking": 2309,
+                      "totalConfirmedBooking": 2308,
+                      "totalCancelledBooking": 1
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/markets": {
+      "post": {
+        "tags": ["Analytics"],
+        "summary": "Retrieve market analytics",
+        "description": "Fetch market analytics data for the specified date range.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date for the market analytics YYYY-MM-DD (ISO 8601)"
+                  },
+                  "to": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date for the market analytics YYYY-MM-DD (ISO 8601)"
+                  }
+                },
+                "required": ["from", "to"]
+              },
+              "example": {
+                "from": "2024-01-01",
+                "to": "2024-02-01"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Market analytics data retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Market analytics data retrieved successfully",
+                  "data": {
+                    "success": true,
+                    "data": [
+                      {
+                        "totalBooking": 2307,
+                        "sales": 622563,
+                        "currency": "EUR",
+                        "nationality": "US"
+                      },
+                      {
+                        "totalBooking": 1,
+                        "sales": 998,
+                        "currency": "EUR",
+                        "nationality": "FR"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/analytics/hotels": {
+      "post": {
+        "tags": ["Analytics"],
+        "summary": "Most booked hotels",
+        "description": "Fetch hotel analytics data for most booked hotels the specified date range.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date YYYY-MM-DD (ISO 8601)"
+                  },
+                  "to": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date YYYY-MM-DD (ISO 8601)"
+                  }
+                },
+                "required": ["from", "to"]
+              },
+              "example": {
+                "from": "2024-01-01",
+                "to": "2024-01-31"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Hotel analytics data retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "message": "Hotel analytics data retrieved successfully",
+                  "data": {
+                    "success": true,
+                    "data": [
+                        {
+                          "hotel_id": "lp1987",
+                          "name": "New York Marriott Downtown",
+                          "total": 1151,
+                          "city": "New York",
+                          "country": "USA",
+                          "sales": "289835",
+                          "currency": "EUR"
+                        },
+                        {
+                          "hotel_id": "lp123456",
+                          "total": 520,
+                          "name": "Omni Berkshire Place",
+                          "city": "New York",
+                          "country": "USA",
+                          "sales": "327925",
+                          "currency": "EUR"
+                        }
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,162 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Supply Customization",
+    "version": "1.0.0",
+    "description": "API endpoints for managing supply customization settings"
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0",
+      "description": "Production server"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apiKeyAuth": {
+        "type": "apiKey",
+        "in": "header",
+        "name": "X-Api-Key"
+      }
+    },
+    "schemas": {
+      "data": {
+        "type": "array",
+        "items": {
+          "type": "object",
+          "properties": {
+            "advancedAccessibility": {
+              "type": "boolean",
+              "description": "Indicates if advanced accessibility options are enabled for the user"
+            }
+          }
+        }
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "Error code identifying the error"
+          },
+          "message": {
+            "type": "string",
+            "description": "Detailed error message"
+          }
+        }
+      },
+      "SupplyCustomizationUpdate": {
+        "type": "object",
+        "properties": {
+          "advancedAccessibility": {
+            "type": "boolean",
+            "description": "Indicates if advanced accessibility options should be enabled for the user"
+          }
+        },
+        "required": ["advancedAccessibility"]
+      }
+    }
+  },
+  "security": [
+    {
+      "apiKeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Supply Customization",
+      "description": "Operations for managing supply customization settings"
+    }
+  ],
+  "paths": {
+    "/supply-customization": {
+      "get": {
+        "tags": [
+          "Supply Customization"
+        ],
+        "summary": "Retrieve supply customization settings",
+        "description": "Fetches the supply customization settings for the authenticated user.",
+        "responses": {
+          "200": {
+            "description": "Supply customization settings retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/data"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Supply Customization"
+        ],
+        "summary": "Update supply customization settings",
+        "description": "Updates the supply customization settings for the authenticated user.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/SupplyCustomizationUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Supply customization updated successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/data"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
