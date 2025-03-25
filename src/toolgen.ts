@@ -1,15 +1,14 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z, ZodRawShape } from "zod";
+import axios from "axios";
 
 export function registerToolsFromOpenApi(server: McpServer, spec: any) {
   const paths = spec.paths;
 
-  console.log(`🛠 Registering tools from OpenAPI spec...`, spec.info.title);
+  for (const [routeTemplate, methods] of Object.entries(paths)) {
+    if (typeof methods !== 'object' || methods === null) continue;
 
-  for (const [route, methods] of Object.entries(paths)) {
-    const typedMethods = methods as Record<string, any>;
-
-    for (const [method, op] of Object.entries(typedMethods)) {
+    for (const [method, op] of Object.entries(methods as Record<string, any>)) {
       let operationId = (op.operationId || op.summary || '').replace(/\s/g, '-');
 
       if (!operationId) continue;
@@ -17,43 +16,91 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
       operationId = `${method.toLowerCase()}-${operationId.toLowerCase()}`;
 
       const parameters = op.parameters || [];
-      const requestBody = op.requestBody?.content?.['application/json']?.schema;
+      const requestBodySchema = op.requestBody?.content?.['application/json']?.schema;
 
-      // Create zod schema from OpenAPI schema (basic mapping)
       const schemaShape: ZodRawShape = {};
+      const paramMetadata: {
+        in: "query" | "path" | "header" | "cookie",
+        name: string
+      }[] = [];
 
-      // Add query/path params
       for (const param of parameters) {
-        const name = param.name;
-        const required = param.required || false;
-        const type = param.schema?.type || 'string';
-        schemaShape[name] = mapOpenApiTypeToZod(type, required);
+        const { name, required, schema, in: paramIn } = param;
+        const type = schema?.type || 'string';
+        schemaShape[name] = mapOpenApiTypeToZod(type, required ?? false);
+        paramMetadata.push({ in: paramIn, name });
       }
 
-      // Add body parameters (flattened)
-      if (requestBody?.properties) {
-        for (const [key, prop] of Object.entries<any>(requestBody.properties)) {
-          const required = requestBody.required?.includes(key) ?? false;
+      if (requestBodySchema?.properties) {
+        for (const [key, prop] of Object.entries<any>(requestBodySchema.properties)) {
+          const required = requestBodySchema.required?.includes(key) ?? false;
           const type = prop.type || 'string';
           schemaShape[key] = mapOpenApiTypeToZod(type, required);
         }
       }
 
-      const zodSchema = z.object(schemaShape);
-
-      // Register the tool
       server.tool(operationId, schemaShape, async (args) => {
-        return {
-          content: [{
-            type: "text",
-            text: `Tool "${operationId}" was called with: ${JSON.stringify(args)}`
-          }]
-        };
+        const path = buildPath(routeTemplate, args);
+        const queryParams: any = {};
+        const bodyParams: any = {};
+
+        for (const meta of paramMetadata) {
+          if (meta.in === "query") {
+            queryParams[meta.name] = args[meta.name];
+          }
+        }
+
+        // Body: only if method allows
+        if (["post", "put", "patch"].includes(method.toLowerCase()) && requestBodySchema) {
+          for (const key of Object.keys(requestBodySchema.properties || {})) {
+            if (key in args) {
+              bodyParams[key] = args[key];
+            }
+          }
+        }
+
+        const url = `${spec.servers[0].url}${path}`;
+
+        console.log(`🔌 Calling ${method.toUpperCase()} ${url} with params:`, { queryParams, bodyParams });
+
+        try {
+          const response = await axios.request({
+            method,
+            headers: {
+              'X-Api-Key': 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9',
+            },
+            url,
+            params: queryParams,
+            data: Object.keys(bodyParams).length > 0 ? bodyParams : undefined,
+          });
+
+          return {
+            content: [{
+              type: "text",
+              text: `✅ ${method.toUpperCase()} ${path} returned:\n${JSON.stringify(response.data, null, 2)}`
+            }]
+          };
+        } catch (err: any) {
+          return {
+            isError: true,
+            content: [{
+              type: "text",
+              text: `❌ Error calling ${method.toUpperCase()} ${path}:\n${err?.response?.data ? JSON.stringify(err.response.data, null, 2) : err.message}`
+            }]
+          };
+        }
       });
 
-      console.log(`✅ Registered tool: ${operationId}`);
+      console.log(`🔌 Wired tool: ${operationId} → ${method.toUpperCase()} ${routeTemplate}`);
     }
   }
+}
+
+function buildPath(template: string, args: Record<string, any>) {
+  return template.replace(/{(\w+)}/g, (_, key) => {
+    if (args[key] == null) throw new Error(`Missing path param: ${key}`);
+    return encodeURIComponent(args[key]);
+  });
 }
 
 function mapOpenApiTypeToZod(type: string, required: boolean) {
