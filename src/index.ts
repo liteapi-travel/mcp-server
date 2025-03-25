@@ -1,17 +1,25 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js";
-import { loadOpenApiSpecs } from "./loader";
 import { registerToolsFromOpenApi } from "./toolgen";
 
 const server = new McpServer({
-  name: "OpenAPI Tool Server",
-  version: "1.0.0",
+  name: "LiteAPI MCP Server",
+  version: "3.0.0",
 });
 
-const specs = loadOpenApiSpecs('./openapi-schemas');
-Object.values(specs).forEach(spec => {
-  registerToolsFromOpenApi(server, spec);
-});
+const analytics = require('../openapi-schemas/analytics.json');
+const booking = require('../openapi-schemas/booking.json');
+const loyalty = require('../openapi-schemas/loyalty.json');
+const search = require('../openapi-schemas/search.json');
+const supplyCustomization = require('../openapi-schemas/supplyCustomization.json');
+const voucher = require('../openapi-schemas/voucher.json');
+
+registerToolsFromOpenApi(server, analytics);
+registerToolsFromOpenApi(server, booking);
+registerToolsFromOpenApi(server, loyalty);
+registerToolsFromOpenApi(server, search);
+registerToolsFromOpenApi(server, supplyCustomization);
+registerToolsFromOpenApi(server, voucher);
 
 const transport = new StdioServerTransport();
 

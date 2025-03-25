@@ -13,7 +13,7 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
 
       if (!operationId) continue;
 
-      operationId = `${method.toLowerCase()}-${operationId.toLowerCase()}`;
+      operationId = operationId.toLowerCase().replace(/[^A-z0-9_-]/gm, '').substring(0, 64);
 
       const parameters = op.parameters || [];
       const requestBodySchema = op.requestBody?.content?.['application/json']?.schema;
@@ -77,7 +77,7 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
           return {
             content: [{
               type: "text",
-              text: `✅ ${method.toUpperCase()} ${path} returned:\n${JSON.stringify(response.data, null, 2)}`
+              text: JSON.stringify(response.data, null, 2)
             }]
           };
         } catch (err: any) {
@@ -85,13 +85,13 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
             isError: true,
             content: [{
               type: "text",
-              text: `❌ Error calling ${method.toUpperCase()} ${path}:\n${err?.response?.data ? JSON.stringify(err.response.data, null, 2) : err.message}`
+              text: JSON.stringify(err.response.data, null, 2)
             }]
           };
         }
       });
 
-      console.log(`🔌 Wired tool: ${operationId} → ${method.toUpperCase()} ${routeTemplate}`);
+      //console.log(`🔌 Wired tool: ${operationId} → ${method.toUpperCase()} ${routeTemplate}`);
     }
   }
 }

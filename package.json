@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "build": "npx tsc",
+    "build": "npx tsc && chmod 755 dist/index.js",
     "test": "node test/index.js"
   },
   "keywords": [],
