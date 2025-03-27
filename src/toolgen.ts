@@ -52,6 +52,15 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
           for (const key of Object.keys(requestBodySchema.properties || {})) {
             if (key in args) {
               bodyParams[key] = args[key];
+
+              // If the parameter is a JSON string, parse it
+              if (typeof bodyParams[key] === 'string') {
+                try {
+                  bodyParams[key] = JSON.parse(bodyParams[key]);
+                } catch (e) {
+                  // Ignore
+                }
+              }
             }
           }
         }
