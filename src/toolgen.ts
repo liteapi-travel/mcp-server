@@ -39,7 +39,7 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
         }
       }
 
-      server.tool(operationId, schemaShape, async (args) => {
+      server.tool(operationId, op.summary || op.description, schemaShape, async (args) => {
         const path = buildPath(routeTemplate, args);
         const queryParams: any = {};
         const bodyParams: any = {};
@@ -61,7 +61,7 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
 
         const url = `${spec.servers[0].url}${path}`;
 
-        console.log(`🔌 Calling ${method.toUpperCase()} ${url} with params:`, { queryParams, bodyParams });
+        // console.log(`🔌 Calling ${method.toUpperCase()} ${url} with params:`, { queryParams, bodyParams });
 
         try {
           const response = await axios.request({

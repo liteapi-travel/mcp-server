@@ -1,14 +1,13 @@
 # LiteAPI MCP Server
 
-## Run for development
+## Run just the server for development
 
 ```
 npm run dev
 ```
 
-## Run inspector
+## Run server and inspector
 
 ```
-npm run build
-npx @modelcontextprotocol/inspector node dist/index.js
+npm run inspect
 ```

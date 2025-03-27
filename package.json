@@ -1,19 +1,26 @@
 {
-  "name": "mcp-server",
+  "name": "liteapi-mcp-server",
   "version": "1.0.0",
   "description": "",
-  "main": "index.js",
+  "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "build": "npx tsc && chmod 755 dist/index.js",
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
     "test": "node test/index.js"
   },
   "keywords": [],
   "author": "",
   "license": "ISC",
+  "files": [
+    "/dist"
+  ],
   "devDependencies": {
     "@types/express": "^5.0.1",
     "@types/node": "^22.13.13",
+    "eslint": "^9.23.0",
+    "eslint-config-prettier": "^10.1.1",
+    "eslint-plugin-prettier": "^5.2.5",
     "nodemon": "^3.1.9",
     "ts-node": "^10.9.2",
     "typescript": "^5.8.2"
