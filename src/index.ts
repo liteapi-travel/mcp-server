@@ -13,12 +13,14 @@ const loyalty = require('../openapi-schemas/loyalty.json');
 const search = require('../openapi-schemas/search.json');
 const supplyCustomization = require('../openapi-schemas/supplyCustomization.json');
 const voucher = require('../openapi-schemas/voucher.json');
+const staticData = require('../openapi-schemas/static.json');
 
 registerToolsFromOpenApi(server, analytics);
 registerToolsFromOpenApi(server, booking);
 registerToolsFromOpenApi(server, loyalty);
 registerToolsFromOpenApi(server, search);
 registerToolsFromOpenApi(server, supplyCustomization);
+registerToolsFromOpenApi(server, staticData);
 registerToolsFromOpenApi(server, voucher);
 
 const transport = new StdioServerTransport();

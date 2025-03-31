@@ -553,42 +553,6 @@
             "example": "1000"
           },
           {
-            "name": "lastUpdatedAt",
-            "in": "query",
-            "schema": {
-              "type": "string"
-            },
-            "description": "Retrieve only the hotels that have been updated since the provided date and time (using the RFC3339 format)",
-            "example": "2025-02-05T15:00:00Z"
-          },
-          {
-            "name": "longitude",
-            "in": "query",
-            "schema": {
-              "type": "number"
-            },
-            "description": "Longitude geo coordinates",
-            "example": "-115.16988"
-          },
-          {
-            "name": "latitude",
-            "in": "query",
-            "schema": {
-              "type": "number"
-            },
-            "description": "Latitude geo coordinates",
-            "example": "36.12510"
-          },
-          {
-            "name": "radius",
-            "in": "query",
-            "schema": {
-              "type": "integer"
-            },
-            "description": "radius in meters (min 1000m)",
-            "example": "10000"
-          },
-          {
             "name": "aiSearch",
             "in": "query",
             "schema": {
@@ -689,24 +653,6 @@
             "in": "query",
             "description": "Unique ID of a place retrieved from the places endpoint",
             "example": "ChIJYeZuBI9YwokRjMDs_IEyCwo"
-          },
-          {
-            "name": "language",
-            "schema": {
-              "type": "string"
-            },
-            "in": "query",
-            "description": "The language code, indicating in which language the results should be returned. e.g. 'fr'",
-            "example": "fr"
-          },
-          {
-            "name": "advancedAccessibilityOnly",
-            "schema": {
-              "type": "boolean"
-            },
-            "in": "query",
-            "description": "If `true`, only hotels with advanced accessibility will be returned",
-            "example": true
           }
         ],
         "responses": {

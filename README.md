@@ -11,3 +11,21 @@ npm run dev
 ```
 npm run inspect
 ```
+
+---
+
+## Configure with Claude
+
+```json
+{
+  "mcpServers": {
+    "liteapi": {
+      "command": "/Users/YOUR_USER/.nvm/versions/node/v18.18.2/bin/node",
+      "cwd": "/Users/YOUR_USER/mcp-server",
+      "args": [
+        "/Users/YOUR_USER/mcp-server/dist/index.js"
+      ]
+    }
+  }
+}
+```

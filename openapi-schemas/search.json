@@ -33,7 +33,6 @@
             "application/json": {
               "schema": {
                 "type": "object",
-
                 "required": [
                   "occupancies",
                   "currency",
@@ -82,7 +81,7 @@
                   },
                   "timeout": {
                     "type": "number",
-                    "description": "The timeout for the supplier request. Usually 3 seconds.",
+                    "description": "The timeout for the supplier request in seconds. Usually 3 seconds.",
                     "example": "3"
                   },
                   "limit": {
