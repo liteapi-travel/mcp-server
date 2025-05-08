@@ -130,6 +130,107 @@
           }
         }
       }
+    },
+    "/hotels/rates#place": {
+      "post": {
+        "tags": ["Hotel rates"],
+        "summary": "Search rates for hotels, given a placeId",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "occupancies",
+                  "currency",
+                  "guestNationality",
+                  "checkin",
+                  "checkout",
+                  "maxRatesPerHotel",
+                  "timeout",
+                  "roomMapping",
+                  "placeId"
+                ],
+                "properties": {
+                  "occupancies": {
+                    "type": "array",
+                    "description": "An array of objects specifying the number of guests per room. Required.",
+                    "items": {
+                      "type": "object",
+                      "required": ["adults"],
+                      "properties": {
+                        "adults": {
+                          "type": "integer",
+                          "description": "Number of adults in each selected room",
+                          "example": 2
+                        },
+                        "children": {
+                          "type": "array",
+                          "description": "The ages of children of each selected room",
+                          "example": [5, 2],
+                          "items": {
+                            "type": "integer"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "The currency in which the prices will be displayed.",
+                    "example": "USD"
+                  },
+                  "maxRatesPerHotel": {
+                    "type": "number",
+                    "description": "The number of rates to return per hotel. This number should always be 1.",
+                    "example": "1"
+                  },
+                  "timeout": {
+                    "type": "number",
+                    "description": "The timeout for the supplier request in seconds. Usually 3 seconds.",
+                    "example": "3"
+                  },
+                  "limit": {
+                    "type": "number",
+                    "description": "The number of hotels to search for.",
+                    "example": "100"
+                  },
+                  "guestNationality": {
+                    "type": "string",
+                    "description": "The guest's nationality in ISO 2-letter country code format.",
+                    "example": "US"
+                  },
+                  "hotelName": {
+                    "type": "string",
+                    "description": "The exact name of the hotel to search.",
+                    "example": "The Savoy"
+                  },
+                  "checkin": {
+                    "type": "string",
+                    "description": "The check-in date in YYYY-MM-DD format (ISO 8601).",
+                    "example": "2025-04-01"
+                  },
+                  "checkout": {
+                    "type": "string",
+                    "description": "The check-out date in YYYY-MM-DD format (ISO 8601).",
+                    "example": "2025-04-02"
+                  },
+                  "roomMapping": {
+                    "type": "boolean",
+                    "description": "Enable room mapping to retrieve the mappedRoomId for each room. This allows you to link a rate to its specific room by combining it with hotel details, providing access to room images and additional information",
+                    "example": true
+                  },
+                  "placeId": {
+                    "type": "string",
+                    "description": "The place ID of the area to search.",
+                    "example": "US"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
