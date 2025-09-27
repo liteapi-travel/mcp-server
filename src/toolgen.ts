@@ -70,10 +70,11 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
         // console.log(`🔌 Calling ${method.toUpperCase()} ${url} with params:`, { queryParams, bodyParams });
 
         try {
+          const apiKey = process.env.LITEAPI_API_KEY || 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9';
           const response = await axios.request({
             method,
             headers: {
-              'X-Api-Key': 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9',
+              'X-Api-Key': apiKey,
             },
             url,
             params: queryParams,

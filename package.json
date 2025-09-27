@@ -1,19 +1,33 @@
 {
   "name": "liteapi-mcp-server",
-  "version": "1.0.0",
-  "description": "",
+  "version": "1.0.1",
+  "description": "MCP server for LiteAPI hotel booking services - compatible with n8n workflows",
   "main": "dist/index.js",
+  "bin": {
+    "liteapi-mcp-server": "dist/index.js"
+  },
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "build": "npx tsc && chmod 755 dist/index.js",
+    "build": "npx tsc && echo '#!/usr/bin/env node' | cat - dist/index.js > temp && mv temp dist/index.js && chmod 755 dist/index.js",
     "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
-    "test": "node test/index.js"
+    "test": "node test/index.js",
+    "prepublishOnly": "npm run build"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "liteapi",
+    "hotel-booking",
+    "travel-api",
+    "n8n",
+    "automation"
+  ],
+  "author": "LiteAPI",
+  "license": "MIT",
   "files": [
-    "/dist"
+    "dist/**/*",
+    "openapi-schemas/**/*",
+    "README.md"
   ],
   "devDependencies": {
     "@types/express": "^5.0.1",
