@@ -12,7 +12,7 @@
       "get": {
         "tags": ["Places"],
         "summary": "Search for a list of places",
-        "description": "Look up for a list of places and areas, given a search query. Places can be used to search for hotels within a location and restrict the list to results within the boundaries of a selected place.",
+        "description": "## Overview\n\nSearch for places, locations, and areas using Google Places API. Returns a list of matching places that can be used to search for hotels within specific boundaries.\n\n## When to Use\n\n- **Location autocomplete** - Build location search with autocomplete suggestions\n- **Place selection** - Let users select cities, airports, or areas\n- **Hotel search boundaries** - Get Place IDs to restrict hotel searches to specific regions\n- **Location discovery** - Find places by name or description\n\n## What You Get\n\n- **Place list** - Multiple matching places with details\n- **Place IDs** - Unique identifiers for use in hotel searches\n- **Location information** - Names, addresses, and location types\n- **Formatted addresses** - Human-readable addresses for display\n\n## Key Features\n\n- **Multiple types** - Search for cities, airports, hotels, or other place types\n- **Type filtering** - Specify place types (e.g., 'locality,airport,hotel')\n- **Smart defaults** - Automatically excludes less relevant types unless specified\n- **Relevance ordering** - Results sorted by relevance using Google's ranking\n\n## Quick Start\n\nProvide a `textQuery` (e.g., \"Manhattan\") and optionally specify `type` to filter results. Returns matching places with Place IDs you can use in hotel searches.",
         "security": [
           {
             "apikeyAuth": []
@@ -35,7 +35,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Restricts the results to places matching the specified type. e.g. 'hotel'",
+            "description": "Restricts the results to places matching the specified type(s). You can specify a single type (e.g., 'hotel') or multiple types as a comma-separated list (e.g., 'locality,airport,hotel'). Common types include: 'locality' (cities), 'airport', 'hotel', 'lodging', 'establishment', 'point_of_interest'. When multiple types are provided, results from all types are merged and ordered by relevance.",
             "example": "hotel"
           },
           {
@@ -61,58 +61,16 @@
           "200": {
             "description": "OK",
             "headers": {
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              },
               "Content-Type": {
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
                 }
               },
-              "Vary": {
+              "Content-Encoding": {
                 "schema": {
                   "type": "string",
-                  "example": "Accept-Encoding"
-                }
-              },
-              "X-Ratelimit-Limit": {
-                "schema": {
-                  "type": "integer",
-                  "example": "5"
-                }
-              },
-              "X-Ratelimit-Remaining": {
-                "schema": {
-                  "type": "integer",
-                  "example": "4"
-                }
-              },
-              "X-Ratelimit-Reset": {
-                "schema": {
-                  "type": "integer",
-                  "example": "1721314949"
-                }
-              },
-              "X-Request-Id": {
-                "schema": {
-                  "type": "string",
-                  "example": "ljgo-XZyYUfs8xBtfdhTo"
-                }
-              },
-              "Date": {
-                "schema": {
-                  "type": "string",
-                  "example": "Thu, 18 Jul 2024 15:02:29 GMT"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "275"
+                  "example": "gzip"
                 }
               }
             },
@@ -127,19 +85,24 @@
                         "type": "object",
                         "properties": {
                           "placeId": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "A unique identifier for the place, typically used in further requests or lookups."
                           },
                           "displayName": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "A human-friendly name or label for the place."
                           },
                           "formattedAddress": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The full address for the place, including street, city, country, etc."
                           },
                           "types": {
-                            "type": "string"
+                            "type": "string",
+                            "description": " A list of categories or designations describing the place (e.g. 'hotel', 'lodging')."
                           },
                           "language": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The language code in which the place details are returned."
                           }
                         }
                       }
@@ -180,58 +143,16 @@
           "400": {
             "description": "Bad request",
             "headers": {
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              },
               "Content-Type": {
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
                 }
               },
-              "Vary": {
+              "Content-Encoding": {
                 "schema": {
                   "type": "string",
-                  "example": "Accept-Encoding"
-                }
-              },
-              "X-Ratelimit-Limit": {
-                "schema": {
-                  "type": "integer",
-                  "example": "5"
-                }
-              },
-              "X-Ratelimit-Remaining": {
-                "schema": {
-                  "type": "integer",
-                  "example": "4"
-                }
-              },
-              "X-Ratelimit-Reset": {
-                "schema": {
-                  "type": "integer",
-                  "example": "1721314949"
-                }
-              },
-              "X-Request-Id": {
-                "schema": {
-                  "type": "string",
-                  "example": "ljgo-XZyYUfs8xBtfdhTo"
-                }
-              },
-              "Date": {
-                "schema": {
-                  "type": "string",
-                  "example": "Thu, 18 Jul 2024 15:02:29 GMT"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "275"
+                  "example": "gzip"
                 }
               }
             },
@@ -244,13 +165,16 @@
                       "type": "object",
                       "properties": {
                         "code": {
-                          "type": "integer"
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
                         },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
                         },
                         "message": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Message providing context about the error"
                         }
                       }
                     }
@@ -275,7 +199,7 @@
       "get": {
         "tags": ["Places"],
         "summary": "Search for a specific place",
-        "description": "Look up for a specific place, given a search query. Places can be used to search for hotels within a location and restrict the list to results within the boundaries of a selected place.",
+        "description": "## Overview\n\nGet detailed information about a specific place using its Place ID. Returns complete place details including boundaries and location information.\n\n## When to Use\n\n- **Place details** - Get full information about a selected place\n- **Boundary information** - Retrieve place boundaries for hotel searches\n- **Location verification** - Verify place details before using in searches\n- **Display information** - Show place names and addresses to users\n\n## What You Get\n\n- **Complete place details** - Full information about the place\n- **Boundary data** - Geographic boundaries for the place\n- **Location information** - Coordinates, address, and display name\n- **Place metadata** - Types, formatted address, and language\n\n## Quick Start\n\nProvide the `placeId` in the URL path. Returns complete details for that specific place.",
         "security": [
           {
             "apikeyAuth": []
@@ -288,67 +212,34 @@
             "schema": {
               "type": "string"
             },
-            "description": "Unique identifier of the voucher to retrieve.",
+            "description": "Unique identifier of the place to retrieve.",
             "required": true,
-            "example": "ChIJu1K2erNv5kcR6HyzBQieKJ0"
+            "example": "ChIJLc8UZFdqXz4ROODwebhx2rM"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The language code, indicating in which language the results should be returned. e.g. 'en'",
+            "example": "en"
           }
         ],
         "responses": {
           "200": {
             "description": "OK",
             "headers": {
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              },
               "Content-Type": {
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
                 }
               },
-              "Vary": {
+              "Content-Encoding": {
                 "schema": {
                   "type": "string",
-                  "example": "Accept-Encoding"
-                }
-              },
-              "X-Ratelimit-Limit": {
-                "schema": {
-                  "type": "integer",
-                  "example": "5"
-                }
-              },
-              "X-Ratelimit-Remaining": {
-                "schema": {
-                  "type": "integer",
-                  "example": "4"
-                }
-              },
-              "X-Ratelimit-Reset": {
-                "schema": {
-                  "type": "integer",
-                  "example": "1721314949"
-                }
-              },
-              "X-Request-Id": {
-                "schema": {
-                  "type": "string",
-                  "example": "ljgo-XZyYUfs8xBtfdhTo"
-                }
-              },
-              "Date": {
-                "schema": {
-                  "type": "string",
-                  "example": "Thu, 18 Jul 2024 15:02:29 GMT"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "275"
+                  "example": "gzip"
                 }
               }
             },
@@ -358,23 +249,90 @@
                   "type": "object",
                   "properties": {
                     "data": {
-                      "type": "array",
-                      "items": {
-                        "type": "object",
-                        "properties": {
-                          "placeId": {
-                            "type": "string"
-                          },
-                          "displayName": {
-                            "type": "string"
-                          },
-                          "formattedAddress": {
-                            "type": "string"
-                          },
-                          "types": {
-                            "type": "string"
-                          },
-                          "language": {
+                      "type": "object",
+                      "properties": {
+                        "addressComponents": {
+                          "type": "array",
+                          "description": "A list of address components, each representing a part of the address such as country, city, or postal code.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "languageCode": {
+                                "type": "string",
+                                "description": "The language code for the address component (e.g., 'en', 'en-US')."
+                              },
+                              "longText": {
+                                "type": "string",
+                                "description": "The full text of the address component (e.g., 'France')."
+                              },
+                              "shortText": {
+                                "type": "string",
+                                "description": "The abbreviated or short text for the address component (e.g., 'FR')."
+                              },
+                              "types": {
+                                "type": "array",
+                                "description": "A list of types describing the address component (e.g., 'country', 'political').",
+                                "items": { "type": "string" }
+                              }
+                            }
+                          }
+                        },
+                        "location": {
+                          "type": "object",
+                          "description": "The geographic coordinates of the place.",
+                          "properties": {
+                            "latitude": {
+                              "type": "number",
+                              "description": "The latitude of the location."
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "description": "The longitude of the location."
+                            }
+                          }
+                        },
+                        "viewport": {
+                          "type": "object",
+                          "description": "The recommended viewport for displaying the place, defined by high and low latitude/longitude bounds.",
+                          "properties": {
+                            "high": {
+                              "type": "object",
+                              "description": "The northeast corner of the viewport.",
+                              "properties": {
+                                "latitude": {
+                                  "type": "number",
+                                  "description": "The latitude of the high (northeast) corner."
+                                },
+                                "longitude": {
+                                  "type": "number",
+                                  "description": "The longitude of the high (northeast) corner."
+                                }
+                              }
+                            },
+                            "low": {
+                              "type": "object",
+                              "description": "The southwest corner of the viewport.",
+                              "properties": {
+                                "latitude": {
+                                  "type": "number",
+                                  "description": "The latitude of the low (southwest) corner."
+                                },
+                                "longitude": {
+                                  "type": "number",
+                                  "description": "The longitude of the low (southwest) corner."
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "displayName": {
+                          "type": "string",
+                          "description": "The display name of the place (e.g., 'London Marriott Hotel Park Lane')."
+                        },
+                        "types": {
+                          "type": "array",
+                          "description": "A list of place types (e.g., 'lodging', 'hotel', 'establishment').",
+                          "items": {
                             "type": "string"
                           }
                         }
@@ -383,20 +341,75 @@
                   }
                 },
                 "example": {
-                  "data": [
-                    {
-                      "placeId": "ChIJu1K2erNv5kcR6HyzBQieKJ0",
-                      "displayName": "Rome",
-                      "formattedAddress": "75017 París, Francia",
-                      "types": [
-                        "subway_station",
-                        "transit_station",
-                        "point_of_interest",
-                        "establishment"
-                      ],
-                      "language": "fr"
+                  "data": {
+                    "addressComponents": [
+                      {
+                        "languageCode": "en",
+                        "longText": "140",
+                        "shortText": "140",
+                        "types": ["street_number"]
+                      },
+                      {
+                        "languageCode": "en",
+                        "longText": "Park Lane",
+                        "shortText": "Park Ln",
+                        "types": ["route"]
+                      },
+                      {
+                        "languageCode": "en",
+                        "longText": "London",
+                        "shortText": "London",
+                        "types": ["postal_town"]
+                      },
+                      {
+                        "languageCode": "en",
+                        "longText": "Greater London",
+                        "shortText": "Greater London",
+                        "types": ["administrative_area_level_2", "political"]
+                      },
+                      {
+                        "languageCode": "en",
+                        "longText": "England",
+                        "shortText": "England",
+                        "types": ["administrative_area_level_1", "political"]
+                      },
+                      {
+                        "languageCode": "en",
+                        "longText": "United Kingdom",
+                        "shortText": "GB",
+                        "types": ["country", "political"]
+                      },
+                      {
+                        "languageCode": "en",
+                        "longText": "W1K 7AA",
+                        "shortText": "W1K 7AA",
+                        "types": ["postal_code"]
+                      }
+                    ],
+                    "displayName": "London Marriott Hotel Park Lane",
+                    "location": {
+                      "latitude": 51.513107299999994,
+                      "longitude": -0.1577347
+                    },
+                    "types": [
+                      "hotel",
+                      "wedding_venue",
+                      "event_venue",
+                      "lodging",
+                      "point_of_interest",
+                      "establishment"
+                    ],
+                    "viewport": {
+                      "high": {
+                        "latitude": 51.614437080291495,
+                        "longitude": -0.05660501970849796
+                      },
+                      "low": {
+                        "latitude": 51.41173911970849,
+                        "longitude": -0.259302980291502
+                      }
                     }
-                  ]
+                  }
                 }
               }
             }
@@ -404,58 +417,16 @@
           "400": {
             "description": "Bad request",
             "headers": {
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              },
               "Content-Type": {
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
                 }
               },
-              "Vary": {
+              "Content-Encoding": {
                 "schema": {
                   "type": "string",
-                  "example": "Accept-Encoding"
-                }
-              },
-              "X-Ratelimit-Limit": {
-                "schema": {
-                  "type": "integer",
-                  "example": "5"
-                }
-              },
-              "X-Ratelimit-Remaining": {
-                "schema": {
-                  "type": "integer",
-                  "example": "4"
-                }
-              },
-              "X-Ratelimit-Reset": {
-                "schema": {
-                  "type": "integer",
-                  "example": "1721314949"
-                }
-              },
-              "X-Request-Id": {
-                "schema": {
-                  "type": "string",
-                  "example": "ljgo-XZyYUfs8xBtfdhTo"
-                }
-              },
-              "Date": {
-                "schema": {
-                  "type": "string",
-                  "example": "Thu, 18 Jul 2024 15:02:29 GMT"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "275"
+                  "example": "gzip"
                 }
               }
             },
@@ -468,13 +439,16 @@
                       "type": "object",
                       "properties": {
                         "code": {
-                          "type": "integer"
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
                         },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
                         },
                         "message": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Message providing context about the error"
                         }
                       }
                     }
@@ -500,7 +474,7 @@
       "get": {
         "tags": ["Hotels"],
         "summary": "Retrieve a list of hotels",
-        "description": "This API endpoint returns a **list of hotels** available based on different search criterion.\n\nThe API supports additional search criteria such as city name, geo coordinates, and radius.\n\nThis endpoint provides detailed hotel metadata, including names, addresses, ratings, amenities, and images, facilitating robust hotel search and display features within applications.",
+        "description": "## Overview\n\nSearch and retrieve hotel listings based on various criteria. Get hotel metadata including names, addresses, ratings, amenities, and images for display in your application.\n\n## When to Use\n\n- **Hotel listings** - Display hotel search results\n- **Location-based search** - Find hotels by city, coordinates, or Place ID\n- **Hotel discovery** - Browse hotels in specific areas\n- **Metadata retrieval** - Get hotel information for display\n\n## What You Get\n\n- **Hotel list** - Matching hotels with complete metadata\n- **Basic information** - Names, addresses, ratings, and locations\n- **Amenities** - Available facilities and features\n- **Images** - Hotel photos for display\n- **Identifiers** - Hotel IDs for use in rate searches\n\n## Search Options\n\n- **By city** - Search hotels in a specific city\n- **By coordinates** - Find hotels near latitude/longitude with radius\n- **By Place ID** - Get hotels within a specific place boundary\n- **By hotel IDs** - Retrieve specific hotels by their IDs\n\n## Quick Start\n\nProvide search criteria (city, coordinates+radius, placeId, or hotelIds). Returns matching hotels with complete metadata.",
         "security": [
           {
             "apikeyAuth": []
@@ -553,13 +527,49 @@
             "example": "1000"
           },
           {
+            "name": "lastUpdatedAt",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Retrieve only the hotels that have been updated since the provided date and time (using the RFC3339 format)",
+            "example": "2026-07-05T15:00:00Z"
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Longitude geo coordinates",
+            "example": "-115.16988"
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number"
+            },
+            "description": "Latitude geo coordinates",
+            "example": "36.12510"
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "schema": {
+              "type": "integer"
+            },
+            "description": "radius in meters (min 1000m)",
+            "example": "10000"
+          },
+          {
             "name": "aiSearch",
             "in": "query",
             "schema": {
               "type": "string"
             },
-            "description": "Search term for AI search",
-            "example": "Hotels near the Eiffel tower"
+            "description": "Search term for AI search. Uses semantic search to find hotels matching the query intent. Examples: 'Romantic getaway with Italian vibes in London near the London Eye', 'Hotels near the Eiffel tower'",
+            "example": "Romantic getaway with Italian vibes in London near the London Eye"
           },
           {
             "schema": {
@@ -651,8 +661,35 @@
               "type": "string"
             },
             "in": "query",
-            "description": "Unique ID of a place retrieved from the places endpoint",
-            "example": "ChIJYeZuBI9YwokRjMDs_IEyCwo"
+            "description": "Unique ID of a place retrieved from the `/data/places` endpoint. When provided, the API fetches place details and searches for hotels within a 1km radius of the place location center, or a specific hotel when the placeId refers to a property. The response includes a `place` object containing the place information used in the search.",
+            "example": "ChIJLc8UZFdqXz4ROODwebhx2rM"
+          },
+          {
+            "name": "language",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "description": "The language code, indicating in which language the results should be returned. e.g. 'fr'",
+            "example": "fr"
+          },
+          {
+            "name": "hotelIds",
+            "schema": {
+              "type": "string"
+            },
+            "in": "query",
+            "description": "Comma-separated list of hotel IDs (e.g., 'lp1897,lp1343') to fetch specific hotels by their IDs. This is a valid main query parameter that can be used instead of other search criteria.",
+            "example": "lp1897,lp1343"
+          },
+          {
+            "name": "advancedAccessibilityOnly",
+            "schema": {
+              "type": "boolean"
+            },
+            "in": "query",
+            "description": "If `true`, only hotels with advanced accessibility will be returned",
+            "example": true
           }
         ],
         "responses": {
@@ -805,9 +842,18 @@
                             ],
                             "description": "A compact representation of the hotel's accessibility features."
                           },
+                          "rohId": {
+                            "type": "integer",
+                            "description": "Room of House ID - unique identifier for the hotel property."
+                          },
                           "deletedAt": {
                             "type": "string",
                             "description": "Timestamp indicating when hotel is deleted in our system"
+                          },
+                          "score": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Similarity score (0.0-1.0) indicating how well the hotel name matches the search query when searching by placeId. Higher scores indicate better matches. Only present when placeId parameter is used."
                           }
                         }
                       }
@@ -822,6 +868,101 @@
                     "total": {
                       "type": "integer",
                       "description": "The total number of hotels retrieved based on the applied filters or query parameters."
+                    },
+                    "place": {
+                      "type": "object",
+                      "description": "Place information used in the search. Only present when placeId parameter is used.",
+                      "properties": {
+                        "placeId": {
+                          "type": "string",
+                          "description": "The place ID used in the search"
+                        },
+                        "displayName": {
+                          "type": "string",
+                          "description": "The display name of the place (e.g., 'Marriott New York JFK Airport')"
+                        },
+                        "addressComponents": {
+                          "type": "array",
+                          "description": "A list of address components, each representing a part of the address such as country, city, or postal code.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "languageCode": {
+                                "type": "string",
+                                "description": "The language code for the address component (e.g., 'en', 'en-US')."
+                              },
+                              "longText": {
+                                "type": "string",
+                                "description": "The full text of the address component (e.g., 'France')."
+                              },
+                              "shortText": {
+                                "type": "string",
+                                "description": "The abbreviated or short text for the address component (e.g., 'FR')."
+                              },
+                              "types": {
+                                "type": "array",
+                                "description": "A list of types describing the address component (e.g., 'country', 'political').",
+                                "items": { "type": "string" }
+                              }
+                            }
+                          }
+                        },
+                        "location": {
+                          "type": "object",
+                          "description": "The geographic coordinates of the place.",
+                          "properties": {
+                            "latitude": {
+                              "type": "number",
+                              "description": "The latitude of the location."
+                            },
+                            "longitude": {
+                              "type": "number",
+                              "description": "The longitude of the location."
+                            }
+                          }
+                        },
+                        "viewport": {
+                          "type": "object",
+                          "description": "The recommended viewport for displaying the place, defined by high and low latitude/longitude bounds.",
+                          "properties": {
+                            "high": {
+                              "type": "object",
+                              "description": "The northeast corner of the viewport.",
+                              "properties": {
+                                "latitude": {
+                                  "type": "number",
+                                  "description": "The latitude of the high (northeast) corner."
+                                },
+                                "longitude": {
+                                  "type": "number",
+                                  "description": "The longitude of the high (northeast) corner."
+                                }
+                              }
+                            },
+                            "low": {
+                              "type": "object",
+                              "description": "The southwest corner of the viewport.",
+                              "properties": {
+                                "latitude": {
+                                  "type": "number",
+                                  "description": "The latitude of the low (southwest) corner."
+                                },
+                                "longitude": {
+                                  "type": "number",
+                                  "description": "The longitude of the low (southwest) corner."
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "types": {
+                          "type": "array",
+                          "description": "A list of place types (e.g., 'lodging', 'hotel', 'establishment').",
+                          "items": {
+                            "type": "string"
+                          }
+                        }
+                      }
                     }
                   }
                 },
@@ -1044,11 +1185,761 @@
         }
       }
     },
+    "/data/hotels/semantic-search": {
+      "get": {
+        "tags": ["Hotels"],
+        "summary": "Search hotels by semantic query (Beta)",
+        "description": "## Overview\n\n**Beta Feature** - Search hotels using natural language queries. Uses AI to understand search intent and find hotels that match the meaning, not just keywords.\n\n## When to Use\n\n- **Natural language search** - Let users search with phrases like \"romantic getaway in London\"\n- **Intent-based matching** - Find hotels matching the vibe or style, not just location\n- **Conversational search** - Support natural language hotel discovery\n- **Semantic matching** - Get hotels that semantically match the query\n\n## What You Get\n\n- **Matching hotels** - Hotels that semantically match your query\n- **Semantic attributes** - Tags, persona, style, location_type, and story for each hotel\n- **Relevance scores** - How well each hotel matches the query\n- **Hotel metadata** - ID, name, photos, address, city, country\n\n## Example Queries\n\n- \"Romantic getaway in London with Italian vibes\"\n- \"Hotels near Paris\"\n- \"Family-friendly beachfront hotels\"\n\n## Quick Start\n\nProvide a natural language `query` parameter. Returns hotels with semantic matching scores and attributes.\n\n**Note:** This is a beta feature and may be subject to changes.",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Semantic search query. This can be a natural language description of what you're looking for, e.g. 'romantic getaway in london with italian vibes'",
+            "required": true,
+            "example": "romantic getaway in london with italian vibes"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 3,
+              "minimum": 1
+            },
+            "description": "Maximum number of results to return. Default is 3.",
+            "example": 3
+          },
+          {
+            "name": "min_rating",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "default": 0,
+              "minimum": 0
+            },
+            "description": "Minimum hotel rating to filter results. Default is 0 (no minimum rating filter).",
+            "example": 0
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "LiteAPI hotel ID",
+                            "example": "lp5d8a7"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Hotel name",
+                            "example": "Point Pleasant Inn & Resort"
+                          },
+                          "main_photo": {
+                            "type": "string",
+                            "description": "URL of the main hotel photo",
+                            "example": "https://example.com/hotel-photo.jpg"
+                          },
+                          "address": {
+                            "type": "string",
+                            "description": "Hotel address",
+                            "example": "123 Main Street"
+                          },
+                          "city": {
+                            "type": "string",
+                            "description": "City where the hotel is located",
+                            "example": "Bristol"
+                          },
+                          "country": {
+                            "type": "string",
+                            "description": "Country code where the hotel is located",
+                            "example": "US"
+                          },
+                          "tags": {
+                            "type": "array",
+                            "description": "Semantic tags describing the hotel",
+                            "items": {
+                              "type": "string"
+                            },
+                            "example": ["boutique hotel", "coastal retreat", "romantic getaway"]
+                          },
+                          "score": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Relevance score (0-1) indicating how well the hotel matches the query, rounded to 2 decimals",
+                            "example": 0.7
+                          },
+                          "persona": {
+                            "type": "string",
+                            "description": "Target persona for this hotel",
+                            "example": "Discerning Couple"
+                          },
+                          "style": {
+                            "type": "string",
+                            "description": "Style of the hotel",
+                            "example": "Classic Elegance"
+                          },
+                          "location_type": {
+                            "type": "string",
+                            "description": "Type of location",
+                            "example": "Waterfront Estate"
+                          },
+                          "story": {
+                            "type": "string",
+                            "description": "Narrative description of the hotel",
+                            "example": "Historic waterfront inn offering an exclusive and tranquil escape near local cultural attractions."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "lp5d8a7",
+                      "name": "Point Pleasant Inn & Resort",
+                      "main_photo": "https://example.com/hotel-photo.jpg",
+                      "address": "123 Main Street",
+                      "city": "Bristol",
+                      "country": "US",
+                      "tags": [
+                        "boutique hotel",
+                        "coastal retreat",
+                        "historic charm",
+                        "waterfront views",
+                        "romantic getaway"
+                      ],
+                      "score": 0.7,
+                      "persona": "Discerning Couple",
+                      "style": "Classic Elegance",
+                      "location_type": "Waterfront Estate",
+                      "story": "Historic waterfront inn offering an exclusive and tranquil escape near local cultural attractions."
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "value": {
+                    "error": {
+                      "code": 4002,
+                      "description": "query parameter is required",
+                      "message": "required request field is missing or wrong input"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/hotel/ask": {
+      "get": {
+        "tags": ["Hotels"],
+        "summary": "Ask a question about a hotel (Beta)",
+        "description": "## Overview\n\n**Beta Feature** - Ask natural language questions about a specific hotel and get AI-powered answers based on the hotel's information.\n\n## When to Use\n\n- **Hotel Q&A** - Answer customer questions about hotels\n- **Information lookup** - Get specific details about amenities, services, or features\n- **Conversational interfaces** - Build chat interfaces for hotel information\n- **Detailed inquiries** - Ask about specific aspects like restaurants, parking, or amenities\n\n## What You Get\n\n- **AI-generated answers** - Relevant responses to your questions\n- **Hotel-specific information** - Answers based on the hotel's actual data\n- **Natural language responses** - Human-readable answers\n\n## Example Questions\n\n- \"What amenities does this hotel have?\"\n- \"Is there parking available?\"\n- \"What does a meal at the restaurant look like?\"\n\n## Key Features\n\n- **Web search option** - Enable `allowWebSearch` to get additional information from the web\n- **Hotel context** - Answers are specific to the hotel you're asking about\n- **Natural language** - Ask questions conversationally\n\n## Quick Start\n\nProvide the `hotelId` and your `question`. Optionally enable `allowWebSearch` for web-enhanced answers.\n\n**Note:** This is a beta feature and may be subject to changes.",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique ID of the hotel (liteAPI format)",
+            "required": true,
+            "example": "lp1897"
+          },
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "The question to ask about the hotel",
+            "required": true,
+            "example": "What does a meal at the restaurant of this hotel look like?"
+          },
+          {
+            "name": "allowWebSearch",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Whether to allow web search for additional information. Default is false.",
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "answer": {
+                          "type": "string",
+                          "description": "The answer to the question",
+                          "example": "Yes, this hotel allows pets. However, there may be applicable charges."
+                        },
+                        "citations": {
+                          "type": "array",
+                          "description": "List of citations or sources used to generate the answer",
+                          "items": {
+                            "type": "string"
+                          },
+                          "example": []
+                        },
+                        "latency_ms": {
+                          "type": "integer",
+                          "description": "Response latency in milliseconds",
+                          "example": 1083
+                        },
+                        "search_used": {
+                          "type": "boolean",
+                          "description": "Whether web search was used to generate the answer",
+                          "example": false
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "answer": "Yes, this hotel allows pets. However, there may be applicable charges.",
+                    "citations": [],
+                    "latency_ms": 1083,
+                    "search_used": false
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "value": {
+                    "error": {
+                      "code": 4002,
+                      "description": "hotelId parameter is required",
+                      "message": "required request field is missing or wrong input"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/hotels/room-search": {
+      "get": {
+        "tags": ["Hotels"],
+        "summary": "Search hotel rooms by image and text (Beta)",
+        "description": "## Overview\n\n**Beta Feature** - Search hotel rooms using visual and text-based queries. Uses image search technology to match your query against room images and find hotels with rooms that match your visual preferences, amenities, or style.\n\n## When to Use\n\n- **Visual room search** - Find rooms based on visual characteristics like \"luxury modernist comfort\" or \"blue accessible bathroom\"\n- **Style-based search** - Search for rooms by design style like \"art deco hotel room\" or \"brutalist room\"\n- **Amenity-focused search** - Find rooms with specific features like \"twin room with a city view\" or \"room with a skylight\"\n- **Geographic filtering** - Limit results to hotels near a specific location using coordinates or Place ID\n- **City and country filtering** - Filter results by city and/or country\n\n## What You Get\n\n- **Matching hotels** - Hotels grouped by hotel ID with rooms that match your query\n- **Room details** - Room name, image URL, and similarity score (rounded to 3 decimals) for each matching room\n- **Hotel metadata** - ID, name, address, city, country, and rating for each hotel\n- **Geographic filtering** - Optionally limit results to a specific area using coordinates or Place ID\n- **City and country filters** - Filter results by city and/or country code\n\n## Example Queries\n\n- \"luxury modernist comfort\"\n- \"an extremely fun room or art deco hotel room\"\n- \"luxurious accessible bathroom or blue accessible bathroom with walk in shower\"\n- \"twin room with a city view\"\n- \"a room filled with paintings\"\n- \"a hotel room with a skylight\"\n\n## Geographic Filtering\n\nYou can optionally limit search results to a specific geographic area:\n\n- **Using coordinates**: Provide `latitude`, `longitude`, and optionally `radius` (in kilometers, default: 12km)\n- **Using Place ID**: Provide `placeId` - the place's location will be automatically fetched and the search will use the place's viewport boundaries (or the provided `radius` if viewport is unavailable)\n- **Using city/country**: Provide `city` and/or `country` to filter results by location\n\n## Quick Start\n\nProvide a `query` parameter describing the room you're looking for. Optionally add geographic filtering with `latitude`/`longitude` or `placeId` to limit results to a specific area.\n\n**Note:** This is a beta feature and may be subject to changes.",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query describing the room you're looking for. Can be visual (e.g., 'luxury modernist comfort', 'blue accessible bathroom'), amenity-based (e.g., 'twin room with a city view'), or style-based (e.g., 'art deco hotel room', 'brutalist room')",
+            "required": true,
+            "example": "luxury modernist comfort"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "description": "Maximum number of results to return (maps to top_k in the API)",
+            "required": false,
+            "example": 12
+          },
+          {
+            "name": "placeId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Place ID. If provided, the search will be limited to hotels within the place's viewport boundaries (or the provided `radius` if viewport is unavailable). The place's latitude and longitude will be automatically fetched.",
+            "required": false,
+            "example": "ChIJLc8UZFdqXz4ROODwebhx2rM"
+          },
+          {
+            "name": "latitude",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "Latitude coordinate for geographic filtering. Must be provided together with longitude. Ignored if placeId is provided.",
+            "required": false,
+            "example": 36.1699
+          },
+          {
+            "name": "longitude",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float"
+            },
+            "description": "Longitude coordinate for geographic filtering. Must be provided together with latitude. Ignored if placeId is provided.",
+            "required": false,
+            "example": -115.1398
+          },
+          {
+            "name": "radius",
+            "in": "query",
+            "schema": {
+              "type": "number",
+              "format": "float",
+              "minimum": 0
+            },
+            "description": "Search radius in kilometers. Only used when latitude/longitude is provided, or when placeId is provided but the place does not have viewport information. When placeId is provided and viewport is available, the viewport boundaries are used instead of this radius. Default is 12km.",
+            "required": false,
+            "example": 12
+          },
+          {
+            "name": "city",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter results by city name. Can be used alone or together with country.",
+            "required": false,
+            "example": "Paris"
+          },
+          {
+            "name": "country",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Filter results by country code (ISO 3166-1 alpha-2 format, e.g., 'FR', 'US'). Can be used alone or together with city.",
+            "required": false,
+            "example": "FR"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "id": {
+                            "type": "string",
+                            "description": "LiteAPI hotel ID",
+                            "example": "lp1e4de"
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Hotel name",
+                            "example": "The Level Hotel"
+                          },
+                          "address": {
+                            "type": "string",
+                            "description": "Hotel address",
+                            "example": "123 Main Street"
+                          },
+                          "city": {
+                            "type": "string",
+                            "description": "City where the hotel is located",
+                            "example": "Madrid"
+                          },
+                          "country": {
+                            "type": "string",
+                            "description": "Country code where the hotel is located",
+                            "example": "es"
+                          },
+                          "rating": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "Hotel rating",
+                            "example": 8.53
+                          },
+                          "rooms": {
+                            "type": "array",
+                            "description": "Array of rooms matching the search query",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "room_name": {
+                                  "type": "string",
+                                  "description": "Name of the room",
+                                  "example": "The Level Double Or Twin Room - Mountain View"
+                                },
+                                "image_url": {
+                                  "type": "string",
+                                  "description": "URL of the room image",
+                                  "example": "https://static.cupid.travel/rooms-large-pictures/94833838.jpg"
+                                },
+                                "similarity": {
+                                  "type": "number",
+                                  "format": "float",
+                                  "description": "Similarity score indicating how well the room matches the query",
+                                  "example": 0.29541015625
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": "lp1e4de",
+                      "name": "The Level Hotel",
+                      "address": "123 Main Street",
+                      "city": "Madrid",
+                      "country": "es",
+                      "rating": 8.53,
+                      "rooms": [
+                        {
+                          "room_name": "The Level Double Or Twin Room - Mountain View",
+                          "image_url": "https://static.cupid.travel/rooms-large-pictures/94833838.jpg",
+                          "similarity": 0.29541015625
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "value": {
+                    "error": {
+                      "code": 4002,
+                      "description": "query parameter is required",
+                      "message": "required request field is missing or wrong input"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/data/hotel": {
       "get": {
         "tags": ["Hotels"],
         "summary": "Get the details of a hotel",
-        "description": "The \"Get Hotel Details\" endpoint allows developers to retrieve detailed information about a specific hotel using its unique identifier. This endpoint provides extensive data, including the hotel's name, address, rating, amenities, images, and a detailed description. By making a `GET` request to `/v3.0/data/hotel?hotelId={id}`, developers can access this comprehensive information, which is crucial for displaying detailed hotel profiles in their applications.\n\nThis endpoint ensures that users have access to all necessary details to make informed decisions about their hotel stays, enhancing the overall user experience.",
+        "description": "## Overview\n\nGet comprehensive details about a specific hotel including descriptions, amenities, images, location, and ratings. Perfect for displaying hotel detail pages.\n\n## When to Use\n\n- **Hotel detail pages** - Show complete hotel information\n- **Booking pages** - Display hotel details before booking\n- **Hotel profiles** - Build rich hotel information pages\n- **Content display** - Show descriptions, amenities, and images\n\n## What You Get\n\n- **Complete hotel information** - Name, address, description, and ratings\n- **Amenities list** - All available facilities and services\n- **Image gallery** - Hotel photos and images\n- **Location details** - Address, coordinates, and location information\n- **Hotel metadata** - Star rating, chain information, and classifications\n\n## Quick Start\n\nProvide the `hotelId` as a query parameter. Returns complete hotel details including all metadata, amenities, and images.",
         "security": [
           {
             "apikeyAuth": []
@@ -1196,6 +2087,10 @@
                           "type": "string",
                           "description": "URL of the hotel's thumbnail image."
                         },
+                        "videoUrl": {
+                          "type": "string",
+                          "description": "URL of the hotel's video."
+                        },
                         "country": {
                           "type": "string",
                           "description": "Country where the hotel is located."
@@ -1317,6 +2212,10 @@
                                     "bedSize": {
                                       "type": "string",
                                       "description": "Dimensions or size description of the bed."
+                                    },
+                                    "Id": {
+                                      "type": "integer",
+                                      "description": "Unique identifier for the bed type."
                                     }
                                   }
                                 }
@@ -1762,6 +2661,10 @@
                           "type": "integer",
                           "description": "Total number of reviews received for the hotel."
                         },
+                        "rohId": {
+                          "type": "integer",
+                          "description": "Room of House ID - unique identifier for the hotel property."
+                        },
                         "parking": {
                           "type": "boolean",
                           "nullable": true,
@@ -1877,7 +2780,7 @@
                         "id": "lp1897",
                         "name": "The Manhattan at Times Square",
                         "hotelDescription": "<p><strong>Central Manhattan Location</strong><br>The Manhattan at Times Square is perfectly situated in the heart of Manhattan, just steps away from iconic landmarks like Times Square and Rockefeller Centre.</p><p><strong>Comfortable Accommodations</strong><br>Each room at The Manhattan at Times Square is equipped with a work desk, and select rooms boast stunning skyline views and a cozy seating area for relaxation.</p><p><strong>Convenient Amenities</strong><br>Guests can enjoy a range of amenities at The Manhattan at Times Square, including a fitness centre, a business centre with fax and photocopying services, and attentive concierge services.</p><p>Book your stay at The Manhattan at Times Square to experience the best of New York City right at your doorstep.</p>",
-                        "hotelImportantInformation": "Guests are required to show a photo identification and credit card upon check-in. Please note that all Special Requests are subject to availability and additional charges may apply.\nIn response to Coronavirus (COVID-19), additional safety and sanitation measures are in effect at this property.\nPlease inform The Manhattan at Times Square in advance of your expected arrival time. You can use the Special Requests box when booking, or contact the property directly with the contact details provided in your confirmation.\nA damage deposit of USD 50 is required on arrival. This will be collected by credit card. You should be reimbursed on check-out. Your deposit will be refunded in full via credit card, subject to an inspection of the property.\nPlease note that the Manhattan at Times Square Hotel has a mandatory Facilities Fee of $43.61 per room per night provides guests with the following inclusive services, amenities and added value offerings:\n\nAll local, long distance and international phone calls\nPremium high-speed wireless internet access for unlimited devices\nAn eco-friendly, collapsible 16 oz. water bottle to use at the hotel’s water filtration stations\nUnlimited use of our Business Center\nUnlimited use of our 24/7 Fitness Center with treadmills, bikes, elliptical machines and free weights\n25% discount on hop on/hop off bus tour with provided QR code\n*The Facilities Fee does not include service gratuity",
+                        "hotelImportantInformation": "Guests are required to show a photo identification and credit card upon check-in. Please note that all Special Requests are subject to availability and additional charges may apply.\nIn response to Coronavirus (COVID-19), additional safety and sanitation measures are in effect at this property.\nPlease inform The Manhattan at Times Square in advance of your expected arrival time. You can use the Special Requests box when booking, or contact the property directly with the contact details provided in your confirmation.\nA damage deposit of USD 50 is required on arrival. This will be collected by credit card. You should be reimbursed on check-out. Your deposit will be refunded in full via credit card, subject to an inspection of the property.\nPlease note that the Manhattan at Times Square Hotel has a mandatory Facilities Fee of $43.61 per room per night provides guests with the following inclusive services, amenities and added value offerings:\n\nAll local, long distance and international phone calls\nPremium high-speed wireless internet access for unlimited devices\nAn eco-friendly, collapsible 16 oz. water bottle to use at the hotel's water filtration stations\nUnlimited use of our Business Center\nUnlimited use of our 24/7 Fitness Center with treadmills, bikes, elliptical machines and free weights\n25% discount on hop on/hop off bus tour with provided QR code\n*The Facilities Fee does not include service gratuity",
                         "checkinCheckoutTimes": {
                           "checkout": "11:00 AM",
                           "checkin": "04:00 PM",
@@ -1915,6 +2818,7 @@
                         ],
                         "main_photo": "https://static.cupid.travel/hotels/524489007.jpg",
                         "thumbnail": "https://static.cupid.travel/hotels/thumbnail/524489007.jpg",
+                        "videoUrl": "https://static.nuitee.cloud/videos/lpf82e2.mp4",
                         "country": "us",
                         "city": "New York",
                         "starRating": 4,
@@ -3194,6 +4098,7 @@
                         "airportCode": "LGA",
                         "rating": 5.6,
                         "reviewCount": 6536,
+                        "rohId": 20712,
                         "parking": "",
                         "groupRoomMin": 0,
                         "childAllowed": false,
@@ -3308,7 +4213,7 @@
                             }
                           ]
                         },
-                        "sentiment_updated_at": "2024-11-08T14:33:49Z"
+                        "sentiment_updated_at": "2026-07-08T14:33:49Z"
                       }
                     }
                   }
@@ -3430,7 +4335,7 @@
       "get": {
         "tags": ["Hotels"],
         "summary": "Get the reviews of a hotel",
-        "description": "The \"Get Hotel Reviews\" endpoint allows developers to fetch reviews for a specific hotel using its unique identifier. This endpoint provides valuable feedback from previous guests, including ratings, review text, and the date of the review. By making a `GET` request to `/v3.0/data/reviews?hotelId={id}`, developers can integrate authentic user reviews into their applications, helping potential guests make informed decisions based on real experiences.\n\nThis feature enhances the user experience by providing transparent and detailed insights into hotel quality and guest satisfaction, which is crucial for building trust and credibility.",
+        "description": "## Overview\n\nRetrieve guest reviews and ratings for a specific hotel. Display authentic feedback from previous guests to help users make informed booking decisions.\n\n## When to Use\n\n- **Review display** - Show guest reviews on hotel detail pages\n- **Rating aggregation** - Display average ratings and review counts\n- **Trust building** - Show authentic guest feedback\n- **Decision support** - Help users evaluate hotels before booking\n\n## What You Get\n\n- **Guest reviews** - Individual review text and ratings\n- **Review dates** - When each review was written\n- **Ratings** - Numerical and textual ratings\n- **Guest feedback** - Detailed comments from previous guests\n\n## Quick Start\n\nProvide the `hotelId` as a query parameter. Returns all reviews for that hotel with ratings and comments.",
         "security": [
           {
             "apikeyAuth": []
@@ -3484,6 +4389,15 @@
               "default": false
             },
             "description": "If set to true, an AI sentiment analysis of the last 1000 reviews will be returned"
+          },
+          {
+            "name": "language",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "ISO 639-1 language code (e.g., 'fr', 'es', 'de') to translate reviews using AI. If not provided, the reviews will be returned in the default language (en). When this parameter is provided, the maximum number of reviews returned is 10.",
+            "example": "fr"
           }
         ],
         "responses": {
@@ -3522,7 +4436,7 @@
                           "date": {
                             "type": "string",
                             "description": "Date and time of the review",
-                            "example": "2024-05-10 15:26:15"
+                            "example": "2026-07-10 15:26:15"
                           },
                           "headline": {
                             "type": "string",
@@ -3543,6 +4457,11 @@
                             "type": "string",
                             "description": "Cons mentioned in the review",
                             "example": ""
+                          },
+                          "source": {
+                            "type": "string",
+                            "description": "The source of the review",
+                            "example": "Tripadvisor"
                           }
                         }
                       }
@@ -3561,22 +4480,24 @@
                           "country": "ps",
                           "type": "solo traveller",
                           "name": "Hala",
-                          "date": "2024-05-16 07:52:57",
+                          "date": "2026-07-16 07:52:57",
                           "headline": "Very good",
                           "language": "en",
                           "pros": "",
-                          "cons": ""
+                          "cons": "",
+                          "source": "Nuitee"
                         },
                         {
                           "averageScore": 8,
                           "country": "ma",
                           "type": "solo traveller",
                           "name": "Saharian.prince",
-                          "date": "2024-05-15 15:24:22",
+                          "date": "2026-07-15 15:24:22",
                           "headline": "Very good",
                           "language": "en",
                           "pros": "Great location, good people, good prices and a nice breakfast included.",
-                          "cons": "Construction site nearby and slow wifi."
+                          "cons": "Construction site nearby and slow wifi.",
+                          "source": "Tripadvisor"
                         }
                       ],
                       "total": 10
@@ -3663,7 +4584,7 @@
       "get": {
         "tags": ["Cities"],
         "summary": "List the cities of a country",
-        "description": "The \"Get Cities\" endpoint allows developers to retrieve a list of city names within a specified country. The country code must be provided in ISO-2 format. By making a `GET` request to `/v3.0/data/cities` with the appropriate country code, developers can access a comprehensive list of cities in that country. If you need the ISO-2 country codes, you can use the [Get Country List endpoint](/v3.0.0/reference/get_data-countries).\n\nThis endpoint is essential for applications that require location-specific data, enhancing user experiences by providing accurate and relevant city information.",
+        "description": "## Overview\n\nGet a list of all cities within a specific country. Perfect for building location dropdowns and city selection interfaces.\n\n## When to Use\n\n- **City dropdowns** - Populate city selection lists\n- **Location filters** - Filter hotels by city\n- **Geographic data** - Get city lists for specific countries\n- **Form autocomplete** - Build city autocomplete features\n\n## What You Get\n\n- **City list** - All cities in the specified country\n- **City names** - Formatted city names ready for display\n\n## Quick Start\n\nProvide the `countryCode` in ISO-2 format (e.g., \"US\", \"GB\"). Returns all cities in that country. Use the [Get Country List endpoint](/v3.0.0/reference/get_data-countries) to get country codes.",
         "security": [
           {
             "apikeyAuth": []
@@ -3822,7 +4743,7 @@
                           "city": "Hunaywah"
                         },
                         {
-                          "city": "Da‘sah"
+                          "city": "Da'sah"
                         },
                         {
                           "city": "Al Ain"
@@ -3903,7 +4824,7 @@
                           "city": "Baţīn"
                         },
                         {
-                          "city": "‘Ashashah"
+                          "city": "'Ashashah"
                         },
                         {
                           "city": "Badīyah"
@@ -3933,7 +4854,7 @@
                           "city": "Madīnat Zāyid"
                         },
                         {
-                          "city": "‘Ūd al Bayḑāʼ"
+                          "city": "'Ūd al Bayḑāʼ"
                         },
                         {
                           "city": "Mawşil"
@@ -4203,7 +5124,7 @@
       "get": {
         "tags": ["Countries"],
         "summary": "List all countries",
-        "description": "The API returns the list of countries available along with its ISO-2 code.",
+        "description": "## Overview\n\nGet a complete list of all countries available in the system with their ISO-2 country codes. Essential for building country selection interfaces.\n\n## When to Use\n\n- **Country dropdowns** - Populate country selection lists\n- **Location filters** - Filter hotels or searches by country\n- **Form inputs** - Build country selection forms\n- **Reference data** - Get country codes for use in other endpoints\n\n## What You Get\n\n- **Country list** - All available countries\n- **ISO-2 codes** - Standard country codes (e.g., \"US\", \"GB\", \"FR\")\n- **Country names** - Full country names\n\n## Quick Start\n\nNo parameters required. Returns all countries with their ISO-2 codes.",
         "security": [
           {
             "apikeyAuth": []
@@ -5448,7 +6369,7 @@
       "get": {
         "tags": ["Currencies"],
         "summary": "List all currencies",
-        "description": "The API returns all available currency codes along with its name and the list of supported countries that the currency applies to.",
+        "description": "## Overview\n\nGet all available currencies with their codes, names, and the countries where each currency is used. Perfect for building currency selection interfaces.\n\n## When to Use\n\n- **Currency dropdowns** - Populate currency selection lists\n- **Price display** - Show prices in different currencies\n- **Currency conversion** - Get currency information for conversion\n- **Reference data** - Get currency codes for use in booking endpoints\n\n## What You Get\n\n- **Currency list** - All available currencies\n- **Currency codes** - ISO currency codes (e.g., \"USD\", \"EUR\", \"GBP\")\n- **Currency names** - Full currency names\n- **Country mapping** - Countries where each currency is used\n\n## Quick Start\n\nNo parameters required. Returns all currencies with codes, names, and country mappings.",
         "security": [
           {
             "apikeyAuth": []
@@ -5932,7 +6853,7 @@
       "get": {
         "tags": ["IATA codes"],
         "summary": "List the IATA codes",
-        "description": "The API returns the IATA  (International Air Transport Association) codes  for all available airports along with the name of the airport, geographical coordinates and country code in ISO-2 format.",
+        "description": "## Overview\n\nGet IATA (International Air Transport Association) airport codes with airport names, coordinates, and country information. Useful for airport-based hotel searches.\n\n## When to Use\n\n- **Airport searches** - Find hotels near airports\n- **Location selection** - Let users search by airport codes\n- **Geographic data** - Get airport locations and coordinates\n- **Reference data** - Get IATA codes for use in hotel searches\n\n## What You Get\n\n- **Airport list** - All available airports with IATA codes\n- **Airport names** - Full airport names\n- **Coordinates** - Latitude and longitude for each airport\n- **Country codes** - ISO-2 country codes for each airport\n\n## Quick Start\n\nNo parameters required. Returns all airports with IATA codes, names, coordinates, and country information.",
         "security": [
           {
             "apikeyAuth": []
@@ -6234,8 +7155,8 @@
     "/data/facilities": {
       "get": {
         "tags": ["Hotel Facilities"],
-        "summary": "List the Hotel facilities",
-        "description": "The API returns the list of hotel facilities available in the system.",
+        "summary": "List Hotel Facilities with Multi-Language Support",
+        "description": "## Overview\n\nGet all available hotel facilities (amenities) with multi-language translations. Use these facility IDs to filter hotel searches by amenities.\n\n## When to Use\n\n- **Facility filters** - Build amenity filtering in hotel searches\n- **Facility display** - Show available facilities with translated names\n- **Multi-language support** - Display facilities in user's language\n- **Reference data** - Get facility IDs for use in search filters\n\n## What You Get\n\n- **Facility list** - All available hotel facilities\n- **Facility IDs** - Numeric IDs for use in search filters\n- **Multi-language names** - Facility names in multiple languages\n- **Translations** - Localized facility names\n\n## Quick Start\n\nNo parameters required. Returns all facilities with IDs and multi-language translations. Use facility IDs in hotel search filters.",
         "security": [
           {
             "apikeyAuth": []
@@ -6249,12 +7170,6 @@
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "220592"
                 }
               },
               "Content-Encoding": {
@@ -6275,31 +7190,295 @@
                         "type": "object",
                         "properties": {
                           "facility": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "Name of the facility in English by default."
                           },
                           "facility_id": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Numeric identifier of the facility."
                           },
                           "sort": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Numeric sort order used for display."
                           },
                           "translation": {
                             "type": "array",
+                            "description": "Array of translated facility names by language.",
                             "items": {
                               "type": "object",
                               "properties": {
                                 "lang": {
-                                  "type": "string"
+                                  "type": "string",
+                                  "description": "ISO language code (e.g., 'en', 'es', 'fr', 'de', 'it', 'pt', 'ru', 'ar', 'ja', 'zh', 'ko', 'tr', 'nl', 'pl', 'cs', 'hu', 'sv', 'da', 'no', 'fi', 'el', 'bg', 'hr', 'sk', 'lt', 'lv', 'et', 'sl', 'ca', 'ro', 'uk', 'nb')."
                                 },
                                 "facility": {
-                                  "type": "string"
+                                  "type": "string",
+                                  "description": "Facility name in the given language."
                                 }
                               }
                             }
                           }
+                        },
+                        "example": {
+                          "facility_id": 2263,
+                          "facility": "Farming classes",
+                          "sort": 0,
+                          "translation": [
+                            {
+                              "lang": "en",
+                              "facility": "Farming classes"
+                            },
+                            {
+                              "lang": "es",
+                              "facility": "clases de agricultura"
+                            },
+                            {
+                              "lang": "fr",
+                              "facility": "Cours d'agriculture"
+                            },
+                            {
+                              "lang": "de",
+                              "facility": "Landwirtschaftskurse"
+                            },
+                            {
+                              "lang": "it",
+                              "facility": "Lezioni di agricoltura"
+                            },
+                            {
+                              "lang": "pt",
+                              "facility": "Aulas de agricultura"
+                            },
+                            {
+                              "lang": "ru",
+                              "facility": "фермерские уроки"
+                            },
+                            {
+                              "lang": "ar",
+                              "facility": "دروس الزراعة"
+                            },
+                            {
+                              "lang": "ja",
+                              "facility": "農業教室"
+                            },
+                            {
+                              "lang": "zh",
+                              "facility": "农业课程"
+                            },
+                            {
+                              "lang": "tr",
+                              "facility": "Çiftçilik dersleri"
+                            },
+                            {
+                              "lang": "nl",
+                              "facility": "Landbouwlessen"
+                            },
+                            {
+                              "lang": "pl",
+                              "facility": "Zajęcia rolnicze"
+                            },
+                            {
+                              "lang": "cs",
+                              "facility": "Zemědělské kurzy"
+                            },
+                            {
+                              "lang": "hu",
+                              "facility": "Farming classes"
+                            },
+                            {
+                              "lang": "sv",
+                              "facility": "Odlingskurser"
+                            },
+                            {
+                              "lang": "da",
+                              "facility": "Landbrugsundervisning"
+                            },
+                            {
+                              "lang": "nb",
+                              "facility": "Kurs i landbruk"
+                            },
+                            {
+                              "lang": "fi",
+                              "facility": "Maatalousluokat"
+                            },
+                            {
+                              "lang": "el",
+                              "facility": "Μαθήματα γεωργίας"
+                            },
+                            {
+                              "lang": "bg",
+                              "facility": "Курсове по земеделие"
+                            },
+                            {
+                              "lang": "hr",
+                              "facility": "Tečajevi uzgoja"
+                            },
+                            {
+                              "lang": "sk",
+                              "facility": "Rancherské kurzy"
+                            },
+                            {
+                              "lang": "lt",
+                              "facility": "Žemės ūkio pamokos"
+                            },
+                            {
+                              "lang": "lv",
+                              "facility": "Lauksaimniecības nodarbības"
+                            },
+                            {
+                              "lang": "uk",
+                              "facility": "Класи з фермерства"
+                            },
+                            {
+                              "lang": "sl",
+                              "facility": "Kmetijske delavnice"
+                            },
+                            {
+                              "lang": "ca",
+                              "facility": "Classes d'agricultura"
+                            },
+                            {
+                              "lang": "et",
+                              "facility": "Põllumajanduse kursused"
+                            },
+                            {
+                              "lang": "ro",
+                              "facility": "Ferme de învățătură"
+                            }
+                          ]
                         }
                       }
                     }
+                  },
+                  "example": {
+                    "data": [
+                      {
+                        "facility_id": 2263,
+                        "facility": "Farming classes",
+                        "sort": 0,
+                        "translation": [
+                          {
+                            "lang": "en",
+                            "facility": "Farming classes"
+                          },
+                          {
+                            "lang": "es",
+                            "facility": "clases de agricultura"
+                          },
+                          {
+                            "lang": "fr",
+                            "facility": "Cours d'agriculture"
+                          },
+                          {
+                            "lang": "de",
+                            "facility": "Landwirtschaftskurse"
+                          },
+                          {
+                            "lang": "it",
+                            "facility": "Lezioni di agricoltura"
+                          },
+                          {
+                            "lang": "pt",
+                            "facility": "Aulas de agricultura"
+                          },
+                          {
+                            "lang": "ru",
+                            "facility": "фермерские уроки"
+                          },
+                          {
+                            "lang": "ar",
+                            "facility": "دروس الزراعة"
+                          },
+                          {
+                            "lang": "ja",
+                            "facility": "農業教室"
+                          },
+                          {
+                            "lang": "zh",
+                            "facility": "农业课程"
+                          },
+                          {
+                            "lang": "tr",
+                            "facility": "Çiftçilik dersleri"
+                          },
+                          {
+                            "lang": "nl",
+                            "facility": "Landbouwlessen"
+                          },
+                          {
+                            "lang": "pl",
+                            "facility": "Zajęcia rolnicze"
+                          },
+                          {
+                            "lang": "cs",
+                            "facility": "Zemědělské kurzy"
+                          },
+                          {
+                            "lang": "hu",
+                            "facility": "Farming classes"
+                          },
+                          {
+                            "lang": "sv",
+                            "facility": "Odlingskurser"
+                          },
+                          {
+                            "lang": "da",
+                            "facility": "Landbrugsundervisning"
+                          },
+                          {
+                            "lang": "nb",
+                            "facility": "Kurs i landbruk"
+                          },
+                          {
+                            "lang": "fi",
+                            "facility": "Maatalousluokat"
+                          },
+                          {
+                            "lang": "el",
+                            "facility": "Μαθήματα γεωργίας"
+                          },
+                          {
+                            "lang": "bg",
+                            "facility": "Курсове по земеделие"
+                          },
+                          {
+                            "lang": "hr",
+                            "facility": "Tečajevi uzgoja"
+                          },
+                          {
+                            "lang": "sk",
+                            "facility": "Rancherské kurzy"
+                          },
+                          {
+                            "lang": "lt",
+                            "facility": "Žemės ūkio pamokos"
+                          },
+                          {
+                            "lang": "lv",
+                            "facility": "Lauksaimniecības nodarbības"
+                          },
+                          {
+                            "lang": "uk",
+                            "facility": "Класи з фермерства"
+                          },
+                          {
+                            "lang": "sl",
+                            "facility": "Kmetijske delavnice"
+                          },
+                          {
+                            "lang": "ca",
+                            "facility": "Classes d'agricultura"
+                          },
+                          {
+                            "lang": "et",
+                            "facility": "Põllumajanduse kursused"
+                          },
+                          {
+                            "lang": "ro",
+                            "facility": "Ferme de învățătură"
+                          }
+                        ]
+                      }
+                    ]
                   }
                 }
               }
@@ -6312,7 +7491,7 @@
       "get": {
         "tags": ["Hotel Types"],
         "summary": "List of hotel types",
-        "description": "The API returns a list of available hotel types",
+        "description": "## Overview\n\nGet all available hotel type classifications (e.g., resort, boutique, business hotel). Use type IDs to filter hotel searches.\n\n## When to Use\n\n- **Type filters** - Filter hotels by type in search\n- **Type display** - Show hotel type classifications\n- **Reference data** - Get hotel type IDs for filtering\n\n## What You Get\n\n- **Hotel type list** - All available hotel types\n- **Type IDs** - Numeric IDs for use in search filters\n- **Type names** - Hotel type classifications\n\n## Quick Start\n\nNo parameters required. Returns all hotel types with IDs. Use type IDs in hotel search filters.",
         "security": [
           {
             "apikeyAuth": []
@@ -6326,12 +7505,6 @@
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "220592"
                 }
               },
               "Content-Encoding": {
@@ -6352,10 +7525,12 @@
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "A numeric identifier for the hotel or property type."
                           },
                           "name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "The name or category of the hotel or property type."
                           }
                         }
                       }
@@ -6372,7 +7547,7 @@
       "get": {
         "tags": ["Hotel Chains"],
         "summary": "List of hotel chains",
-        "description": "The API returns a list of available hotel chains",
+        "description": "## Overview\n\nGet all available hotel chains (e.g., Marriott, Hilton, IHG). Use chain IDs to filter hotel searches by brand.\n\n## When to Use\n\n- **Chain filters** - Filter hotels by chain/brand\n- **Brand selection** - Let users search for specific hotel chains\n- **Reference data** - Get chain IDs for use in search filters\n\n## What You Get\n\n- **Chain list** - All available hotel chains\n- **Chain IDs** - Numeric IDs for use in search filters\n- **Chain names** - Hotel chain/brand names\n\n## Quick Start\n\nNo parameters required. Returns all hotel chains with IDs. Use chain IDs in hotel search filters.",
         "security": [
           {
             "apikeyAuth": []
@@ -6386,12 +7561,6 @@
                 "schema": {
                   "type": "string",
                   "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Length": {
-                "schema": {
-                  "type": "integer",
-                  "example": "220592"
                 }
               },
               "Content-Encoding": {
@@ -6408,14 +7577,17 @@
                   "properties": {
                     "data": {
                       "type": "array",
+                      "description": "An array containing objects for each hotel chain.",
                       "items": {
                         "type": "object",
                         "properties": {
                           "id": {
-                            "type": "number"
+                            "type": "number",
+                            "description": "Numeric field representing the unique identifier of the hotel chain."
                           },
                           "name": {
-                            "type": "string"
+                            "type": "string",
+                            "description": "String field representing the hotel chain's name."
                           }
                         }
                       }
@@ -6432,7 +7604,7 @@
       "get": {
         "tags": ["Weather"],
         "summary": "Get weather data",
-        "description": "Retrieve weather data for a specific location and date range.",
+        "description": "## Overview\n\nGet weather forecasts for specific locations. Response structure adapts based on the forecast time range (short-term vs. long-term).\n\n## When to Use\n\n- **Travel planning** - Show weather forecasts for destinations\n- **Hotel pages** - Display weather information on hotel detail pages\n- **Trip preparation** - Help users plan for weather conditions\n- **Destination information** - Provide weather context for locations\n\n## What You Get\n\n- **Weather forecasts** - Temperature, humidity, wind, precipitation\n- **Time-based structure** - Different formats for short-term (<1 week) vs. long-term forecasts\n- **Detailed data** - Atmospheric pressure, conditions, and summaries\n- **Date-specific** - Weather data for specific dates\n\n## Key Features\n\n- **Adaptive structure** - Response format changes based on time range\n- **Short-term** - Detailed hourly/daily data for forecasts within one week\n- **Long-term** - Daily summaries for forecasts beyond one week\n- **Accuracy note** - Forecasts beyond one week have reduced accuracy\n\n## Quick Start\n\nProvide location coordinates (`latitude`, `longitude`) and date range. Returns weather forecasts with appropriate detail level.",
         "security": [
           {
             "apikeyAuth": []
@@ -6446,7 +7618,8 @@
             "schema": {
               "type": "string"
             },
-            "description": "Latitude of the location."
+            "description": "Latitude of the location.",
+            "example": "36.12510"
           },
           {
             "name": "longitude",
@@ -6455,7 +7628,8 @@
             "schema": {
               "type": "string"
             },
-            "description": "Longitude of the location."
+            "description": "Longitude of the location.",
+            "example": "-115.16988"
           },
           {
             "name": "startDate",
@@ -6465,7 +7639,15 @@
               "type": "string",
               "format": "date"
             },
-            "description": "Start date in YYYY-MM-DD format."
+            "description": "Start date in YYYY-MM-DD format. The service can provide future forecasts, but reliability significantly decreases beyond one week.",
+            "examples": {
+              "Example1": {
+                "value": "2026-07-11"
+              },
+              "Example2": {
+                "value": "2026-07-15"
+              }
+            }
           },
           {
             "name": "endDate",
@@ -6475,7 +7657,15 @@
               "type": "string",
               "format": "date"
             },
-            "description": "End date in YYYY-MM-DD format."
+            "description": "End date in YYYY-MM-DD format. The service can provide future forecasts, but reliability significantly decreases beyond one week.",
+            "examples": {
+              "Example1": {
+                "value": "2026-07-15"
+              },
+              "Example2": {
+                "value": "2026-07-16"
+              }
+            }
           },
           {
             "name": "units",
@@ -6492,16 +7682,395 @@
         "responses": {
           "200": {
             "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/WeatherData"
+                },
+                "examples": {
+                  "OneWeekLaterForecast": {
+                    "value": {
+                      "data": [
+                        {
+                          "weatherData": [
+                            {
+                              "detailedWeatherData": {
+                                "lat": 36.1251,
+                                "lon": -115.1699,
+                                "timezone": "America/Los_Angeles",
+                                "timezone_offset": -25200,
+                                "daily": [
+                                  {
+                                    "date": "2026-07-10",
+                                    "sunrise": "13:13:32",
+                                    "sunset": "02:09:47",
+                                    "moonrise": "00:22:00",
+                                    "moonset": "12:09:00",
+                                    "moon_phase": 0.43,
+                                    "summary": "Date: 2026-07-10, Summary: The day will start with clear sky through the late morning hours, transitioning to partly cloudy",
+                                    "temp": {
+                                      "day": 29.42,
+                                      "min": 18.56,
+                                      "max": 32.77,
+                                      "night": 24.65,
+                                      "eve": 32.53,
+                                      "morn": 18.56
+                                    },
+                                    "feels_like": {
+                                      "day": 27.69,
+                                      "night": 23.51,
+                                      "eve": 30.26,
+                                      "morn": 17.02
+                                    },
+                                    "pressure": 1017,
+                                    "humidity": 10,
+                                    "dew_point": -4.5,
+                                    "wind_speed": 2.16,
+                                    "wind_deg": 247,
+                                    "wind_gust": 3.66,
+                                    "weather": [
+                                      {
+                                        "id": 804,
+                                        "main": "Clouds",
+                                        "description": "overcast clouds",
+                                        "icon": "04d"
+                                      }
+                                    ],
+                                    "clouds": 88,
+                                    "pop": 0,
+                                    "uvi": 9.24
+                                  },
+                                  {
+                                    "date": "2026-07-11",
+                                    "sunrise": "13:12:09",
+                                    "sunset": "02:10:38",
+                                    "moonrise": "01:18:00",
+                                    "moonset": "12:31:00",
+                                    "moon_phase": 0.46,
+                                    "summary": "Date: 2026-07-11, Summary: Expect a day of partly cloudy with clear spells",
+                                    "temp": {
+                                      "day": 31.13,
+                                      "min": 19.4,
+                                      "max": 34.37,
+                                      "night": 25.79,
+                                      "eve": 32.16,
+                                      "morn": 19.4
+                                    },
+                                    "feels_like": {
+                                      "day": 29.07,
+                                      "night": 24.76,
+                                      "eve": 29.95,
+                                      "morn": 17.89
+                                    },
+                                    "pressure": 1012,
+                                    "humidity": 9,
+                                    "dew_point": -5.12,
+                                    "wind_speed": 8.67,
+                                    "wind_deg": 234,
+                                    "wind_gust": 11.81,
+                                    "weather": [
+                                      {
+                                        "id": 803,
+                                        "main": "Clouds",
+                                        "description": "broken clouds",
+                                        "icon": "04d"
+                                      }
+                                    ],
+                                    "clouds": 82,
+                                    "pop": 0,
+                                    "uvi": 9.17
+                                  }
+                                ]
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "guestLevel": 0,
+                      "sandbox": true,
+                      "weather": [
+                        {
+                          "dailyWeather": {
+                            "date": "2026-07-01",
+                            "units": "metric",
+                            "cloud_cover": {
+                              "afternoon": 99.92
+                            },
+                            "humidity": {
+                              "afternoon": 94.34
+                            },
+                            "precipitation": {
+                              "total": 181.55
+                            },
+                            "temperature": {
+                              "min": 5.34,
+                              "max": 7.16,
+                              "afternoon": 5.57,
+                              "night": 7.16,
+                              "evening": 6.36,
+                              "morning": 5.34
+                            },
+                            "pressure": {
+                              "afternoon": 1014.21
+                            },
+                            "wind": {
+                              "max": {
+                                "speed": 10.05,
+                                "direction": 71.31
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "dailyWeather": {
+                            "date": "2026-07-02",
+                            "units": "metric",
+                            "cloud_cover": {
+                              "afternoon": 99.52
+                            },
+                            "humidity": {
+                              "afternoon": 99.45
+                            },
+                            "precipitation": {
+                              "total": 135.08
+                            },
+                            "temperature": {
+                              "min": 6.78,
+                              "max": 11.56,
+                              "afternoon": 8.73,
+                              "night": 6.78,
+                              "evening": 11.56,
+                              "morning": 6.9
+                            },
+                            "pressure": {
+                              "afternoon": 1006.58
+                            },
+                            "wind": {
+                              "max": {
+                                "speed": 4.76,
+                                "direction": 54.28
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  },
+                  "BeyondOneWeeksForecast": {
+                    "value": {
+                      "data": [
+                        {
+                          "weatherData": [
+                            {
+                              "dailyWeather": {
+                                "date": "2026-07-01",
+                                "units": "metric",
+                                "cloud_cover": {
+                                  "afternoon": 4.1
+                                },
+                                "humidity": {
+                                  "afternoon": 26.24
+                                },
+                                "precipitation": {
+                                  "total": 0
+                                },
+                                "temperature": {
+                                  "min": 20.91,
+                                  "max": 35.42,
+                                  "afternoon": 20.91,
+                                  "night": 35.42,
+                                  "evening": 33.27,
+                                  "morning": 25.92
+                                },
+                                "pressure": {
+                                  "afternoon": 1011.62
+                                },
+                                "wind": {
+                                  "max": {
+                                    "speed": 3.86,
+                                    "direction": 191.47
+                                  }
+                                }
+                              }
+                            },
+                            {
+                              "dailyWeather": {
+                                "date": "2026-07-02",
+                                "units": "metric",
+                                "cloud_cover": {
+                                  "afternoon": 12.16
+                                },
+                                "humidity": {
+                                  "afternoon": 23.69
+                                },
+                                "precipitation": {
+                                  "total": 0
+                                },
+                                "temperature": {
+                                  "min": 22.47,
+                                  "max": 36.76,
+                                  "afternoon": 22.47,
+                                  "night": 36.76,
+                                  "evening": 33.37,
+                                  "morning": 26.14
+                                },
+                                "pressure": {
+                                  "afternoon": 1012.57
+                                },
+                                "wind": {
+                                  "max": {
+                                    "speed": 3.9,
+                                    "direction": 156.21
+                                  }
+                                }
+                              }
+                            }
+                          ]
+                        }
+                      ],
+                      "guestLevel": 0,
+                      "sandbox": true,
+                      "weather": [
+                        {
+                          "dailyWeather": {
+                            "date": "2026-07-01",
+                            "units": "metric",
+                            "cloud_cover": {
+                              "afternoon": 99.92
+                            },
+                            "humidity": {
+                              "afternoon": 94.34
+                            },
+                            "precipitation": {
+                              "total": 181.55
+                            },
+                            "temperature": {
+                              "min": 5.34,
+                              "max": 7.16,
+                              "afternoon": 5.57,
+                              "night": 7.16,
+                              "evening": 6.36,
+                              "morning": 5.34
+                            },
+                            "pressure": {
+                              "afternoon": 1014.21
+                            },
+                            "wind": {
+                              "max": {
+                                "speed": 10.05,
+                                "direction": 71.31
+                              }
+                            }
+                          }
+                        },
+                        {
+                          "dailyWeather": {
+                            "date": "2026-07-02",
+                            "units": "metric",
+                            "cloud_cover": {
+                              "afternoon": 99.52
+                            },
+                            "humidity": {
+                              "afternoon": 99.45
+                            },
+                            "precipitation": {
+                              "total": 135.08
+                            },
+                            "temperature": {
+                              "min": 6.78,
+                              "max": 11.56,
+                              "afternoon": 8.73,
+                              "night": 6.78,
+                              "evening": 11.56,
+                              "morning": 6.9
+                            },
+                            "pressure": {
+                              "afternoon": 1006.58
+                            },
+                            "wind": {
+                              "max": {
+                                "speed": 4.76,
+                                "direction": 54.28
+                              }
+                            }
+                          }
+                        }
+                      ]
+                    }
+                  }
                 }
               }
             }
           },
           "204": {
             "description": "No Content",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
             "content": {
               "application/json": {
                 "schema": {
@@ -6509,9 +8078,184 @@
                   "properties": {
                     "error": {
                       "type": "string",
-                      "example": "No daily weather data matches the date criteria"
+                      "example": "Invalid latitude",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
                     }
                   }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to fetch weather data",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "string",
+                      "example": "Failed to fetch weather data",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/hotel/search": {
+      "get": {
+        "tags": ["Hotels"],
+        "summary": "Semantic hotel search by text query",
+        "description": "Search for a hotel using a semantic text query. Returns the best-matching hotel with basic details and a relevance score.",
+        "security": [{ "apikeyAuth": [] }],
+        "parameters": [
+          {
+            "name": "query",
+            "in": "query",
+            "schema": { "type": "string" },
+            "description": "The semantic search query (e.g. 'Burj Jumeirah Dubai').",
+            "required": true,
+            "example": "Burj Jumeirah Dubai"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "id": {
+                          "type": "string",
+                          "description": "LiteAPI hotel ID"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Hotel name"
+                        },
+                        "hotelDescription": {
+                          "type": "string",
+                          "description": "Hotel description"
+                        },
+                        "city": { "type": "string", "description": "City" },
+                        "country": {
+                          "type": "string",
+                          "description": "Country code"
+                        },
+                        "latitude": {
+                          "type": "number",
+                          "description": "Latitude"
+                        },
+                        "longitude": {
+                          "type": "number",
+                          "description": "Longitude"
+                        },
+                        "address": {
+                          "type": "string",
+                          "description": "Address"
+                        },
+                        "zip": { "type": "string", "description": "ZIP code" }
+                      }
+                    },
+                    "score": {
+                      "type": "number",
+                      "description": "Semantic search relevance score (0-1)"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "id": "lp54b35",
+                    "name": "Burj Jumeirah",
+                    "hotelDescription": "<p><strong>Luxurious Hotel</strong>...",
+                    "city": "Dubai",
+                    "country": "it",
+                    "latitude": 45.4384,
+                    "longitude": 10.9916,
+                    "address": "1b John Street",
+                    "zip": "10200"
+                  },
+                  "score": 0.86283493
                 }
               }
             }
@@ -6524,41 +8268,47 @@
                   "type": "object",
                   "properties": {
                     "error": {
-                      "type": "string",
-                      "example": "Invalid latitude"
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "description": { "type": "string" },
+                        "message": { "type": "string" }
+                      }
                     }
+                  }
+                },
+                "example": {
+                  "error": {
+                    "code": 4001,
+                    "description": "query parameter is required",
+                    "message": "bad request"
                   }
                 }
               }
             }
           },
-          "401": {
-            "description": "Unauthorized",
+          "404": {
+            "description": "No match found",
             "content": {
               "application/json": {
                 "schema": {
                   "type": "object",
                   "properties": {
                     "error": {
-                      "type": "string",
-                      "example": "Unauthorized"
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "description": { "type": "string" },
+                        "message": { "type": "string" }
+                      }
                     }
                   }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Failed to fetch weather data"
-                    }
+                },
+                "example": {
+                  "error": {
+                    "code": 404,
+                    "description": "no match found for query",
+                    "message": "not found"
                   }
                 }
               }
@@ -6588,55 +8338,73 @@
           }
         }
       },
+
       "DetailedWeatherData": {
         "type": "object",
+        "description": "Represents a summarized daily weather forecast.",
+
         "properties": {
           "lat": {
-            "type": "number"
+            "type": "number",
+            "description": "The latitude coordinate of the location."
           },
           "lon": {
-            "type": "number"
+            "type": "number",
+            "description": "The longitude coordinate of the location."
           },
           "timezone": {
-            "type": "string"
+            "type": "string",
+            "description": "The timezone identifier (e.g., America/New_York) for the location."
           },
           "timezone_offset": {
-            "type": "integer"
+            "type": "integer",
+            "description": "The offset in seconds from UTC for the specified timezone."
           },
           "daily": {
             "type": "array",
+            "description": "An array of daily weather details, each adhering to the DetailedDailyWeather schema.",
             "items": {
               "$ref": "#/components/schemas/DetailedDailyWeather"
             }
           }
         }
       },
+
       "DailyWeather": {
         "type": "object",
+        "description": "Represents a summarized daily weather forecast.",
         "properties": {
           "date": {
-            "type": "string"
+            "type": "string",
+            "description": "The date for which the weather information applies."
           },
           "units": {
-            "type": "string"
+            "type": "string",
+            "description": "The unit system used for measurements (e.g., metric or imperial)."
           },
           "cloud_cover": {
-            "$ref": "#/components/schemas/CloudCover"
+            "$ref": "#/components/schemas/CloudCover",
+            "description": "Cloud coverage details for the afternoon, defined by the CloudCover schema."
           },
           "humidity": {
-            "$ref": "#/components/schemas/Humidity"
+            "$ref": "#/components/schemas/Humidity",
+            "description": "Humidity measurement for the afternoon as specified in the Humidity schema."
           },
           "precipitation": {
-            "$ref": "#/components/schemas/Precipitation"
+            "$ref": "#/components/schemas/Precipitation",
+            "description": "Total precipitation data (e.g., rainfall amount) as defined in the Precipitation schema."
           },
           "temperature": {
-            "$ref": "#/components/schemas/Temperature"
+            "$ref": "#/components/schemas/Temperature",
+            "description": "Temperature metrics including min, max, and specific times of the day, as outlined in the Temperature schema."
           },
           "pressure": {
-            "$ref": "#/components/schemas/Pressure"
+            "$ref": "#/components/schemas/Pressure",
+            "description": "Atmospheric pressure reading during the afternoon as defined in the Pressure schema."
           },
           "wind": {
-            "$ref": "#/components/schemas/Wind"
+            "$ref": "#/components/schemas/Wind",
+            "description": "Wind-related information, particularly maximum wind details, structured according to the Wind schema."
           }
         }
       },
@@ -6644,7 +8412,8 @@
         "type": "object",
         "properties": {
           "afternoon": {
-            "type": "number"
+            "type": "number",
+            "description": "The cloud cover measurement (often as a percentage or fraction) during the afternoon."
           }
         }
       },
@@ -6652,7 +8421,8 @@
         "type": "object",
         "properties": {
           "afternoon": {
-            "type": "number"
+            "type": "number",
+            "description": "The humidity level for the afternoon, typically expressed as a percentage."
           }
         }
       },
@@ -6660,179 +8430,231 @@
         "type": "object",
         "properties": {
           "total": {
-            "type": "number"
+            "type": "number",
+            "description": "The total amount of precipitation (for example, in millimeters or inches) recorded over the period."
           }
         }
       },
       "Temperature": {
         "type": "object",
+        "description": "Represents precipitation data.",
         "properties": {
           "min": {
-            "type": "number"
+            "type": "number",
+            "description": "The minimum temperature recorded for the day."
           },
           "max": {
-            "type": "number"
+            "type": "number",
+            "description": "The maximum temperature recorded for the day."
           },
           "afternoon": {
-            "type": "number"
+            "type": "number",
+            "description": "The temperature measured in the afternoon."
           },
           "night": {
-            "type": "number"
+            "type": "number",
+            "description": "The temperature recorded during the night."
           },
           "evening": {
-            "type": "number"
+            "type": "number",
+            "description": "The temperature observed in the evening."
           },
           "morning": {
-            "type": "number"
+            "type": "number",
+            "description": "The temperature measured in the morning."
           }
         }
       },
       "Pressure": {
         "type": "object",
+        "description": "Provides atmospheric pressure details.",
         "properties": {
           "afternoon": {
-            "type": "number"
+            "type": "number",
+            "description": "The pressure reading taken during the afternoon (commonly measured in hPa)."
           }
         }
       },
       "Wind": {
         "type": "object",
+        "description": "Encapsulates wind-related data.",
         "properties": {
           "max": {
-            "$ref": "#/components/schemas/WindMax"
+            "$ref": "#/components/schemas/WindMax",
+            "description": "Details the maximum wind speed and direction, as further defined in the WindMax schema."
           }
         }
       },
       "WindMax": {
         "type": "object",
+        "description": "Details the peak wind measurements.",
         "properties": {
           "speed": {
-            "type": "number"
+            "type": "number",
+            "description": "The maximum wind speed observed (typically in meters per second or miles per hour)."
           },
           "direction": {
-            "type": "number"
+            "type": "number",
+            "description": "The wind direction represented in degrees (from 0° to 360°)."
           }
         }
       },
       "DetailedDailyWeather": {
         "type": "object",
+        "description": "Provides an in-depth daily forecast with additional parameters such as sunrise/sunset times, temperature, wind, and precipitation probability.",
         "properties": {
           "date": {
-            "type": "string"
+            "type": "string",
+            "description": "The specific date for the forecast."
           },
           "sunrise": {
-            "type": "string"
+            "type": "string",
+            "description": "Time of sunrise on the given date."
           },
           "sunset": {
-            "type": "string"
+            "type": "string",
+            "description": "Time of sunset on the given date."
           },
           "moonrise": {
-            "type": "string"
+            "type": "string",
+            "description": "Time when the moon rises on the specified day."
           },
           "moonset": {
-            "type": "string"
+            "type": "string",
+            "description": "Time when the moon sets on the specified day."
           },
           "moon_phase": {
-            "type": "number"
+            "type": "number",
+            "description": "A numeric value representing the current phase of the moon (0.0–1.0)."
           },
           "summary": {
-            "type": "string"
+            "type": "string",
+            "description": "Brief textual summary of the day's weather conditions."
           },
           "temp": {
-            "$ref": "#/components/schemas/TemperatureDetail"
+            "$ref": "#/components/schemas/TemperatureDetail",
+            "description": "Detailed temperatures for different times of the day."
           },
           "feels_like": {
-            "$ref": "#/components/schemas/FeelsLike"
+            "$ref": "#/components/schemas/FeelsLike",
+            "description": "Perceived temperatures ('feels like') for different times of the day."
           },
           "pressure": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Atmospheric pressure in hPa."
           },
           "humidity": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Humidity percentage."
           },
           "dew_point": {
-            "type": "number"
+            "type": "number",
+            "description": "The temperature at which dew forms, indicating atmospheric moisture."
           },
           "wind_speed": {
-            "type": "number"
+            "type": "number",
+            "description": "Speed of the wind."
           },
           "wind_deg": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Direction of the wind in degrees (0–360)."
           },
           "wind_gust": {
-            "type": "number"
+            "type": "number",
+            "description": "Speed of wind gusts, representing short bursts of higher wind."
           },
           "weather": {
             "type": "array",
+            "description": "Array of weather condition objects.",
             "items": {
               "$ref": "#/components/schemas/Weather"
             }
           },
           "clouds": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Overall cloudiness, expressed as a percentage."
           },
           "pop": {
-            "type": "number"
+            "type": "number",
+            "description": "Probability of precipitation (0.0–1.0)."
           },
           "uvi": {
-            "type": "number"
+            "type": "number",
+            "description": "UV index value, representing the intensity of ultraviolet radiation."
           }
         }
       },
       "TemperatureDetail": {
         "type": "object",
+        "description": "Provides a breakdown of temperatures throughout the day.",
         "properties": {
           "day": {
-            "type": "number"
+            "type": "number",
+            "description": "Temperature during the daytime."
           },
           "min": {
-            "type": "number"
+            "type": "number",
+            "description": "Minimum temperature for the day."
           },
           "max": {
-            "type": "number"
+            "type": "number",
+            "description": "Maximum temperature for the day."
           },
           "night": {
-            "type": "number"
+            "type": "number",
+            "description": "Temperature recorded at night."
           },
           "eve": {
-            "type": "number"
+            "type": "number",
+            "description": "Temperature recorded in the evening."
           },
           "morn": {
-            "type": "number"
+            "type": "number",
+            "description": "Temperature recorded in the morning."
           }
         }
       },
       "FeelsLike": {
         "type": "object",
+        "description": "Represents perceived (feels-like) temperatures, accounting for factors like humidity and wind chill.",
         "properties": {
           "day": {
-            "type": "number"
+            "type": "number",
+            "description": "Perceived temperature during the daytime."
           },
           "night": {
-            "type": "number"
+            "type": "number",
+            "description": "Perceived temperature during the night."
           },
           "eve": {
-            "type": "number"
+            "type": "number",
+            "description": "Perceived temperature in the evening."
           },
           "morn": {
-            "type": "number"
+            "type": "number",
+            "description": "Perceived temperature in the morning."
           }
         }
       },
       "Weather": {
         "type": "object",
+        "description": "Describes a particular weather condition for the day.",
         "properties": {
           "id": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Numeric identifier of the weather condition."
           },
           "main": {
-            "type": "string"
+            "type": "string",
+            "description": "Short label for the weather category (e.g., Rain, Snow, Clear)."
           },
           "description": {
-            "type": "string"
+            "type": "string",
+            "description": "More detailed textual description of the weather condition."
           },
           "icon": {
-            "type": "string"
+            "type": "string",
+            "description": "Identifier for an icon representing the weather condition."
           }
         }
       }

@@ -37,7 +37,7 @@
       "post": {
         "tags": ["Vouchers"],
         "summary": "Create a new voucher",
-        "description": "Create a new voucher with the specified details, including the voucher code, discount type, value, and validity period. This voucher can then be used by customers.",
+        "description": "## Overview\n\nCreate discount vouchers that customers can apply to their bookings. Supports percentage discounts, fixed amounts, and points redemption vouchers.\n\n## When to Use\n\n- **Promotional campaigns** - Create discount codes for marketing\n- **Customer rewards** - Generate vouchers for loyal customers\n- **Special offers** - Create time-limited discount vouchers\n- **Points redemption** - Generate vouchers from loyalty points\n\n## What You Get\n\n- **Voucher object** - Complete voucher details including code and settings\n- **Usage tracking** - Remaining uses count\n- **Validation** - Confirmation that the voucher was created successfully\n\n## Key Features\n\n- **Multiple discount types** - Percentage, fixed amount, or points redemption\n- **Flexible rules** - Set minimum spend, maximum discount, and usage limits\n- **Validity control** - Define start and end dates\n- **Guest assignment** - Optionally assign to specific guests\n\n## Quick Start\n\nProvide voucher code, discount type, value, currency, validity dates, usage limits, and status. Returns the created voucher with all details.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -120,12 +120,12 @@
                 "minimum_spend": 60,
                 "maximum_discount_amount": 20,
                 "currency": "USD",
-                "validity_start": "2024-06-03",
-                "validity_end": "2024-07-30",
+                "validity_start": "2026-07-03",
+                "validity_end": "2026-07-30",
                 "usages_limit": 10,
                 "status": "active",
-                "created_at": "2024-12-10T09:41:43.000Z",
-                "updated_at": "2024-12-10T09:41:43.000Z",
+                "created_at": "2026-07-10T09:41:43.000Z",
+                "updated_at": "2026-07-10T09:41:43.000Z",
                 "deleted_at": null,
                 "user_id": 961,
                 "terms_and_conditions": null,
@@ -243,12 +243,12 @@
                       "minimum_spend": 60,
                       "maximum_discount_amount": 20,
                       "currency": "USD",
-                      "validity_start": "2024-06-03",
-                      "validity_end": "2024-07-30",
+                      "validity_start": "2026-07-03",
+                      "validity_end": "2026-07-30",
                       "usages_limit": 10,
                       "status": "active",
-                      "created_at": "2024-12-10T09:41:43.000Z",
-                      "updated_at": "2024-12-10T09:41:43.000Z",
+                      "created_at": "2026-07-10T09:41:43.000Z",
+                      "updated_at": "2026-07-10T09:41:43.000Z",
                       "deleted_at": null,
                       "user_id": 961,
                       "terms_and_conditions": null,
@@ -266,7 +266,7 @@
       "get": {
         "tags": ["Vouchers"],
         "summary": "Retrieve all vouchers",
-        "description": "Fetch a list of all available vouchers. This endpoint provides details such as the voucher code, discount type and value, validity period, and other relevant information.",
+        "description": "## Overview\n\nGet a complete list of all vouchers in your system, including active and inactive vouchers with their current status.\n\n## When to Use\n\n- **Voucher management** - View all vouchers in your admin panel\n- **Inventory overview** - See all available discount codes\n- **Status monitoring** - Check which vouchers are active\n- **Reporting** - Generate lists of all vouchers for analysis\n\n## What You Get\n\n- **Complete voucher list** - All vouchers with full details\n- **Discount information** - Type, value, and currency for each voucher\n- **Validity status** - Start/end dates and current status\n- **Usage tracking** - Remaining uses for each voucher\n\n## Quick Start\n\nNo parameters required. Returns all vouchers with complete details including codes, discounts, validity, and usage counts.",
         "responses": {
           "200": {
             "description": "A list of all vouchers with their details",
@@ -374,12 +374,12 @@
                       "minimum_spend": 60,
                       "maximum_discount_amount": 20,
                       "currency": "USD",
-                      "validity_start": "2024-06-03",
-                      "validity_end": "2024-06-30",
+                      "validity_start": "2026-07-03",
+                      "validity_end": "2026-07-30",
                       "usages_limit": 100,
                       "status": "active",
-                      "created_at": "2024-07-24T14:42:48.000Z",
-                      "updated_at": "2024-07-25T10:48:24.000Z",
+                      "created_at": "2026-07-24T14:42:48.000Z",
+                      "updated_at": "2026-07-25T10:48:24.000Z",
                       "deleted_at": null,
                       "user_id": 898,
                       "terms_and_conditions": null,
@@ -399,7 +399,7 @@
       "get": {
         "tags": ["Vouchers"],
         "summary": "Retrieve a specific voucher",
-        "description": "Fetch detailed information about a specific voucher using its unique identifier. This includes the voucher code, discount details, usage limits, and more.",
+        "description": "## Overview\n\nGet complete details for a specific voucher by its ID, including discount rules, validity, and usage information.\n\n## When to Use\n\n- **Voucher lookup** - Find details for a specific voucher code\n- **Validation** - Verify voucher details before applying to bookings\n- **Details display** - Show voucher information to customers\n- **Support** - Look up voucher information during customer service\n\n## What You Get\n\n- **Complete voucher details** - All information about the voucher\n- **Discount rules** - Type, value, minimum spend, maximum discount\n- **Validity information** - Start/end dates and current status\n- **Usage data** - Current usage count and remaining uses\n\n## Quick Start\n\nProvide the voucher ID in the URL path. Returns complete voucher information.",
         "parameters": [
           {
             "name": "voucherID",
@@ -519,13 +519,13 @@
                       "minimum_spend": 60,
                       "maximum_discount_amount": 20,
                       "currency": "USD",
-                      "validity_start": "2024-06-03",
-                      "validity_end": "2024-06-30",
+                      "validity_start": "2026-07-03",
+                      "validity_end": "2026-07-30",
                       "usages_limit": 100,
                       "remaining_uses": 80,
                       "status": "active",
-                      "created_at": "2024-07-25T15:10:56.000Z",
-                      "updated_at": "2024-07-25T16:56:22.000Z",
+                      "created_at": "2026-07-25T15:10:56.000Z",
+                      "updated_at": "2026-07-25T16:56:22.000Z",
                       "deleted_at": null,
                       "user_id": 898,
                       "guest_id": null,
@@ -553,7 +553,7 @@
       "put": {
         "tags": ["Vouchers"],
         "summary": "Update a voucher",
-        "description": "Update the details of an existing voucher, including the voucher code, discount value, validity period, and more.",
+        "description": "## Overview\n\nModify an existing voucher's settings, including discount values, validity periods, usage limits, and status.\n\n## When to Use\n\n- **Extend validity** - Update voucher end dates\n- **Adjust discounts** - Change discount values or types\n- **Update limits** - Modify usage limits or minimum spend\n- **Status changes** - Activate or deactivate vouchers\n\n## What You Get\n\n- **Confirmation** - Success message when voucher is updated\n- **Updated voucher** - Voucher reflects the new settings\n\n## Important Notes\n\n- **Read-only if used** - Vouchers that have been used in bookings cannot be modified (returns 404)\n- **All fields required** - Must provide all required fields, not just the ones you want to change\n\n## Quick Start\n\nProvide the voucher ID and updated fields. Returns confirmation of the update.",
         "parameters": [
           {
             "name": "id",
@@ -635,8 +635,8 @@
                 "minimum_spend": 60,
                 "maximum_discount_amount": 20,
                 "currency": "USD",
-                "validity_start": "2024-06-03",
-                "validity_end": "2024-06-30",
+                "validity_start": "2026-07-03",
+                "validity_end": "2026-07-30",
                 "usages_limit": 100,
                 "status": "active"
               }
@@ -681,7 +681,7 @@
       "put": {
         "tags": ["Vouchers"],
         "summary": "Update voucher status",
-        "description": "Update the status of a voucher, typically to activate or deactivate it.",
+        "description": "## Overview\n\nQuickly activate or deactivate a voucher without updating other fields. Perfect for temporarily disabling vouchers.\n\n## When to Use\n\n- **Temporary disable** - Deactivate vouchers without deleting them\n- **Reactivate vouchers** - Turn inactive vouchers back on\n- **Status management** - Quickly toggle voucher availability\n\n## What You Get\n\n- **Confirmation** - Success message confirming status change\n- **Updated status** - Voucher status changed to active or inactive\n\n## Quick Start\n\nProvide the voucher ID and the new `status` (\"active\" or \"inactive\"). Returns confirmation of the status update.",
         "parameters": [
           {
             "name": "id",
@@ -732,7 +732,7 @@
       "get": {
         "tags": ["Vouchers"],
         "summary": "Retrieve voucher usage history",
-        "description": "Fetch the usage history for all vouchers. This includes details of each booking where the voucher was applied, such as the booking date and applied discount amount.",
+        "description": "## Overview\n\nGet a complete history of all voucher redemptions across your system, showing which vouchers were used, when, and for which bookings.\n\n## When to Use\n\n- **Usage analytics** - Track voucher redemption patterns\n- **Performance reporting** - See which vouchers are most popular\n- **Audit trail** - Maintain records of voucher usage\n- **Marketing insights** - Understand voucher effectiveness\n\n## What You Get\n\n- **Usage records** - Each voucher redemption with full details\n- **Booking information** - Booking IDs and hotel names where vouchers were used\n- **Guest details** - Email addresses of guests who used vouchers\n- **Discount amounts** - Total discount applied per usage\n- **Timestamps** - When each voucher was redeemed\n\n## Quick Start\n\nNo parameters required. Returns complete usage history for all vouchers, including booking details and discount amounts.",
         "responses": {
           "200": {
             "description": "Voucher updated successfully",
@@ -781,7 +781,7 @@
                             "type": "string",
                             "format": "date-time",
                             "description": "Date and time when the voucher was used.",
-                            "example": "2024-09-28T08:18:39.000Z"
+                            "example": "2026-07-28T08:18:39.000Z"
                           }
                         }
                       }
@@ -797,7 +797,7 @@
                       "hotel_name": "Hotel Jadran",
                       "booking_id": "YxsYhO17z",
                       "voucher_total_amount": 12.25,
-                      "usage_date": "2024-09-28T08:18:39.000Z"
+                      "usage_date": "2026-07-28T08:18:39.000Z"
                     }
                   ]
                 }
@@ -812,7 +812,7 @@
         "tags": ["Vouchers"],
         "operationId": "delete Voucher",
         "summary": "Delete a voucher",
-        "description": "Deletes a voucher from the system using its unique identifier.",
+        "description": "## Overview\n\nPermanently remove a voucher from your system. Use with caution - deleted vouchers cannot be recovered.\n\n## When to Use\n\n- **Cleanup** - Remove expired or unused vouchers\n- **Error correction** - Delete vouchers created by mistake\n- **Inventory management** - Remove vouchers no longer needed\n\n## What You Get\n\n- **Confirmation** - Success message when voucher is deleted\n\n## Important Notes\n\n- **Permanent action** - Deleted vouchers cannot be restored\n- **Usage check** - Ensure vouchers aren't needed before deleting\n\n## Quick Start\n\nProvide the voucher ID in the URL path. Returns confirmation of deletion.",
         "parameters": [
           {
             "name": "id",

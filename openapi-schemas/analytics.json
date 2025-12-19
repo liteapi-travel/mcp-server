@@ -37,7 +37,7 @@
       "post": {
         "tags": ["Analytics"],
         "summary": "Retrieve weekly analytics",
-        "description": "Fetch weekly analytics data for the specified date range.",
+        "description": "## Overview\n\nGet weekly aggregated sales and booking data broken down by week. Perfect for tracking week-over-week performance trends.\n\n## When to Use\n\n- **Weekly performance dashboards** - Show sales trends by week\n- **Week-over-week comparisons** - Identify growth patterns\n- **Business reporting** - Generate weekly reports for stakeholders\n- **Performance monitoring** - Track weekly sales metrics\n\n## What You Get\n\n- **Weekly sales totals** - Aggregated sales revenue per week\n- **Week labels** - Human-readable week identifiers (e.g., \"week 12\")\n- **Time-series data** - Ordered by week for easy charting\n\n## Quick Start\n\nProvide a date range (`from` and `to` dates). The endpoint returns sales data grouped by week within that range.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -58,8 +58,8 @@
                 "required": ["from", "to"]
               },
               "example": {
-                "from": "2024-01-01",
-                "to": "2024-01-07"
+                "from": "2026-07-01",
+                "to": "2026-07-07"
               }
             }
           }
@@ -101,7 +101,7 @@
       "post": {
         "tags": ["Analytics"],
         "summary": "Retrieve detailed analytics report",
-        "description": "Fetch a detailed analytics report for the specified date range.",
+        "description": "## Overview\n\nGet comprehensive analytics covering sales, bookings, commissions, and revenue for your date range. This is your complete business intelligence endpoint.\n\n## When to Use\n\n- **Executive dashboards** - Complete business overview\n- **Financial reporting** - Track revenue, sales, and commissions\n- **Booking analysis** - Monitor confirmed vs cancelled bookings\n- **Performance tracking** - Daily breakdowns of key metrics\n\n## What You Get\n\n- **Sales revenue** - Daily sales totals with currency\n- **Booking counts** - Confirmed and cancelled bookings per day\n- **Commission data** - Commission earned per day\n- **Revenue breakdown** - Total revenue calculations\n- **Aggregated totals** - Summary statistics for the entire period\n\n## Key Features\n\n- **Daily granularity** - See day-by-day performance\n- **Multiple currencies** - Currency information included\n- **Complete metrics** - Sales, bookings, commissions, and revenue in one response\n- **Time-series ready** - Data formatted for easy charting\n\n## Quick Start\n\nProvide start and end dates. Returns detailed daily analytics plus aggregated totals for the period.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -122,8 +122,8 @@
                 "required": ["from", "to"]
               },
               "example": {
-                "from": "2024-01-01",
-                "to": "2024-01-31"
+                "from": "2026-07-01",
+                "to": "2026-07-31"
               }
             }
           }
@@ -142,79 +142,79 @@
                         {
                           "salesRevenue": 41293.76,
                           "currency": "EUR",
-                          "date": "2024-08-16T00:00:00.000Z"
+                          "date": "2026-07-16T00:00:00.000Z"
                         },
                         {
                           "salesRevenue": 41406.99,
                           "currency": "EUR",
-                          "date": "2024-08-17T00:00:00.000Z"
+                          "date": "2026-07-17T00:00:00.000Z"
                         }
                       ],
                       "uniqueDates": [
-                        "2024-08-16T00:00:00.000Z",
-                        "2024-08-17T00:00:00.000Z"
+                        "2026-07-16T00:00:00.000Z",
+                        "2026-07-17T00:00:00.000Z"
                       ],
                       "confirmed_booking": [
                         {
                           "confirmed_booking": 144,
-                          "date": "2024-08-16T00:00:00.000Z"
+                          "date": "2026-07-16T00:00:00.000Z"
                         },
                         {
                           "confirmed_booking": 144,
-                          "date": "2024-08-17T00:00:00.000Z"
+                          "date": "2026-07-17T00:00:00.000Z"
                         }
                       ],
                       "sales": [
                         {
                           "sales": 41293.76,
                           "currency": "EUR",
-                          "date": "2024-08-16T00:00:00.000Z"
+                          "date": "2026-07-16T00:00:00.000Z"
                         },
                         {
                           "sales": 41406.99,
                           "currency": "EUR",
-                          "date": "2024-08-17T00:00:00.000Z"
+                          "date": "2026-07-17T00:00:00.000Z"
                         }
                       ],
                       "commission": [
                         {
                           "commission": 3753.43,
                           "currency": "EUR",
-                          "date": "2024-08-16T00:00:00.000Z"
+                          "date": "2026-07-16T00:00:00.000Z"
                         },
                         {
                           "commission": 3763.39,
                           "currency": "EUR",
-                          "date": "2024-08-17T00:00:00.000Z"
+                          "date": "2026-07-17T00:00:00.000Z"
                         }
                       ],
                       "revenue": [
                         {
                           "revenue": 4129.38,
                           "currency": "EUR",
-                          "date": "2024-08-16T00:00:00.000Z"
+                          "date": "2026-07-16T00:00:00.000Z"
                         },
                         {
                           "revenue": 4140.7,
                           "currency": "EUR",
-                          "date": "2024-08-17T00:00:00.000Z"
+                          "date": "2026-07-17T00:00:00.000Z"
                         }
                       ],
                       "totalRevenue": 62356,
                       "bookings": [
                         {
-                          "date": "2024-08-16T00:00:00.000Z",
+                          "date": "2026-07-16T00:00:00.000Z",
                           "booking": 144
                         },
                         {
-                          "date": "2024-08-17T00:00:00.000Z",
+                          "date": "2026-07-17T00:00:00.000Z",
                           "booking": 144
                         }
                       ],
                       "cancelled_booking": [
                         {
                           "cancelled_booking": 1,
-                          "date": "2024-08-22T00:00:00.000Z"
+                          "date": "2026-07-22T00:00:00.000Z"
                         }
                       ],
                       "totalSales": 623562,
@@ -235,7 +235,7 @@
       "post": {
         "tags": ["Analytics"],
         "summary": "Retrieve market analytics",
-        "description": "Fetch market analytics data for the specified date range.",
+        "description": "## Overview\n\nAnalyze your bookings and sales by customer nationality/market. Understand which countries drive the most business.\n\n## When to Use\n\n- **Market analysis** - Identify top-performing markets\n- **Geographic insights** - Understand customer distribution\n- **Marketing optimization** - Focus efforts on high-value markets\n- **Business intelligence** - Track performance by nationality\n\n## What You Get\n\n- **Sales by nationality** - Total sales per customer country\n- **Booking counts** - Number of bookings per market\n- **Currency information** - Sales currency for each market\n- **Ranked results** - Markets sorted by performance\n\n## Quick Start\n\nProvide a date range. Returns sales and booking data grouped by customer nationality (ISO country code).",
         "requestBody": {
           "content": {
             "application/json": {
@@ -256,8 +256,8 @@
                 "required": ["from", "to"]
               },
               "example": {
-                "from": "2024-01-01",
-                "to": "2024-02-01"
+                "from": "2026-07-01",
+                "to": "2026-08-01"
               }
             }
           }
@@ -297,7 +297,7 @@
       "post": {
         "tags": ["Analytics"],
         "summary": "Most booked hotels",
-        "description": "Fetch hotel analytics data for most booked hotels the specified date range.",
+        "description": "## Overview\n\nGet a ranked list of your top-performing hotels by booking volume and sales. Perfect for identifying your best-selling properties.\n\n## When to Use\n\n- **Hotel performance dashboards** - Show top hotels by bookings\n- **Sales analysis** - Identify highest-revenue properties\n- **Inventory insights** - Understand which hotels drive business\n- **Partnership optimization** - Focus on high-performing hotel relationships\n\n## What You Get\n\n- **Hotel rankings** - Hotels sorted by total bookings\n- **Booking counts** - Total bookings per hotel\n- **Sales totals** - Revenue generated per hotel\n- **Location data** - City and country for each hotel\n- **Hotel identifiers** - Hotel ID and name for reference\n\n## Quick Start\n\nProvide a date range. Returns hotels ranked by total bookings, including booking counts, sales, and location information.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -318,8 +318,8 @@
                 "required": ["from", "to"]
               },
               "example": {
-                "from": "2024-01-01",
-                "to": "2024-01-31"
+                "from": "2026-07-01",
+                "to": "2026-07-31"
               }
             }
           }

@@ -28,7 +28,7 @@
       "get": {
         "tags": ["Loyalty Program"],
         "summary": "Fetch all guests",
-        "description": "Fetches a list of all guests along with their loyalty program information, including accumulated points and booking history.",
+        "description": "## Overview\n\nRetrieve a complete list of all guests enrolled in your loyalty program with their points balance and booking history.\n\n## When to Use\n\n- **Guest management** - View all loyalty program members\n- **Points administration** - Check points balances across all guests\n- **Customer support** - Look up guest information quickly\n- **Reporting** - Generate lists of loyalty program participants\n\n## What You Get\n\n- **Guest profiles** - Name, email, phone number for each guest\n- **Points balance** - Current points and upcoming points (pending from bookings)\n- **Booking history** - List of booking IDs associated with each guest\n- **Account metadata** - Creation and update timestamps\n\n## Quick Start\n\nNo parameters required. Returns all guests with their loyalty program details.",
         "responses": {
           "200": {
             "description": "OK",
@@ -165,8 +165,8 @@
                         "W7L3ozN0p",
                         "lWidEnw_b"
                       ],
-                      "createdAt": "2024-07-08T13:50:55+02:00",
-                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "createdAt": "2026-07-08T13:50:55+02:00",
+                      "updatedAt": "2026-07-11T14:47:44+02:00",
                       "deletedAt": null
                     },
                     {
@@ -181,8 +181,8 @@
                         "MKDW0OjCT",
                         "H1VRQCX5o"
                       ],
-                      "createdAt": "2024-07-08T13:52:25+02:00",
-                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "createdAt": "2026-07-08T13:52:25+02:00",
+                      "updatedAt": "2026-07-11T14:47:44+02:00",
                       "deletedAt": null
                     },
                     {
@@ -197,8 +197,8 @@
                         "MKDW0OjCT",
                         "H1VRQCX5o"
                       ],
-                      "createdAt": "2024-07-08T13:52:25+02:00",
-                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "createdAt": "2026-07-08T13:52:25+02:00",
+                      "updatedAt": "2026-07-11T14:47:44+02:00",
                       "deletedAt": null
                     }
                   ]
@@ -218,7 +218,7 @@
       "get": {
         "tags": ["Loyalty Program"],
         "summary": "Fetch a specific guest",
-        "description": "Fetches detailed information about a guest, including personal data, loyalty points, and booking history.",
+        "description": "## Overview\n\nGet detailed information about a specific guest by their ID, including loyalty points and booking history.\n\n## When to Use\n\n- **Customer profiles** - Display guest information on their account page\n- **Points lookup** - Check a specific guest's points balance\n- **Booking history** - Show a guest's past bookings\n- **Support tickets** - Quickly access guest details during support\n\n## What You Get\n\n- **Complete guest profile** - Personal information (name, email, phone)\n- **Points summary** - Current available points and upcoming points\n- **Booking list** - All booking IDs associated with this guest\n- **Account status** - Account creation and update information\n\n## Quick Start\n\nProvide the guest ID in the URL path. Returns complete guest information including points and bookings.",
         "parameters": [
           {
             "name": "guestId",
@@ -338,8 +338,8 @@
                         "W7L3ozN0p",
                         "lWidEnw_b"
                       ],
-                      "createdAt": "2024-07-08T13:50:55+02:00",
-                      "updatedAt": "2024-07-11T14:47:44+02:00",
+                      "createdAt": "2026-07-08T13:50:55+02:00",
+                      "updatedAt": "2026-07-11T14:47:44+02:00",
                       "deletedAt": null
                     }
                   ]
@@ -431,7 +431,7 @@
       "get": {
         "tags": ["Loyalty Program"],
         "summary": "Fetch a guest's bookings",
-        "description": "Retrieves a list of all bookings associated with a specific guest, including details about the points earned and cashback applied for each booking.",
+        "description": "## Overview\n\nGet all loyalty transactions for a specific guest, showing points earned and cashback rates used for each booking.\n\n## When to Use\n\n- **Points history** - Show guests their points earning history\n- **Transaction details** - Display detailed booking transactions\n- **Cashback tracking** - Show cashback rates applied to bookings\n- **Account statements** - Generate points activity reports\n\n## What You Get\n\n- **Transaction list** - All loyalty transactions for the guest\n- **Points per booking** - Points earned (or deducted) for each booking\n- **Cashback rates** - Cashback percentage used for each transaction\n- **Booking references** - Booking IDs linked to each transaction\n- **Timestamps** - When each transaction occurred\n\n## Quick Start\n\nProvide the guest ID in the URL path. Returns all loyalty transactions with points and cashback details.",
         "parameters": [
           {
             "name": "guestId",
@@ -517,8 +517,8 @@
                       "points": 30,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-08T13:50:55+02:00",
-                      "updatedAt": "2024-07-08T13:50:55+02:00",
+                      "createdAt": "2026-07-08T13:50:55+02:00",
+                      "updatedAt": "2026-07-08T13:50:55+02:00",
                       "deletedAt": null
                     },
                     {
@@ -528,8 +528,8 @@
                       "points": 30,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-08T13:51:20+02:00",
-                      "updatedAt": "2024-07-08T13:51:20+02:00",
+                      "createdAt": "2026-07-08T13:51:20+02:00",
+                      "updatedAt": "2026-07-08T13:51:20+02:00",
                       "deletedAt": null
                     },
                     {
@@ -539,8 +539,8 @@
                       "points": 30,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-08T13:51:47+02:00",
-                      "updatedAt": "2024-07-08T13:51:47+02:00",
+                      "createdAt": "2026-07-08T13:51:47+02:00",
+                      "updatedAt": "2026-07-08T13:51:47+02:00",
                       "deletedAt": null
                     },
                     {
@@ -550,8 +550,8 @@
                       "points": 30,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-08T17:09:01+02:00",
-                      "updatedAt": "2024-07-08T17:09:01+02:00",
+                      "createdAt": "2026-07-08T17:09:01+02:00",
+                      "updatedAt": "2026-07-08T17:09:01+02:00",
                       "deletedAt": null
                     },
                     {
@@ -561,8 +561,8 @@
                       "points": 60,
                       "cashbackRateUsed": 0.02,
                       "expirationDate": null,
-                      "createdAt": "2024-07-08T15:40:09+02:00",
-                      "updatedAt": "2024-07-08T15:40:09+02:00",
+                      "createdAt": "2026-07-08T15:40:09+02:00",
+                      "updatedAt": "2026-07-08T15:40:09+02:00",
                       "deletedAt": null
                     },
                     {
@@ -572,8 +572,8 @@
                       "points": 3040,
                       "cashbackRateUsed": 1,
                       "expirationDate": null,
-                      "createdAt": "2024-07-08T15:41:08+02:00",
-                      "updatedAt": "2024-07-08T15:41:08+02:00",
+                      "createdAt": "2026-07-08T15:41:08+02:00",
+                      "updatedAt": "2026-07-08T15:41:08+02:00",
                       "deletedAt": null
                     },
                     {
@@ -583,8 +583,8 @@
                       "points": 4,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-09T11:43:59+02:00",
-                      "updatedAt": "2024-07-09T11:43:59+02:00",
+                      "createdAt": "2026-07-09T11:43:59+02:00",
+                      "updatedAt": "2026-07-09T11:43:59+02:00",
                       "deletedAt": null
                     },
                     {
@@ -594,8 +594,8 @@
                       "points": 4,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-09T15:02:50+02:00",
-                      "updatedAt": "2024-07-09T15:02:50+02:00",
+                      "createdAt": "2026-07-09T15:02:50+02:00",
+                      "updatedAt": "2026-07-09T15:02:50+02:00",
                       "deletedAt": null
                     },
                     {
@@ -605,8 +605,8 @@
                       "points": 4,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-09T15:04:28+02:00",
-                      "updatedAt": "2024-07-09T15:04:28+02:00",
+                      "createdAt": "2026-07-09T15:04:28+02:00",
+                      "updatedAt": "2026-07-09T15:04:28+02:00",
                       "deletedAt": null
                     },
                     {
@@ -616,8 +616,8 @@
                       "points": 4,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-11T11:39:51+02:00",
-                      "updatedAt": "2024-07-11T11:39:51+02:00",
+                      "createdAt": "2026-07-11T11:39:51+02:00",
+                      "updatedAt": "2026-07-11T11:39:51+02:00",
                       "deletedAt": null
                     },
                     {
@@ -627,8 +627,8 @@
                       "points": 4,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-11T12:18:36+02:00",
-                      "updatedAt": "2024-07-11T12:18:36+02:00",
+                      "createdAt": "2026-07-11T12:18:36+02:00",
+                      "updatedAt": "2026-07-11T12:18:36+02:00",
                       "deletedAt": null
                     },
                     {
@@ -638,8 +638,8 @@
                       "points": -30,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-11T12:26:57+02:00",
-                      "updatedAt": "2024-07-11T12:26:57+02:00",
+                      "createdAt": "2026-07-11T12:26:57+02:00",
+                      "updatedAt": "2026-07-11T12:26:57+02:00",
                       "deletedAt": null
                     },
                     {
@@ -649,8 +649,8 @@
                       "points": -30,
                       "cashbackRateUsed": 0.01,
                       "expirationDate": null,
-                      "createdAt": "2024-07-11T13:11:00+02:00",
-                      "updatedAt": "2024-07-11T13:11:00+02:00",
+                      "createdAt": "2026-07-11T13:11:00+02:00",
+                      "updatedAt": "2026-07-11T13:11:00+02:00",
                       "deletedAt": null
                     }
                   ]
@@ -670,7 +670,7 @@
       "get": {
         "tags": ["Loyalty Program"],
         "summary": "Fetch a guest's vouchers",
-        "description": "Retrieves a list of all vouchers associated with a specific guest, including voucher details like discount type, amount, and validity.",
+        "description": "## Overview\n\nRetrieve all vouchers available to a specific guest, including discount codes, validity periods, and usage limits.\n\n## When to Use\n\n- **Voucher display** - Show available vouchers on a guest's account page\n- **Discount management** - Check which vouchers a guest can use\n- **Validity checking** - Verify if vouchers are still active\n- **Usage tracking** - Monitor voucher usage counts\n\n## What You Get\n\n- **Voucher list** - All vouchers assigned to the guest\n- **Discount details** - Type (percentage/fixed), value, and currency\n- **Validity period** - Start and end dates for each voucher\n- **Usage information** - Current usage count and usage limits\n- **Status** - Active/inactive status of each voucher\n\n## Quick Start\n\nProvide the guest ID in the URL path. Returns all vouchers available to that guest.",
         "parameters": [
           {
             "name": "guestId",
@@ -731,15 +731,15 @@
                         "minimum_spend": 0,
                         "maximum_discount_amount": 0,
                         "currency": "USD",
-                        "validity_start": "2024-12-24T00:00:00+01:00",
+                        "validity_start": "2026-07-24T00:00:00+01:00",
                         "validity_end": "2026-12-24T00:00:00+01:00",
                         "usages": 6,
                         "usages_limit": 1,
                         "status": "active",
                         "terms_and_conditions": "",
                         "category": "",
-                        "created_at": "2024-12-24T19:28:49+01:00",
-                        "updated_at": "2024-12-24T19:28:52+01:00",
+                        "created_at": "2026-07-24T19:28:49+01:00",
+                        "updated_at": "2026-07-24T19:28:52+01:00",
                         "deleted_at": null
                       },
                       {
@@ -752,15 +752,15 @@
                         "minimum_spend": 0,
                         "maximum_discount_amount": 0,
                         "currency": "USD",
-                        "validity_start": "2024-12-24T00:00:00+01:00",
+                        "validity_start": "2026-07-24T00:00:00+01:00",
                         "validity_end": "2026-12-24T00:00:00+01:00",
                         "usages": 0,
                         "usages_limit": 1,
                         "status": "active",
                         "terms_and_conditions": "",
                         "category": "redemption",
-                        "created_at": "2024-12-24T20:04:14+01:00",
-                        "updated_at": "2024-12-24T20:04:14+01:00",
+                        "created_at": "2026-07-24T20:04:14+01:00",
+                        "updated_at": "2026-07-24T20:04:14+01:00",
                         "deleted_at": null
                       }
                     ]
@@ -808,7 +808,7 @@
       "put": {
         "tags": ["Loyalty Program"],
         "summary": "Update the loyalty program",
-        "description": "Updates the loyalty program settings, including status and cashback rates.",
+        "description": "## Overview\n\nConfigure your loyalty program settings, including enabling/disabling the program and setting cashback rates.\n\n## When to Use\n\n- **Program activation** - Enable or disable your loyalty program\n- **Rate adjustments** - Update cashback percentages\n- **Program management** - Change loyalty program configuration\n- **A/B testing** - Test different cashback rates\n\n## What You Get\n\n- **Confirmation** - Updated program settings\n- **Status** - Current program status (enabled/disabled)\n- **Cashback rate** - Active cashback percentage\n\n## Key Features\n\n- **Enable/disable** - Turn your loyalty program on or off\n- **Cashback control** - Set the percentage guests earn (e.g., 0.1 = 10%)\n- **Immediate effect** - Changes apply to new bookings right away\n\n## Quick Start\n\nSend the new `status` (\"enabled\" or \"disabled\") and `cashbackRate` (decimal, e.g., 0.1 for 10%). Both fields are required.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -994,7 +994,7 @@
       "get": {
         "tags": ["Loyalty Program"],
         "summary": "Get the loyalty program settings",
-        "description": "Retrieves information about current loyalty program settings, including status and cashback rates.",
+        "description": "## Overview\n\nRetrieve your current loyalty program configuration, including whether it's active and what cashback rate is set.\n\n## When to Use\n\n- **Settings display** - Show current program configuration in admin panels\n- **Status checks** - Verify if the loyalty program is enabled\n- **Rate verification** - Check current cashback rates\n- **Configuration review** - Review program settings before making changes\n\n## What You Get\n\n- **Program status** - Whether the program is enabled or disabled\n- **Cashback rate** - Current percentage guests earn\n- **Currency** - Cashback currency setting\n\n## Quick Start\n\nNo parameters required. Returns current loyalty program settings.",
         "responses": {
           "200": {
             "description": "OK",
@@ -1083,7 +1083,7 @@
       "get": {
         "tags": ["Loyalty Program"],
         "summary": "Fetch a guest's loyalty points",
-        "description": "Fetches the current and upcoming loyalty points for a guest.",
+        "description": "## Overview\n\nGet a guest's current available points and upcoming points (points pending from confirmed bookings).\n\n## When to Use\n\n- **Points display** - Show points balance on guest account pages\n- **Points checking** - Quick lookup of available points\n- **Pending points** - Display points that will be awarded after stays\n- **Balance verification** - Verify points before redemption\n\n## What You Get\n\n- **Current points** - Points available for immediate redemption\n- **Upcoming points** - Points that will be awarded from confirmed bookings\n\n## Quick Start\n\nProvide the guest ID in the URL path. Returns both current and upcoming points balances.",
         "parameters": [
           {
             "name": "guestId",
@@ -1159,7 +1159,7 @@
       "post": {
         "tags": ["Loyalty Program"],
         "summary": "Redeem a guest's loyalty points",
-        "description": "Redeems a guest's loyalty points for a voucher type fixed amount with the specified currency and the points converted using the following rule; 10 points = $1 USD. The voucher returned is a fixed amount voucher allowed to be shared with other guest.",
+        "description": "## Overview\n\nConvert a guest's loyalty points into a discount voucher. Points are converted at a rate of **10 points = $1 USD** (or equivalent in the specified currency).\n\n## When to Use\n\n- **Points redemption** - Allow guests to convert points to vouchers\n- **Reward fulfillment** - Create discount vouchers from points\n- **Loyalty rewards** - Enable points-to-cash conversion\n\n## What You Get\n\n- **Voucher code** - Unique code the guest can use for discounts\n- **Voucher details** - Discount type, value, validity period, and usage limits\n- **Fixed amount voucher** - Voucher with a specific discount value\n- **Shareable voucher** - Can be used by other guests\n\n## Key Features\n\n- **Conversion rate** - 10 points = $1 USD (or equivalent)\n- **Currency support** - Specify the currency for the voucher value\n- **Shareable** - Vouchers can be shared with other guests\n- **Fixed amount** - Creates a fixed discount amount voucher\n\n## Quick Start\n\nProvide the guest ID and specify `points` (amount to redeem) and `currency` (e.g., \"USD\"). Returns a voucher code and details.",
         "parameters": [
           {
             "name": "guestId",
@@ -1241,15 +1241,15 @@
                       "minimumSpend": 0,
                       "maximumDiscountAmount": 9,
                       "currency": "USD",
-                      "validityStart": "2024-12-24",
+                      "validityStart": "2026-07-24",
                       "validityEnd": "2026-12-24",
                       "usages": 0,
                       "usagesLimit": 1,
                       "status": "active",
                       "termsAndConditions": "",
                       "category": "redemption",
-                      "createdAt": "2024-12-24T16:36:19.820824Z",
-                      "updatedAt": "2024-12-24T20:36:20.002+04:00",
+                      "createdAt": "2026-07-24T16:36:19.820824Z",
+                      "updatedAt": "2026-07-24T20:36:20.002+04:00",
                       "deletedAt": null
                     }
                   }

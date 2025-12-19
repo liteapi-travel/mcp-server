@@ -75,7 +75,7 @@
           "Supply Customization"
         ],
         "summary": "Retrieve supply customization settings",
-        "description": "Fetches the supply customization settings for the authenticated user.",
+        "description": "## Overview\n\nGet your current supply customization preferences, including advanced accessibility options for hotel searches.\n\n## When to Use\n\n- **Settings display** - Show current customization settings in admin panels\n- **Configuration checks** - Verify your current preferences\n- **Feature verification** - Check if advanced accessibility is enabled\n\n## What You Get\n\n- **Current settings** - Your active supply customization configuration\n- **Advanced accessibility flag** - Whether advanced accessibility options are enabled\n\n## Quick Start\n\nNo parameters required. Returns your current supply customization settings.",
         "responses": {
           "200": {
             "description": "Supply customization settings retrieved successfully",
@@ -109,7 +109,7 @@
           "Supply Customization"
         ],
         "summary": "Update supply customization settings",
-        "description": "Updates the supply customization settings for the authenticated user.",
+        "description": "## Overview\n\nConfigure your supply customization preferences, including enabling or disabling advanced accessibility options for hotel searches.\n\n## When to Use\n\n- **Enable features** - Turn on advanced accessibility filtering\n- **Customize supply** - Adjust how hotel results are filtered\n- **Accessibility control** - Control whether advanced accessibility hotels are included\n\n## What You Get\n\n- **Updated settings** - Confirmation with your new configuration\n- **Current state** - Your active supply customization settings\n\n## Key Features\n\n- **Advanced accessibility** - Enable/disable filtering for hotels with advanced accessibility features\n- **Search impact** - Settings affect hotel search results\n\n## Quick Start\n\nProvide `advancedAccessibility` (boolean) to enable or disable advanced accessibility options. Returns updated settings.",
         "requestBody": {
           "content": {
             "application/json": {
