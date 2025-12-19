@@ -2,7 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z, ZodRawShape } from "zod";
 import axios from "axios";
 
-export function registerToolsFromOpenApi(server: McpServer, spec: any) {
+export function registerToolsFromOpenApi(server: McpServer, spec: any, apiKeyGetter: () => string = () => {
+  return process.env.LITEAPI_API_KEY || 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9';
+}) {
   const paths = spec.paths;
 
   for (const [routeTemplate, methods] of Object.entries(paths)) {
@@ -70,10 +72,11 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any) {
         // console.log(`🔌 Calling ${method.toUpperCase()} ${url} with params:`, { queryParams, bodyParams });
 
         try {
+          const apiKey = apiKeyGetter();
           const response = await axios.request({
             method,
             headers: {
-              'X-Api-Key': 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9',
+              'X-Api-Key': apiKey,
             },
             url,
             params: queryParams,

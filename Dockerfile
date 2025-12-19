@@ -27,8 +27,8 @@ RUN npm run build
 # Make the built file executable
 RUN chmod 755 dist/index.js
 
-# Expose port (if needed for any HTTP endpoints)
+# Expose port for HTTP server
 EXPOSE 3000
 
-# Set the default command to run the MCP server
+# Set the default command to run the MCP server in HTTP mode
 CMD ["node", "dist/index.js"]

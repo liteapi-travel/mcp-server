@@ -1,0 +1,24 @@
+{
+  "version": 2,
+  "builds": [
+    {
+      "src": "api/index.ts",
+      "use": "@vercel/node"
+    }
+  ],
+  "routes": [
+    {
+      "src": "/(.*)",
+      "dest": "/api/index.ts"
+    }
+  ],
+  "env": {
+    "MCP_MODE": "http"
+  },
+  "functions": {
+    "api/index.ts": {
+      "maxDuration": 300
+    }
+  }
+}
+

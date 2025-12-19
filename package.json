@@ -5,8 +5,11 @@
   "main": "dist/index.js",
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
+    "dev:stdio": "MCP_MODE=stdio nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "build": "npx tsc && chmod 755 dist/index.js",
-    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js",
+    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js --stdio",
+    "start": "node dist/index.js",
+    "start:stdio": "MCP_MODE=stdio node dist/index.js --stdio",
     "test": "node test/index.js"
   },
   "keywords": [],
