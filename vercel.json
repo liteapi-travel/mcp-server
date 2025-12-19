@@ -14,11 +14,6 @@
   ],
   "env": {
     "MCP_MODE": "http"
-  },
-  "functions": {
-    "api/index.ts": {
-      "maxDuration": 300
-    }
   }
 }
 
