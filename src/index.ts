@@ -6,6 +6,7 @@ import { z } from "zod";
 import express from "express";
 import { createServer } from "http";
 import { randomUUID } from "crypto";
+import { join } from "path";
 
 // Session management: Map of session ID to API key
 const sessionApiKeys = new Map<string, string>();
@@ -32,13 +33,48 @@ const server = new McpServer({
   version: "3.0.0",
 });
 
-const analytics = require('../openapi-schemas/analytics.json');
-const booking = require('../openapi-schemas/booking.json');
-const loyalty = require('../openapi-schemas/loyalty.json');
-const search = require('../openapi-schemas/search.json');
-const supplyCustomization = require('../openapi-schemas/supplyCustomization.json');
-const voucher = require('../openapi-schemas/voucher.json');
-const staticData = require('../openapi-schemas/static.json');
+// Resolve OpenAPI schema paths - works in both local and Vercel environments
+function loadSchema(filename: string): any {
+  // In Vercel, process.cwd() points to the project root
+  // Try multiple possible paths
+  const cwd = process.cwd();
+  const possiblePaths = [
+    join(cwd, 'openapi-schemas', filename),
+    // Try relative to dist folder if running from compiled code
+    join(cwd, '..', 'openapi-schemas', filename),
+    // Try from api folder perspective (Vercel)
+    join(cwd, '..', '..', 'openapi-schemas', filename),
+  ];
+
+  for (const schemaPath of possiblePaths) {
+    try {
+      const schema = require(schemaPath);
+      if (process.env.VERCEL || process.env.NODE_ENV === 'development') {
+        console.log(`✓ Loaded schema: ${filename} from ${schemaPath}`);
+      }
+      return schema;
+    } catch (e: any) {
+      // Continue to next path
+      if (e.code !== 'MODULE_NOT_FOUND' && process.env.NODE_ENV === 'development') {
+        console.warn(`  Failed ${schemaPath}:`, e.message);
+      }
+    }
+  }
+
+  // If all paths failed, throw with helpful error
+  console.error(`✗ Failed to load schema: ${filename}`);
+  console.error(`  Checked paths:`, possiblePaths);
+  console.error(`  Current working directory:`, cwd);
+  throw new Error(`Could not load OpenAPI schema: ${filename}. Ensure openapi-schemas directory exists at project root.`);
+}
+
+const analytics = loadSchema('analytics.json');
+const booking = loadSchema('booking.json');
+const loyalty = loadSchema('loyalty.json');
+const search = loadSchema('search.json');
+const supplyCustomization = loadSchema('supplyCustomization.json');
+const voucher = loadSchema('voucher.json');
+const staticData = loadSchema('static.json');
 
 // For stdio mode, use environment variable or default
 const defaultApiKeyGetter = () => process.env.LITEAPI_API_KEY || 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9';
@@ -85,6 +121,16 @@ export function createApp() {
   // Middleware
   app.use(express.json());
   app.use(express.static('public'));
+
+  // Error handling middleware
+  app.use((err: any, req: express.Request, res: express.Response, next: express.NextFunction) => {
+    console.error('Express error:', err);
+    res.status(500).json({
+      error: 'Internal server error',
+      message: err.message,
+      ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    });
+  });
 
   // Health check endpoint
   app.get('/health', (req, res) => {
