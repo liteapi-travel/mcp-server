@@ -13,6 +13,7 @@
     "dev": "tsx src/index.ts",
     "watch": "tsc --watch",
     "test": "node test-server.js",
+    "test:mcp": "LITEAPI_API_KEY=${LITEAPI_API_KEY:-sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9} npx tsx scripts/test-mcp-http.ts",
     "inspect": "npx @modelcontextprotocol/inspector node run-mcp-server.mjs"
   },
   "keywords": [

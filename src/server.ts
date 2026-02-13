@@ -41,12 +41,10 @@ export class LiteAPIMCPServer {
     for (const endpoint of this.endpoints.values()) {
       const inputSchema = this.createZodShape(endpoint);
       
-      this.server.registerTool<any, any>(
+      this.server.tool(
         endpoint.operationId,
-        {
-          description: endpoint.description || endpoint.summary,
-          inputSchema: inputSchema as any,
-        },
+        endpoint.description || endpoint.summary,
+        inputSchema as any,
         async (args: any) => {
           try {
             // Separate path params, query params, and body

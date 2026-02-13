@@ -102,9 +102,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
 
   try {
     // Extract API key from query parameter or header
-    const apiKey = 
-      (req.query.apiKey as string) || 
-      (req.headers['x-api-key'] as string) || 
+    const apiKey =
+      (req.query.apiKey as string) ||
+      (req.headers['x-api-key'] as string) ||
       (req.headers['authorization'] as string)?.replace('Bearer ', '');
 
     if (!apiKey) {
@@ -155,12 +155,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     for (const endpoint of endpoints.values()) {
       const inputSchema = createZodShape(endpoint);
       
-      server.registerTool<any, any>(
+      server.tool(
         endpoint.operationId,
-        {
-          description: endpoint.description || endpoint.summary,
-          inputSchema: inputSchema as any,
-        },
+        endpoint.description || endpoint.summary,
+        inputSchema as any,
         async (args: any) => {
           try {
             // Separate path params, query params, and body
@@ -241,10 +239,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       );
     }
 
-    // Create SSE transport and connect
+    // Create SSE transport and connect (connect() calls start() automatically)
     const transport = new SSEServerTransport('/mcp', res);
     await server.connect(transport);
-    await transport.start();
   } catch (error) {
     console.error('Error establishing MCP SSE connection:', error);
     if (!res.headersSent) {
