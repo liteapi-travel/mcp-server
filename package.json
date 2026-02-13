@@ -1,0 +1,38 @@
+{
+  "name": "liteapi-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP server for LiteAPI - dynamically generates tools from OpenAPI specs",
+  "type": "module",
+  "main": "dist/index.js",
+  "bin": {
+    "liteapi-mcp": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "dev": "tsx src/index.ts",
+    "watch": "tsc --watch",
+    "test": "node test-server.js",
+    "inspect": "npx @modelcontextprotocol/inspector node dist/index.js"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "liteapi",
+    "openapi"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
