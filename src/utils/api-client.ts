@@ -21,7 +21,29 @@ export async function makeAPIRequest(
   }
 
   // Build URL with query parameters
-  const url = new URL(finalPath, baseUrl);
+  // Handle baseUrl that may already have a path (e.g., https://api.liteapi.travel/v3.0)
+  const baseUrlObj = new URL(baseUrl);
+  
+  // Construct the full path by appending the endpoint path to the base URL's pathname
+  let fullPathname: string;
+  
+  if (finalPath.startsWith('/')) {
+    // Path starts with / - need to append to baseUrl's pathname properly
+    if (baseUrlObj.pathname && baseUrlObj.pathname !== '/') {
+      // BaseUrl has a pathname like /v3.0, append the path (remove leading / from finalPath)
+      fullPathname = baseUrlObj.pathname + (baseUrlObj.pathname.endsWith('/') ? '' : '/') + finalPath.slice(1);
+    } else {
+      // BaseUrl has no pathname or just /, use the path as-is
+      fullPathname = finalPath;
+    }
+  } else {
+    // Path doesn't start with /, append normally
+    fullPathname = baseUrlObj.pathname.endsWith('/') 
+      ? baseUrlObj.pathname + finalPath
+      : baseUrlObj.pathname + '/' + finalPath;
+  }
+  
+  const url = new URL(fullPathname, baseUrlObj.origin);
   const queryParams: Record<string, string> = {};
   
   for (const [key, value] of Object.entries(params)) {
@@ -49,6 +71,17 @@ export async function makeAPIRequest(
   // Add body for POST, PUT, PATCH
   if (body && ['POST', 'PUT', 'PATCH'].includes(method.toUpperCase())) {
     options.body = JSON.stringify(body);
+  }
+
+  // Debug logging (only in development)
+  if (process.env.NODE_ENV === 'development' || process.env.DEBUG) {
+    console.error(`[API Request] ${method.toUpperCase()} ${url.toString()}`);
+    if (Object.keys(queryParams).length > 0) {
+      console.error(`[API Request] Query params:`, queryParams);
+    }
+    if (body) {
+      console.error(`[API Request] Body:`, JSON.stringify(body, null, 2));
+    }
   }
 
   try {
