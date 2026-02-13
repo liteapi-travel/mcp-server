@@ -22,9 +22,6 @@ Or set `LITEAPI_API_KEY` in Vercel environment variables for single-tenant deplo
 
 ---
 
-# LiteAPI MCP Server (Legacy)
-
-An MCP (Model Context Protocol) server that dynamically generates tools from LiteAPI OpenAPI specifications. This server exposes all LiteAPI endpoints as MCP tools, making them accessible to AI assistants like Claude.
 
 ## Features
 
@@ -36,7 +33,7 @@ An MCP (Model Context Protocol) server that dynamically generates tools from Lit
 
 ## Prerequisites
 
-- Node.js 18+ 
+- Node.js 18+
 - npm or yarn
 - LiteAPI API Key
 
@@ -145,7 +142,7 @@ async function test() {
   });
 
   await client.connect(transport);
-  
+
   // List all available tools
   const tools = await client.listTools();
   console.log(`Found ${tools.tools.length} tools:`);
@@ -200,7 +197,7 @@ pwd
 }
 ```
 
-**Important**: 
+**Important**:
 - Use `run-mcp-server.mjs` instead of `dist/index.js` to ensure ES modules work correctly
 - Replace `/absolute/path/to/mcp-server` with the actual absolute path to this project
 - Replace `your_api_key_here` with your actual LiteAPI API key
