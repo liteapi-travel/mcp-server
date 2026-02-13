@@ -1,40 +1,39 @@
 {
   "name": "liteapi-mcp-server",
   "version": "1.0.0",
-  "description": "",
+  "description": "MCP server for LiteAPI - dynamically generates tools from OpenAPI specs",
+  "type": "module",
   "main": "dist/index.js",
+  "bin": {
+    "liteapi-mcp": "./dist/index.js"
+  },
   "scripts": {
-    "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "dev:stdio": "MCP_MODE=stdio nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "build": "npx tsc && chmod 755 dist/index.js",
-    "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js --stdio",
-    "start": "node dist/index.js",
-    "start:stdio": "MCP_MODE=stdio node dist/index.js --stdio",
-    "test": "node test/index.js"
+    "build": "tsc",
+    "start": "node run-mcp-server.mjs",
+    "dev": "tsx src/index.ts",
+    "watch": "tsc --watch",
+    "test": "node test-server.js",
+    "inspect": "npx @modelcontextprotocol/inspector node run-mcp-server.mjs"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "files": [
-    "/dist"
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "liteapi",
+    "openapi"
   ],
-  "devDependencies": {
-    "@types/express": "^5.0.1",
-    "@types/node": "^22.13.13",
-    "eslint": "^9.23.0",
-    "eslint-config-prettier": "^10.1.1",
-    "eslint-plugin-prettier": "^5.2.5",
-    "nodemon": "^3.1.9",
-    "ts-node": "^10.9.2",
-    "typescript": "^5.8.2"
-  },
+  "author": "",
+  "license": "MIT",
   "dependencies": {
-    "@apidevtools/swagger-parser": "^10.1.1",
-    "@modelcontextprotocol/sdk": "^1.7.0",
-    "ajv": "^8.17.1",
-    "axios": "^1.8.4",
-    "express": "^4.21.2",
-    "openapi-backend": "^5.11.1",
-    "zod": "^3.24.2"
+    "@modelcontextprotocol/sdk": "^1.26.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@vercel/node": "^3.0.0",
+    "tsx": "^4.7.0",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   }
 }
