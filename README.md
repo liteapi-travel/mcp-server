@@ -1,5 +1,29 @@
 # LiteAPI MCP Server
 
+MCP server for LiteAPI using Next.js and mcp-handler (Streamable HTTP). Deploys to Vercel.
+
+## Quick Start
+
+```bash
+npm install
+npm run dev
+```
+
+MCP endpoint: `http://localhost:3000/api/mcp`
+
+## ChatGPT Setup
+
+Add to ChatGPT MCP Server URL:
+```
+https://mcp.liteapi.travel/api/mcp?apiKey=YOUR_LITEAPI_KEY
+```
+
+Or set `LITEAPI_API_KEY` in Vercel environment variables for single-tenant deployment.
+
+---
+
+# LiteAPI MCP Server (Legacy)
+
 An MCP (Model Context Protocol) server that dynamically generates tools from LiteAPI OpenAPI specifications. This server exposes all LiteAPI endpoints as MCP tools, making them accessible to AI assistants like Claude.
 
 ## Features

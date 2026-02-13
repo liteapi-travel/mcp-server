@@ -8,9 +8,11 @@
     "liteapi-mcp": "./dist/index.js"
   },
   "scripts": {
-    "build": "tsc",
-    "start": "node run-mcp-server.mjs",
-    "dev": "tsx src/index.ts",
+    "build": "next build",
+    "build:stdio": "tsc",
+    "start": "next start",
+    "dev": "next dev",
+    "dev:stdio": "tsx src/index.ts",
     "watch": "tsc --watch",
     "test": "node test-server.js",
     "test:mcp": "LITEAPI_API_KEY=${LITEAPI_API_KEY:-sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9} npx tsx scripts/test-mcp-http.ts",
@@ -25,12 +27,19 @@
   "author": "",
   "license": "MIT",
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.26.0",
+    "@modelcontextprotocol/sdk": "^1.25.2",
+    "mcp-handler": "^1.0.7",
+    "next": "^14.2.35",
     "zod": "^3.23.8"
   },
   "devDependencies": {
+    "@eslint/eslintrc": "^3.3.3",
     "@types/node": "^20.11.0",
+    "@types/react": "^19.2.14",
+    "@types/react-dom": "^19.2.3",
     "@vercel/node": "^3.0.0",
+    "eslint": "^9.39.2",
+    "eslint-config-next": "^16.1.6",
     "tsx": "^4.7.0",
     "typescript": "^5.3.3"
   },
