@@ -12,7 +12,7 @@
       "get": {
         "tags": ["Places"],
         "summary": "Search for a list of places",
-        "description": "## Overview\n\nSearch for places, locations, and areas using Google Places API. Returns a list of matching places that can be used to search for hotels within specific boundaries.\n\n## When to Use\n\n- **Location autocomplete** - Build location search with autocomplete suggestions\n- **Place selection** - Let users select cities, airports, or areas\n- **Hotel search boundaries** - Get Place IDs to restrict hotel searches to specific regions\n- **Location discovery** - Find places by name or description\n\n## What You Get\n\n- **Place list** - Multiple matching places with details\n- **Place IDs** - Unique identifiers for use in hotel searches\n- **Location information** - Names, addresses, and location types\n- **Formatted addresses** - Human-readable addresses for display\n\n## Key Features\n\n- **Multiple types** - Search for cities, airports, hotels, or other place types\n- **Type filtering** - Specify place types (e.g., 'locality,airport,hotel')\n- **Smart defaults** - Automatically excludes less relevant types unless specified\n- **Relevance ordering** - Results sorted by relevance using Google's ranking\n\n## Quick Start\n\nProvide a `textQuery` (e.g., \"Manhattan\") and optionally specify `type` to filter results. Returns matching places with Place IDs you can use in hotel searches.",
+        "description": "## Overview\n\nSearch for places, locations, and areas using Google Places API. Returns a list of matching places that can be used to search for hotels within specific boundaries.\n\n**Pricing**: $0.01 per request\n\n## When to Use\n\n- **Location autocomplete** - Build location search with autocomplete suggestions\n- **Place selection** - Let users select cities, airports, or areas\n- **Hotel search boundaries** - Get Place IDs to restrict hotel searches to specific regions\n- **Location discovery** - Find places by name or description\n\n## What You Get\n\n- **Place list** - Multiple matching places with details\n- **Place IDs** - Unique identifiers for use in hotel searches\n- **Location information** - Names, addresses, and location types\n- **Formatted addresses** - Human-readable addresses for display\n\n## Key Features\n\n- **Multiple types** - Search for cities, airports, hotels, or other place types\n- **Type filtering** - Specify place types (e.g., 'locality,airport,hotel')\n- **Smart defaults** - Automatically excludes less relevant types unless specified\n- **Relevance ordering** - Results sorted by relevance using Google's ranking\n\n## Quick Start\n\nProvide a `textQuery` (e.g., \"Manhattan\") and optionally specify `type` to filter results. Returns matching places with Place IDs you can use in hotel searches.",
         "security": [
           {
             "apikeyAuth": []
@@ -199,7 +199,7 @@
       "get": {
         "tags": ["Places"],
         "summary": "Search for a specific place",
-        "description": "## Overview\n\nGet detailed information about a specific place using its Place ID. Returns complete place details including boundaries and location information.\n\n## When to Use\n\n- **Place details** - Get full information about a selected place\n- **Boundary information** - Retrieve place boundaries for hotel searches\n- **Location verification** - Verify place details before using in searches\n- **Display information** - Show place names and addresses to users\n\n## What You Get\n\n- **Complete place details** - Full information about the place\n- **Boundary data** - Geographic boundaries for the place\n- **Location information** - Coordinates, address, and display name\n- **Place metadata** - Types, formatted address, and language\n\n## Quick Start\n\nProvide the `placeId` in the URL path. Returns complete details for that specific place.",
+        "description": "## Overview\n\nGet detailed information about a specific place using its Place ID. Returns complete place details including boundaries and location information.\n\n**Pricing**: $0.01 per request\n\n## When to Use\n\n- **Place details** - Get full information about a selected place\n- **Boundary information** - Retrieve place boundaries for hotel searches\n- **Location verification** - Verify place details before using in searches\n- **Display information** - Show place names and addresses to users\n\n## What You Get\n\n- **Complete place details** - Full information about the place\n- **Boundary data** - Geographic boundaries for the place\n- **Location information** - Coordinates, address, and display name\n- **Place metadata** - Types, formatted address, and language\n\n## Quick Start\n\nProvide the `placeId` in the URL path. Returns complete details for that specific place.",
         "security": [
           {
             "apikeyAuth": []
@@ -854,6 +854,22 @@
                             "type": "number",
                             "format": "float",
                             "description": "Similarity score (0.0-1.0) indicating how well the hotel name matches the search query when searching by placeId. Higher scores indicate better matches. Only present when placeId parameter is used."
+                          },
+                          "rating": {
+                            "type": "number",
+                            "format": "float",
+                            "description": "The average guest rating for the hotel (e.g., 8.5 out of 10)"
+                          },
+                          "reviewCount": {
+                            "type": "integer",
+                            "description": "The total number of guest reviews for the hotel"
+                          },
+                          "facilityIds": {
+                            "type": "array",
+                            "items": {
+                              "type": "integer"
+                            },
+                            "description": "Array of facility IDs available at the hotel (e.g., [1, 2, 3] representing WiFi, Pool, Gym)"
                           }
                         }
                       }
@@ -7591,6 +7607,187 @@
                           }
                         }
                       }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/languages": {
+      "get": {
+        "tags": ["Languages"],
+        "summary": "List of supported languages",
+        "description": "## Overview\n\nGet all supported languages for hotel translations and content localization. Use language codes to request hotel data in specific languages.\n\n## When to Use\n\n- **Language selection** - Display available languages to users\n- **Content localization** - Get language codes for API requests\n- **Multi-language support** - Build language switchers in your application\n- **Reference data** - Validate language codes before making requests\n\n## What You Get\n\n- **Language list** - All supported and enabled languages\n- **Language codes** - ISO 639-1 codes (e.g., 'en', 'es', 'fr')\n- **Language names** - Human-readable language names in English\n\n## Quick Start\n\nNo parameters required. Returns all supported languages with codes and names. Use language codes in hotel search and detail requests.",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "An array containing objects for each supported language.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "code": {
+                            "type": "string",
+                            "description": "ISO 639-1 language code (e.g., 'en', 'es', 'fr')."
+                          },
+                          "name": {
+                            "type": "string",
+                            "description": "Human-readable language name in English."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "successResponse": {
+                    "value": {
+                      "data": [
+                        {
+                          "code": "ar",
+                          "name": "Arabic"
+                        },
+                        {
+                          "code": "bg",
+                          "name": "Bulgarian"
+                        },
+                        {
+                          "code": "ca",
+                          "name": "Catalan"
+                        },
+                        {
+                          "code": "cs",
+                          "name": "Czech"
+                        },
+                        {
+                          "code": "da",
+                          "name": "Danish"
+                        },
+                        {
+                          "code": "de",
+                          "name": "German"
+                        },
+                        {
+                          "code": "el",
+                          "name": "Greek"
+                        },
+                        {
+                          "code": "es",
+                          "name": "Spanish"
+                        },
+                        {
+                          "code": "et",
+                          "name": "Estonian"
+                        },
+                        {
+                          "code": "fi",
+                          "name": "Finnish"
+                        },
+                        {
+                          "code": "fr",
+                          "name": "French"
+                        },
+                        {
+                          "code": "hr",
+                          "name": "Croatian"
+                        },
+                        {
+                          "code": "hu",
+                          "name": "Hungarian"
+                        },
+                        {
+                          "code": "it",
+                          "name": "Italian"
+                        },
+                        {
+                          "code": "ja",
+                          "name": "Japanese"
+                        },
+                        {
+                          "code": "lt",
+                          "name": "Lithuanian"
+                        },
+                        {
+                          "code": "lv",
+                          "name": "Latvian"
+                        },
+                        {
+                          "code": "nb",
+                          "name": "Norwegian"
+                        },
+                        {
+                          "code": "nl",
+                          "name": "Dutch"
+                        },
+                        {
+                          "code": "pl",
+                          "name": "Polish"
+                        },
+                        {
+                          "code": "pt",
+                          "name": "Portuguese"
+                        },
+                        {
+                          "code": "ro",
+                          "name": "Romanian"
+                        },
+                        {
+                          "code": "ru",
+                          "name": "Russian"
+                        },
+                        {
+                          "code": "sk",
+                          "name": "Slovak"
+                        },
+                        {
+                          "code": "sl",
+                          "name": "Slovenian"
+                        },
+                        {
+                          "code": "sv",
+                          "name": "Swedish"
+                        },
+                        {
+                          "code": "tr",
+                          "name": "Turkish"
+                        },
+                        {
+                          "code": "uk",
+                          "name": "Ukrainian"
+                        },
+                        {
+                          "code": "zh",
+                          "name": "Chinese"
+                        }
+                      ]
                     }
                   }
                 }

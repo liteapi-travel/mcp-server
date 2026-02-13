@@ -509,6 +509,46 @@
                                                 }
                                               }
                                             }
+                                          },
+                                          "promotions": {
+                                            "type": "array",
+                                            "description": "An array of promotions or special offers associated with this rate. Promotions can include early booking deals, seasonal discounts, and other special offers.",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string",
+                                                  "description": "The name or title of the promotion."
+                                                },
+                                                "from": {
+                                                  "type": "string",
+                                                  "description": "The start date of the promotion in YYYY-MM-DD format (ISO 8601).",
+                                                  "example": "2025-11-14"
+                                                },
+                                                "to": {
+                                                  "type": "string",
+                                                  "description": "The end date of the promotion in YYYY-MM-DD format (ISO 8601).",
+                                                  "example": "2025-11-27"
+                                                },
+                                                "discount": {
+                                                  "type": "number",
+                                                  "description": "The discount value applied by this promotion."
+                                                },
+                                                "discountType": {
+                                                  "type": "string",
+                                                  "description": "The type of discount. Common values include 'percentage' for percentage-based discounts.",
+                                                  "example": "percentage"
+                                                },
+                                                "promotionCode": {
+                                                  "type": "string",
+                                                  "description": "An optional promotion code that can be used to apply this promotion. May be empty if no code is required."
+                                                },
+                                                "currency": {
+                                                  "type": "string",
+                                                  "description": "The currency associated with the promotion discount."
+                                                }
+                                              }
+                                            }
                                           }
                                         }
                                       },
@@ -588,46 +628,6 @@
                                               "type": "string",
                                               "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, 'RATE' for rate-level perks, or 'ROOM' for room-level perks."
                                             }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    "promotions": {
-                                      "type": "array",
-                                      "description": "An array of promotions or special offers associated with this rate. Promotions can include early booking deals, seasonal discounts, and other special offers.",
-                                      "items": {
-                                        "type": "object",
-                                        "properties": {
-                                          "name": {
-                                            "type": "string",
-                                            "description": "The name or title of the promotion."
-                                          },
-                                          "from": {
-                                            "type": "string",
-                                            "description": "The start date of the promotion in YYYY-MM-DD format (ISO 8601).",
-                                            "example": "2025-11-14"
-                                          },
-                                          "to": {
-                                            "type": "string",
-                                            "description": "The end date of the promotion in YYYY-MM-DD format (ISO 8601).",
-                                            "example": "2025-11-27"
-                                          },
-                                          "discount": {
-                                            "type": "number",
-                                            "description": "The discount value applied by this promotion."
-                                          },
-                                          "discountType": {
-                                            "type": "string",
-                                            "description": "The type of discount. Common values include 'percentage' for percentage-based discounts.",
-                                            "example": "percentage"
-                                          },
-                                          "promotionCode": {
-                                            "type": "string",
-                                            "description": "An optional promotion code that can be used to apply this promotion. May be empty if no code is required."
-                                          },
-                                          "currency": {
-                                            "type": "string",
-                                            "description": "The currency associated with the promotion discount."
                                           }
                                         }
                                       }
@@ -795,6 +795,17 @@
                                         "amount": 43.61,
                                         "currency": "USD"
                                       }
+                                    ],
+                                    "promotions": [
+                                      {
+                                        "name": "Early booker Deal",
+                                        "from": "2025-11-14",
+                                        "to": "2025-11-27",
+                                        "discount": 45.0,
+                                        "discountType": "percentage",
+                                        "promotionCode": "",
+                                        "currency": "THB"
+                                      }
                                     ]
                                   },
                                   "cancellationPolicies": {
@@ -853,17 +864,6 @@
                                       "amount": 35,
                                       "currency": "USD",
                                       "level": "HOTEL"
-                                    }
-                                  ],
-                                  "promotions": [
-                                    {
-                                      "name": "Early booker Deal",
-                                      "from": "2025-11-14",
-                                      "to": "2025-11-27",
-                                      "discount": 45.0,
-                                      "discountType": "percentage",
-                                      "promotionCode": "",
-                                      "currency": "THB"
                                     }
                                   ]
                                 }

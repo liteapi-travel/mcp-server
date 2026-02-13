@@ -6,11 +6,12 @@
   "scripts": {
     "dev": "nodemon --watch src --ext ts --exec ts-node src/index.ts",
     "dev:stdio": "MCP_MODE=stdio nodemon --watch src --ext ts --exec ts-node src/index.ts",
-    "build": "npx tsc && chmod 755 dist/index.js",
+    "build": "npx tsc && cp dist/src/index.js dist/index.js && chmod 755 dist/index.js",
     "inspect": "npm run build && npx @modelcontextprotocol/inspector node dist/index.js --stdio",
     "start": "node dist/index.js",
     "start:stdio": "MCP_MODE=stdio node dist/index.js --stdio",
-    "test": "node test/index.js"
+    "test": "node test/http-test.js",
+    "test:http": "node test/http-test.js"
   },
   "keywords": [],
   "author": "",
@@ -30,7 +31,7 @@
   },
   "dependencies": {
     "@apidevtools/swagger-parser": "^10.1.1",
-    "@modelcontextprotocol/sdk": "^1.7.0",
+    "@modelcontextprotocol/sdk": "^1.26.0",
     "ajv": "^8.17.1",
     "axios": "^1.8.4",
     "express": "^4.21.2",

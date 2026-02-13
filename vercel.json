@@ -14,6 +14,13 @@
   ],
   "env": {
     "MCP_MODE": "http"
+  },
+  "functions": {
+    "api/index.ts": {
+      "includeFiles": "src/**",
+      "includeFiles": "openapi-schemas/**",
+      "includeFiles": "dist/**"
+    }
   }
 }
 

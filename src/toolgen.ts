@@ -2,6 +2,9 @@ import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z, ZodRawShape } from "zod";
 import axios from "axios";
 
+// Type helper to avoid deep type instantiation issues
+type ToolSchema = Record<string, z.ZodTypeAny>;
+
 export function registerToolsFromOpenApi(server: McpServer, spec: any, apiKeyGetter: () => string = () => {
   return process.env.LITEAPI_API_KEY || 'sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9';
 }) {
@@ -20,24 +23,43 @@ export function registerToolsFromOpenApi(server: McpServer, spec: any, apiKeyGet
       const parameters = op.parameters || [];
       const requestBodySchema = op.requestBody?.content?.['application/json']?.schema;
 
-      const schemaShape: ZodRawShape = {};
+      const schemaShape: ToolSchema = {};
       const paramMetadata: {
         in: "query" | "path" | "header" | "cookie",
         name: string
       }[] = [];
 
       for (const param of parameters) {
-        const { name, schema, in: paramIn } = param;
-        schemaShape[name] = createZodSchema(schema);
+        const { name, schema, in: paramIn, required } = param;
+        let zodSchema = createZodSchema(schema);
+        // In OpenAPI, parameters are optional by default unless required === true
+        // Only mark as required if explicitly set to true
+        if (required === true) {
+          // Keep as required (no modification needed)
+          schemaShape[name] = zodSchema;
+        } else {
+          // Mark as optional using .optional() which should be properly handled by MCP SDK
+          schemaShape[name] = zodSchema.optional();
+        }
         paramMetadata.push({ in: paramIn, name });
       }
 
       if (requestBodySchema?.properties) {
+        const requiredFields = requestBodySchema.required || [];
         for (const [key, prop] of Object.entries<any>(requestBodySchema.properties)) {
-          schemaShape[key] = createZodSchema(prop);
+          let zodSchema = createZodSchema(prop);
+          // If the property is not in the required array, make it optional
+          if (requiredFields.includes(key)) {
+            // Keep as required
+            schemaShape[key] = zodSchema;
+          } else {
+            // Mark as optional
+            schemaShape[key] = zodSchema.optional();
+          }
         }
       }
 
+      // @ts-expect-error - Type instantiation depth issue with complex Zod schemas
       server.tool(operationId, op.summary || op.description, schemaShape, async (args) => {
         const path = buildPath(routeTemplate, args);
         const queryParams: any = {};
