@@ -167,7 +167,7 @@ pwd
   "mcpServers": {
     "liteapi": {
       "command": "node",
-      "args": ["/absolute/path/to/mcp-server/dist/index.js"],
+      "args": ["/absolute/path/to/mcp-server/run-mcp-server.mjs"],
       "env": {
         "LITEAPI_API_KEY": "your_api_key_here"
       }
@@ -177,6 +177,7 @@ pwd
 ```
 
 **Important**: 
+- Use `run-mcp-server.mjs` instead of `dist/index.js` to ensure ES modules work correctly
 - Replace `/absolute/path/to/mcp-server` with the actual absolute path to this project
 - Replace `your_api_key_here` with your actual LiteAPI API key
 - On Windows, use forward slashes `/` or escaped backslashes `\\` in the path
@@ -187,7 +188,7 @@ pwd
   "mcpServers": {
     "liteapi": {
       "command": "node",
-      "args": ["/Users/nicholas/Documents/nuitee/liteapi/mcp-server/dist/index.js"],
+      "args": ["/Users/nicholas/Documents/nuitee/liteapi/mcp-server/run-mcp-server.mjs"],
       "env": {
         "LITEAPI_API_KEY": "sand_c0155ab8-c683-4f26-8f94-b5e92c5797b9"
       }
@@ -195,6 +196,8 @@ pwd
   }
 }
 ```
+
+**Note:** The `.mjs` wrapper script ensures Node.js correctly recognizes ES modules when running from Claude Desktop. If you prefer to use `dist/index.js` directly, make sure Claude Desktop runs it from the project root directory.
 
 4. **Restart Claude Desktop** completely (quit and reopen)
 
