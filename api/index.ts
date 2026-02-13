@@ -42,17 +42,29 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Enable CORS
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-API-Key, X-Api-Key');
 
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
 
   try {
-    const apiKey = process.env.LITEAPI_API_KEY;
+    // Extract API key from request (header, query param, or Bearer token) or use env var
+    const apiKey =
+      (req.query.apiKey as string) ||
+      (req.headers['x-api-key'] as string) ||
+      (req.headers['X-API-Key'] as string) ||
+      (req.headers['authorization'] as string)?.replace(/^Bearer\s+/i, '') ||
+      process.env.LITEAPI_API_KEY;
+
     if (!apiKey) {
-      return res.status(500).json({
-        error: 'Missing LITEAPI_API_KEY environment variable',
+      return res.status(401).json({
+        error: 'API key required',
+        message: 'Please provide your LiteAPI API key via one of these methods:\n' +
+          '1. Header: X-API-Key: your_api_key\n' +
+          '2. Header: Authorization: Bearer your_api_key\n' +
+          '3. Query parameter: ?apiKey=your_api_key\n' +
+          '4. Or set LITEAPI_API_KEY environment variable on the server'
       });
     }
 
