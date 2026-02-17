@@ -67,4 +67,4 @@ const handler = withMcpAuth(baseHandler, verifyApiKey, {
   required: false, // Allow unauthenticated if LITEAPI_API_KEY is set
 });
 
-export { handler as GET, handler as POST };
+export { handler as GET, handler as POST, handler as DELETE };
