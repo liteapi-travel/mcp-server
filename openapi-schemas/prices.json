@@ -1,0 +1,350 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Price Index",
+    "version": "3.0.0",
+    "x-beta": true
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "HotelPriceIndex": {
+        "type": "object",
+        "description": "Price index data for a single hotel",
+        "properties": {
+          "hotelId": {
+            "type": "string",
+            "description": "The hotel ID",
+            "example": "lp19d9e"
+          },
+          "prices": {
+            "type": "array",
+            "description": "Array of price entries, one per calendar day",
+            "items": {
+              "$ref": "#/components/schemas/PriceIndexEntry"
+            }
+          }
+        },
+        "required": ["hotelId", "prices"]
+      },
+      "PriceIndexEntry": {
+        "type": "object",
+        "description": "Price index entry for a single calendar day",
+        "properties": {
+          "day": {
+            "type": "string",
+            "format": "date",
+            "description": "The calendar day in YYYY-MM-DD format",
+            "example": "2026-01-18"
+          },
+          "avgPriceUsd": {
+            "type": "number",
+            "format": "float",
+            "description": "Average price per night in USD for this day, rounded to the nearest integer",
+            "example": 107
+          }
+        },
+        "required": ["day", "avgPriceUsd"]
+      },
+      "PriceIndexCityResponse": {
+        "type": "object",
+        "description": "Aggregated price index data for a city",
+        "properties": {
+          "countryCode": {
+            "type": "string",
+            "description": "ISO-2 country code",
+            "example": "US"
+          },
+          "cityName": {
+            "type": "string",
+            "description": "City name",
+            "example": "New York"
+          },
+          "prices": {
+            "type": "array",
+            "description": "Array of price entries, one per calendar day, aggregated across all hotels in the city",
+            "items": {
+              "$ref": "#/components/schemas/PriceIndexEntry"
+            }
+          }
+        },
+        "required": ["countryCode", "cityName", "prices"]
+      },
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "message": {
+            "type": "string",
+            "description": "Error message describing what went wrong"
+          },
+          "code": {
+            "type": "integer",
+            "description": "Error code"
+          }
+        },
+        "required": ["message", "code"]
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Price Index",
+      "description": "**Beta Feature** - Retrieve historical price index data for hotels. This endpoint provides average per-night prices aggregated by day, allowing you to analyze pricing trends over time.\n\n**Rate Limiting**: This endpoint is rate-limited to 10 requests per minute for both sandbox and production API keys."
+    }
+  ],
+  "paths": {
+    "/prices/city": {
+      "get": {
+        "tags": ["Price Index"],
+        "summary": "Get aggregated price index for a city",
+        "description": "## Overview\n\nRetrieve aggregated historical price index data for all hotels in a specific city. Returns average per-night prices aggregated by calendar day across all hotels in the city, providing city-level pricing trends.\n\n**⚠️ Beta Feature**: This endpoint is currently in beta. The API structure and behavior may change in future versions.\n\n**Pricing**: $0.05 per request\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **City-level price analysis** - Analyze average pricing trends for an entire city\n- **Market research** - Compare pricing across different cities\n- **Destination pricing** - Get aggregated pricing data for a destination\n- **City pricing dashboards** - Build visualizations of city-level price trends\n\n## What You Get\n\n- **City-level aggregation** - Average prices aggregated across all hotels in the city (up to 1,000 hotels)\n- **Per-night prices** - Average price per night for each calendar day\n- **Daily aggregation** - One entry per day with aggregated pricing data\n- **Future dates only** - Only returns data for future check-in dates (defaults to today onwards)\n\n## Key Features\n\n- **Automatic hotel discovery** - Automatically finds hotels in the specified city (up to 1,000)\n- **City-level aggregation** - Prices are averaged across all hotels in the city, not per hotel\n- **Per-night pricing** - Prices are normalized to per-night rates\n- **Future-focused** - Only queries check-in dates in the future by default\n- **Flexible date ranges** - Optional date filtering with sensible defaults\n\n## Parameters\n\n- `countryCode` (required): ISO-2 country code (e.g., 'US', 'GB', 'FR')\n- `cityName` (required): City name (case-insensitive)\n- `fromDate` (optional): Start date in YYYY-MM-DD format. Defaults to today.\n- `toDate` (optional): End date in YYYY-MM-DD format. Defaults to 1 year from today.",
+        "operationId": "getPriceIndexCity",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "countryCode",
+            "in": "query",
+            "required": true,
+            "description": "ISO-2 country code (e.g., 'US', 'GB', 'FR')",
+            "schema": {
+              "type": "string"
+            },
+            "example": "US"
+          },
+          {
+            "name": "cityName",
+            "in": "query",
+            "required": true,
+            "description": "City name (case-insensitive)",
+            "schema": {
+              "type": "string"
+            },
+            "example": "New York"
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "description": "Start date for the price index query in YYYY-MM-DD format. Defaults to today if not provided. Only future check-in dates are queried.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-01-01"
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "description": "End date for the price index query in YYYY-MM-DD format. Defaults to 1 year from today if not provided.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-01-20"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved city price index data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PriceIndexCityResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Number of seconds to wait before retrying",
+                "schema": {
+                  "type": "integer",
+                  "example": 60
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prices/hotels": {
+      "get": {
+        "tags": ["Price Index"],
+        "summary": "Get price index for hotels",
+        "description": "## Overview\n\nRetrieve historical price index data for a list of hotels. Returns average per-night prices aggregated by calendar day, allowing you to analyze pricing trends and patterns.\n\n**⚠️ Beta Feature**: This endpoint is currently in beta. The API structure and behavior may change in future versions.\n\n**Pricing**: $0.05 per request\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Price trend analysis** - Analyze how hotel prices change over time\n- **Price forecasting** - Use historical data to predict future pricing\n- **Market research** - Compare pricing across multiple hotels\n- **Pricing dashboards** - Build visualizations of hotel price trends\n\n## What You Get\n\n- **Per-night prices** - Average price per night for each calendar day\n- **Daily aggregation** - One entry per day with aggregated pricing data\n- **Multiple hotels** - Query up to 50 hotels in a single request\n- **Future dates only** - Only returns data for future check-in dates (defaults to today onwards)\n\n## Key Features\n\n- **Per-night pricing** - Prices are normalized to per-night rates regardless of stay duration\n- **Daily aggregation** - Each day has a single entry with the average per-night price across all stays that include that day\n- **Future-focused** - Only queries check-in dates in the future by default\n- **Flexible date ranges** - Optional date filtering with sensible defaults\n- **Hotel limit** - Maximum 50 hotel IDs per request\n\n## Parameters\n\n- `hotelIds` (required): Comma-separated list of hotel IDs. Maximum 50 hotel IDs allowed.\n- `fromDate` (optional): Start date in YYYY-MM-DD format. Defaults to today.\n- `toDate` (optional): End date in YYYY-MM-DD format. Defaults to 1 year from today.",
+        "operationId": "getPriceIndexHotels",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelIds",
+            "in": "query",
+            "required": true,
+            "description": "Comma-separated list of hotel IDs to query price index data for. Maximum 50 hotel IDs allowed per request.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lp19d9e,lp19e0c"
+          },
+          {
+            "name": "fromDate",
+            "in": "query",
+            "required": false,
+            "description": "Start date for the price index query in YYYY-MM-DD format. Defaults to today if not provided. Only future check-in dates are queried.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-01-01"
+          },
+          {
+            "name": "toDate",
+            "in": "query",
+            "required": false,
+            "description": "End date for the price index query in YYYY-MM-DD format. Defaults to 1 year from today if not provided.",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-01-20"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved price index data",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "description": "Array of hotel price index data, one entry per hotel",
+                      "items": {
+                        "$ref": "#/components/schemas/HotelPriceIndex"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Number of seconds to wait before retrying",
+                "schema": {
+                  "type": "integer",
+                  "example": 60
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

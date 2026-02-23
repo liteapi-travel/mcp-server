@@ -75,6 +75,7 @@ export function loadOpenAPISpecs(specsDir: string): Map<string, OpenAPISpec> {
     'static.json',
     'loyalty.json',
     'supplyCustomization.json',
+    'prices.json',
   ];
 
   for (const file of specFiles) {
@@ -124,7 +125,7 @@ export function parseEndpoints(spec: OpenAPISpec): ParsedEndpoint[] {
       const rawOperationId =
         operation.operationId ||
         `${method}_${path.replace(/[^a-zA-Z0-9]/g, '_')}`.toLowerCase();
-      
+
       // Sanitize the operationId to ensure it's a valid tool name
       const operationId = sanitizeOperationId(rawOperationId);
 

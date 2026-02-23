@@ -127,13 +127,35 @@
                   },
                   "boardType": {
                     "type": "string",
-                    "description": "Filter results by board type. Example values: RO (Room Only), BB (Bed & Breakfast), HB (Half Board), etc.",
-                    "example": "RO"
+                    "description": "Filter results by board type(s). Can be a single value (e.g., 'BB') or comma-separated values (e.g., 'BB,BB1,BB2') for OR logic. Example values: RO (Room Only), BB (Bed & Breakfast), HB (Half Board), BB1, BB2, BB3, etc.",
+                    "example": "BB,BB1,BB2"
                   },
                   "refundableRatesOnly": {
                     "type": "boolean",
                     "description": "If true, only refundable rates (RFN) will be included in the response.",
                     "example": true
+                  },
+                  "roomAmenities": {
+                    "type": "array",
+                    "description": "Filter results by room-level amenity codes. Only rates from rooms that match the specified amenities will be returned. Use amenityFilterLogic to control AND/OR behavior.",
+                    "example": [1, 2, 3],
+                    "items": {
+                      "type": "number"
+                    }
+                  },
+                  "amenityFilterLogic": {
+                    "type": "string",
+                    "enum": ["AND", "OR"],
+                    "description": "Logic to apply when filtering by roomAmenities. 'AND': room must have all specified amenities. 'OR': room must have at least one specified amenity.",
+                    "example": "AND"
+                  },
+                  "bedTypes": {
+                    "type": "array",
+                    "description": "Filter results by bed types extracted from room names. Only rates from rooms matching the specified bed types will be returned. Example values: 'double', 'twin', 'king', 'queen', 'single'.",
+                    "example": ["double", "twin"],
+                    "items": {
+                      "type": "string"
+                    }
                   },
                   "sort": {
                     "type": "array",
@@ -509,6 +531,46 @@
                                                 }
                                               }
                                             }
+                                          },
+                                          "promotions": {
+                                            "type": "array",
+                                            "description": "An array of promotions or special offers associated with this rate. Promotions can include early booking deals, seasonal discounts, and other special offers.",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "name": {
+                                                  "type": "string",
+                                                  "description": "The name or title of the promotion."
+                                                },
+                                                "from": {
+                                                  "type": "string",
+                                                  "description": "The start date of the promotion in YYYY-MM-DD format (ISO 8601).",
+                                                  "example": "2025-11-14"
+                                                },
+                                                "to": {
+                                                  "type": "string",
+                                                  "description": "The end date of the promotion in YYYY-MM-DD format (ISO 8601).",
+                                                  "example": "2025-11-27"
+                                                },
+                                                "discount": {
+                                                  "type": "number",
+                                                  "description": "The discount value applied by this promotion."
+                                                },
+                                                "discountType": {
+                                                  "type": "string",
+                                                  "description": "The type of discount. Common values include 'percentage' for percentage-based discounts.",
+                                                  "example": "percentage"
+                                                },
+                                                "promotionCode": {
+                                                  "type": "string",
+                                                  "description": "An optional promotion code that can be used to apply this promotion. May be empty if no code is required."
+                                                },
+                                                "currency": {
+                                                  "type": "string",
+                                                  "description": "The currency associated with the promotion discount."
+                                                }
+                                              }
+                                            }
                                           }
                                         }
                                       },
@@ -588,46 +650,6 @@
                                               "type": "string",
                                               "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, 'RATE' for rate-level perks, or 'ROOM' for room-level perks."
                                             }
-                                          }
-                                        }
-                                      }
-                                    },
-                                    "promotions": {
-                                      "type": "array",
-                                      "description": "An array of promotions or special offers associated with this rate. Promotions can include early booking deals, seasonal discounts, and other special offers.",
-                                      "items": {
-                                        "type": "object",
-                                        "properties": {
-                                          "name": {
-                                            "type": "string",
-                                            "description": "The name or title of the promotion."
-                                          },
-                                          "from": {
-                                            "type": "string",
-                                            "description": "The start date of the promotion in YYYY-MM-DD format (ISO 8601).",
-                                            "example": "2025-11-14"
-                                          },
-                                          "to": {
-                                            "type": "string",
-                                            "description": "The end date of the promotion in YYYY-MM-DD format (ISO 8601).",
-                                            "example": "2025-11-27"
-                                          },
-                                          "discount": {
-                                            "type": "number",
-                                            "description": "The discount value applied by this promotion."
-                                          },
-                                          "discountType": {
-                                            "type": "string",
-                                            "description": "The type of discount. Common values include 'percentage' for percentage-based discounts.",
-                                            "example": "percentage"
-                                          },
-                                          "promotionCode": {
-                                            "type": "string",
-                                            "description": "An optional promotion code that can be used to apply this promotion. May be empty if no code is required."
-                                          },
-                                          "currency": {
-                                            "type": "string",
-                                            "description": "The currency associated with the promotion discount."
                                           }
                                         }
                                       }
@@ -795,6 +817,17 @@
                                         "amount": 43.61,
                                         "currency": "USD"
                                       }
+                                    ],
+                                    "promotions": [
+                                      {
+                                        "name": "Early booker Deal",
+                                        "from": "2025-11-14",
+                                        "to": "2025-11-27",
+                                        "discount": 45.0,
+                                        "discountType": "percentage",
+                                        "promotionCode": "",
+                                        "currency": "THB"
+                                      }
                                     ]
                                   },
                                   "cancellationPolicies": {
@@ -853,17 +886,6 @@
                                       "amount": 35,
                                       "currency": "USD",
                                       "level": "HOTEL"
-                                    }
-                                  ],
-                                  "promotions": [
-                                    {
-                                      "name": "Early booker Deal",
-                                      "from": "2025-11-14",
-                                      "to": "2025-11-27",
-                                      "discount": 45.0,
-                                      "discountType": "percentage",
-                                      "promotionCode": "",
-                                      "currency": "THB"
                                     }
                                   ]
                                 }
@@ -1134,6 +1156,10 @@
                           },
                           "suggestedSellingPrice": {
                             "type": "integer"
+                          },
+                          "offerId": {
+                            "type": "string",
+                            "description": "The offer ID associated with the minimum rate, used for booking reference"
                           }
                         }
                       }
@@ -1150,12 +1176,14 @@
                         {
                           "hotelId": "lp3803c",
                           "price": 99.99,
-                          "suggestedSellingPrice": 120.99
+                          "suggestedSellingPrice": 120.99,
+                          "offerId": "3gAVonJzkY2kc3JpZNoBEEdNWkRFTUJYR1EzVE9OUlpHWlNURU1CV0dJM0RLTlJVRzRaVEVNQldHUTNES05UREc0MlRPT0JXR1Y2RENJWlNHQVpETU1CU0dFM1hZTVJRR0kzREFNUlJIQjZHSzNTN0tWSlhZVktUUFJLVkdSRDRHSkFUQVEzNEdJWkRRTTM0S1VaRk1XRFNQUVlUT05aUUhFWURRTlpYR0laRFNOTEtMSjNYSUlaUkdBM0RFT0pZRU1ZVEFOWldGVVlUQU5SU0hFNEhZVFNTSVpISFlWQ0VQUTJIWVVSUkdFMlRBN0JSR1kzREdOUkRLSkhTR1RTU0laSENHTVJRR0kzQzJNQlNGVVlUQ0lCUkdVNURBTlJEo3ByY8tAZclHrhR64aVvcl9wcssAAAAAAAAAAKJjbcsAAAAAAAAAAKNwY2Sgo2JyZKJST6RtcmlkwKNtcm7Ao2hkcMCjZnJuoKNzcm6yMiBUd2luIEJlZHMgRGVsdXhlo29jbgGkcHJrc8Ckc2hpZKYxMDYyOTijc2lkAqNoaWSnbHAxOWYzYaNvY2ORgaFhAqNjdXKjVVNEomduolVTomNpqjIwMjYtMDItMTeiY2-qMjAyNi0wMi0xOKNnaWSgomNyy0ATFHrhR64UpHNzaWTZMHNlc3Npb25fMDE5YzUyNjM2NzE4Um1QRlpENDdKY01wc2d0bzBCcGU1V0hCMFpIUKNpc2jCo3NzcK5wcm92aWRlckRpcmVjdKNpZm3CpWlmY2hywqVzZWFpZKCibmvAonR4koShacOhZNkjdGF4IHJlY292ZXJ5IGNoYXJnZXMgJiBzZXJ2aWNlIGZlZXOhYctAN6uFHrhR7KFjo1VTRIShacKhZK10YXggcGVyIG5pZ2h0oWHLQCVXCj1wo9ehY6NVU0SibHDAo2JrdAU="
                         },
                         {
                           "hotelId": "lp1f982",
                           "price": 200,
-                          "suggestedSellingPrice": 220
+                          "suggestedSellingPrice": 220,
+                          "offerId": "3gAVonJzkY2kc3JpZNoBGkdZMlRPT0JXR1UzREdOWlZHNDJETU9KWEdZM0RLTVJRR1kyRE1aUlhHVTNERU5UREdZMlhZTUpER0lZREVOUlFHSVlUTzdCU0dBWkRNTUJTR0U0SFlaTE9MNUtWRzdDVktONkZLVTJFUFFaRUNNQ0RQUVpERU9CVFBSS1RFVlNZT0o2RENOWlhHQTRUQU9CWEc0WkRFT0pWTkpOSE81QkRHRVlEUU1CWkc0UlRDTVJSRzRXVENNQllHQTRUTzdDT0tKREU0N0JTR0FaRE1NQlNHRVlUQU9KVkhGNkRDN0NTR0VZVEtNRDRHRVpES09KVkVOQkVFSTJPS0pERTRJWlNHQVpETUxKUUdJV1RDTUpBR0E0VFVOSlpFTaNwcmPLQGB-ZmZmZmalb3JfcHLLAAAAAAAAAACiY23LAAAAAAAAAACjcGNkoKNicmSiQkmkbXJpZMCjbXJuwKNoZHDAo2ZybqCjc3JusEV4ZWN1dGl2ZSBEb3VibGWjb2NuAaRwcmtzwKRzaGlkpjEwODA5N6NzaWQCo2hpZKdscDFhNjQxo29jY5GBoWECo2N1cqNVU0SiZ26iVVOiY2mqMjAyNi0wMi0xN6Jjb6oyMDI2LTAyLTE4o2dpZKCiY3LLQBMUeuFHrhSkc3NpZNkwc2Vzc2lvbl8wMTljNTI2MzY3MThSbVBGWkQ0N0pjTXBzZ3RvMEJwZTVXSEIwWkhQo2lzaMKjc3NwrnByb3ZpZGVyRGlyZWN0o2lmbcKlaWZjaHLCpXNlYWlkoKJua8CidHiShKFpw6Fk2SN0YXggcmVjb3ZlcnkgY2hhcmdlcyAmIHNlcnZpY2UgZmVlc6Fhy0A--FHrhR64oWOjVVNEhKFpwqFktHJlc29ydCBmZWUgcGVyIG5pZ2h0oWHLQBCj1wo9cKShY6NVU0SibHDAo2JrdAQ="
                         }
                       ],
                       "sandbox": true

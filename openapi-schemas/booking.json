@@ -1434,7 +1434,7 @@
       "post": {
         "tags": ["Make bookings"],
         "summary": "2. Complete a booking",
-        "description": "## Overview\n\n**Step 2 of 2** in the booking flow. Complete the booking by providing guest information and payment details. This confirms the reservation and creates the final booking.\n\n## When to Use\n\n- **After prebook** - Call this after creating a prebook session\n- **Payment processing** - Submit payment information to confirm booking\n- **Booking confirmation** - Finalize the reservation\n\n## What You Get\n\n- **Booking ID** - Unique identifier for the confirmed booking\n- **Hotel confirmation code** - Reference code from the hotel\n- **Complete booking details** - Dates, pricing, room information\n- **Cancellation policies** - Terms for cancelling the booking\n- **Guest information** - Confirmed guest details\n\n## Payment Methods\n\n- **TRANSACTION** - Use when using Payment SDK (provide `transactionId`)\n- **ACC_CREDIT_CARD** - Direct credit card payment\n- **WALLET** - Wallet payment method\n- **CREDIT** - Use account credit balance\n\n## Required Information\n\n- **Prebook ID** - From the prebook step\n- **Guest details** - First name, last name, and email\n- **Payment information** - Payment method and details\n\n## Quick Start\n\nProvide the `prebookId`, guest information (firstName, lastName, email), and payment details. Returns confirmed booking with booking ID and confirmation code.",
+        "description": "## Overview\n\n**Step 2 of 2** in the booking flow. Complete the booking by providing guest information and payment details. This confirms the reservation and creates the final booking.\n\n## When to Use\n\n- **After prebook** - Call this after creating a prebook session\n- **Payment processing** - Submit payment information to confirm booking\n- **Booking confirmation** - Finalize the reservation\n\n## What You Get\n\n- **Booking ID** - Unique identifier for the confirmed booking\n- **Hotel confirmation code** - Reference code from the hotel\n- **Complete booking details** - Dates, pricing, room information\n- **Cancellation policies** - Terms for cancelling the booking\n- **Guest information** - Confirmed guest details\n\n## Payment Methods\n\n- **ACC_CREDIT_CARD** - Direct credit card payment. In sandbox mode, this can be used to simulate a booking without getting charged.\n- **TRANSACTION** - Use when using Payment SDK (provide `transactionId`)\n- **WALLET** - Wallet payment method\n- **CREDIT** - Use account credit balance\n\n## Testing\n\nWhen testing sandbox bookings, simply use the `ACC_CREDIT_CARD` payment method. This allows you to simulate a booking without getting charged.\n\n## Required Information\n\n- **Prebook ID** - From the prebook step\n- **Guest details** - First name, last name, and email\n- **Payment information** - Payment method and details\n\n## Quick Start\n\nProvide the `prebookId`, guest information (firstName, lastName, email), and payment details. Returns confirmed booking with booking ID and confirmation code.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1442,31 +1442,23 @@
                 "type": "object",
                 "x-examples": {
                   "Example 1": {
-                    "prebookId": "len80MPr_",
+                    "prebookId": "dsePLiNX1",
                     "holder": {
-                      "firstName": "John",
+                      "firstName": "Steve",
                       "lastName": "Doe",
-                      "email": "john.doe@example.com"
+                      "email": "s.doe@liteapi.travel",
+                      "phone": "0200923695"
                     },
                     "guests": [
                       {
                         "occupancyNumber": 1,
-                        "remarks": "quiet room please",
-                        "firstName": "John",
-                        "lastName": "Doe",
-                        "email": "john.doe@example.com"
-                      },
-                      {
-                        "occupancyNumber": 2,
-                        "remarks": "non smoking room please",
-                        "firstName": "John",
-                        "lastName": "Doe",
-                        "email": "john.doe@example.com"
+                        "firstName": "Sunny",
+                        "lastName": "Mars",
+                        "email": "s.mars@liteapi.travel"
                       }
                     ],
                     "payment": {
-                      "method": "TRANSACTION_ID",
-                      "transactionId": "tr_ct_ELlwT7nqeZCKSysxZq1Vr"
+                      "method": "ACC_CREDIT_CARD"
                     }
                   }
                 },
@@ -1591,9 +1583,42 @@
                       }
                     }
                   },
+                  "payment": {
+                    "anyOf": [
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Payment methods that don't require a transaction ID. These methods use pre-configured payment settings: ACC_CREDIT_CARD uses stored card details (in sandbox mode, this can be used to simulate a booking without getting charged), WALLET uses available wallet balance, and CREDIT allows payment on credit line.",
+                        "required": ["method"],
+                        "properties": {
+                          "method": {
+                            "enum": ["ACC_CREDIT_CARD", "WALLET", "CREDIT"],
+                            "description": "The payment method used for the transaction. This determines where the money for the booking comes from."
+                          }
+                        }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Payment method using TRANSACTION_ID. Required when using the Payment SDK for processing payments. This method requires both the payment method and transaction ID from the prebook step.",
+                        "required": ["method", "transactionId"],
+                        "properties": {
+                          "method": {
+                            "enum": ["TRANSACTION_ID"],
+                            "description": "The payment method used for the transaction. This determines where the money for the booking comes from."
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "description": "The unique identifier for the transaction from the prebook step and only used with the payment SDK and the TRANSACTION method"
+                          }
+                        }
+                      }
+                    ],
+                    "description": "Specifies the payment method for completing the booking"
+                  },
                   "guestPayment": {
                     "type": "object",
-                    "description": "The payment method used for the transaction. This determines where the money for the booking comes from",
+                    "description": "The payment method used for the transaction. This determines where the money for the booking comes from. Recommended to be added when you are merchant of record to improve the fraud detection system.",
                     "required": [
                       "method",
                       "phone",
@@ -1645,39 +1670,6 @@
                         }
                       }
                     }
-                  },
-                  "payment": {
-                    "anyOf": [
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "description": "Payment method using TRANSACTION_ID. Required when using the Payment SDK for processing payments. This method requires both the payment method and transaction ID from the prebook step.",
-                        "required": ["method", "transactionId"],
-                        "properties": {
-                          "method": {
-                            "enum": ["TRANSACTION_ID"],
-                            "description": "The payment method used for the transaction. This determines where the money for the booking comes from."
-                          },
-                          "transactionId": {
-                            "type": "string",
-                            "description": "The unique identifier for the transaction from the prebook step and only used with the payment SDK and the TRANSACTION method"
-                          }
-                        }
-                      },
-                      {
-                        "type": "object",
-                        "additionalProperties": false,
-                        "description": "Alternative payment methods that don't require a transaction ID. These methods use pre-configured payment settings: WALLET uses available wallet balance, ACC_CREDIT_CARD uses stored card details, and CREDIT allows payment on credit line.",
-                        "required": ["method"],
-                        "properties": {
-                          "method": {
-                            "enum": ["WALLET", "ACC_CREDIT_CARD", "CREDIT"],
-                            "description": "The payment method used for the transaction. This determines where the money for the booking comes from."
-                          }
-                        }
-                      }
-                    ],
-                    "description": "Specifies the payment method for completing the booking"
                   }
                 }
               },
@@ -2249,10 +2241,6 @@
                           "type": "string",
                           "description": "The latest date/time when the booking can be canceled without penalties (ISO 8601 format)."
                         },
-                        "apiCommission": {
-                          "type": "number",
-                          "description": "The commission amount received by the API for this booking."
-                        },
                         "userId": {
                           "type": "integer",
                           "description": "The ID of the user who made the booking."
@@ -2474,7 +2462,6 @@
                         "exchangeRateUsd": 1,
                         "tag": "RFN",
                         "lastFreeCancellationDate": "2025-01-01T00:00:00Z",
-                        "apiCommission": 5,
                         "userId": 1,
                         "nationality": "US",
                         "loyaltyGuestId": 1,
@@ -3354,10 +3341,6 @@
                             "format": "date-time",
                             "description": "The latest date/time when the booking can be canceled without penalties (ISO 8601 format)."
                           },
-                          "apiCommission": {
-                            "type": "number",
-                            "description": "The commission amount received by the API for this booking."
-                          },
                           "userId": {
                             "type": "integer",
                             "description": "ID of the user who made the booking."
@@ -3554,7 +3537,6 @@
                       "email": "example-holder@liteapi.travel",
                       "tag": "",
                       "lastFreeCancellationDate": "2025-05-24T02:59:59+03:00",
-                      "apiCommission": 32.06,
                       "userId": 869595,
                       "nationality": "GR",
                       "loyaltyGuestId": 102,
@@ -4364,10 +4346,6 @@
                           "type": "string",
                           "description": "The latest date/time when the booking can be canceled without penalties (ISO 8601 format)."
                         },
-                        "apiCommission": {
-                          "type": "number",
-                          "description": "The commission amount received by the API for this booking."
-                        },
                         "userId": {
                           "type": "integer",
                           "description": "ID of the user who made the booking."
@@ -4633,7 +4611,6 @@
                         "email": "johndoe@liteapi.travel",
                         "tag": "RFN",
                         "lastFreeCancellationDate": "2024-11-15T00:00:00+00:00",
-                        "apiCommission": 5,
                         "userId": 1,
                         "nationality": "US",
                         "holderTitle": "Mr",
@@ -4799,7 +4776,6 @@
                         "email": "john.doe@example.com",
                         "tag": "",
                         "lastFreeCancellationDate": null,
-                        "apiCommission": 4.17,
                         "userId": 2,
                         "nationality": "US",
                         "holderTitle": "Mr",
@@ -5692,10 +5668,6 @@
                             "type": "string",
                             "description": "The currency in which the booking was processed."
                           },
-                          "api_commission": {
-                            "type": "number",
-                            "description": "The commission amount received by the API for this booking."
-                          },
                           "nationality": {
                             "type": "string",
                             "description": "The nationality of the primary guest, represented in ISO 2-letter country code format."
@@ -5835,7 +5807,6 @@
                       "tag": "",
                       "last_free_cancellation_date": "0001-01-01T00:00:00Z",
                       "currency": "USD",
-                      "api_commission": 64.88999999999999,
                       "nationality": "US",
                       "holder_title": "",
                       "hotelId": "lp19e75",
