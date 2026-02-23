@@ -360,6 +360,386 @@
           }
         }
       }
+    },
+    "/commissions/report": {
+      "post": {
+        "tags": ["Analytics"],
+        "summary": "Commission earnings report",
+        "description": "## Overview\n\nReturns commission earnings on the account for the given date range. Each day in the range includes the total commission amount and the average commission percentage.\n\n## When to Use\n\n- **Commission tracking** - Monitor daily commission earnings\n- **Revenue analysis** - Understand commission as a percentage of sales\n- **Financial reporting** - Report commission totals and averages by day\n- **Performance dashboards** - Chart commission trends over time\n\n## What You Get\n\n- **Daily amounts** - Total commission earned per day\n- **Daily percentage** - Average commission percentage per day\n- **Time-series data** - One entry per day, ordered by date\n\n## Quick Start\n\nProvide a date range (`from` and `to`) and optionally `sandbox` to filter by environment. Returns an array of daily commission amounts and percentages.",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "properties": {
+                  "from": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Start date for the report YYYY-MM-DD (ISO 8601)"
+                  },
+                  "to": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "End date for the report YYYY-MM-DD (ISO 8601)"
+                  },
+                  "sandbox": {
+                    "type": "string",
+                    "description": "Filter by environment: \"true\" for sandbox, \"false\" for production"
+                  }
+                },
+                "required": ["from", "to"]
+              },
+              "example": {
+                "from": "2026-01-24",
+                "to": "2026-02-23",
+                "sandbox": "false"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Commission earnings report retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "success": true,
+                  "data": [
+                    {
+                      "date": "2025-12-24",
+                      "amount": 41522.48,
+                      "percentage": 11.43
+                    },
+                    {
+                      "date": "2025-12-25",
+                      "amount": 39784.89,
+                      "percentage": 10.92
+                    },
+                    {
+                      "date": "2026-01-01",
+                      "amount": 49683.22,
+                      "percentage": 12.01
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/guest-nationality-report": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Guest nationality (source market) report",
+        "description": "## Overview\n\nReturns analytics on the source markets (guest nationality) of bookings. Compares the current period to the previous period of equal length, with per-nationality booking counts, sales in USD, average booking value, and period-over-period change.\n\n## When to Use\n\n- **Source market analysis** - See which nationalities drive the most bookings and sales\n- **Period comparison** - Compare current vs previous period totals and per-nationality growth\n- **Geographic dashboards** - Track performance by guest country (ISO code)\n- **Marketing and sales planning** - Identify growing or declining markets\n\n## What You Get\n\n- **Period definition** - Date ranges for current and previous periods\n- **Summary** - Total sales (USD), change percent/amount, and count of nationalities\n- **Per-nationality data** - For each guest nationality: booking count, total sales USD, avg booking value; current and previous period; and change (sales percent/amount, booking count change)\n- **New markets** - Nationalities with no previous-period data have `previous_period: null` and change expressed as 100% growth\n\n## Quick Start\n\nPass query parameters `from`, `to`, and `sandbox`. The API derives the previous period (same length, immediately before). Returns period metadata, summary totals, and an array of nationality-level metrics.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Start date of the current period YYYY-MM-DD (ISO 8601)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "End date of the current period YYYY-MM-DD (ISO 8601)"
+          },
+          {
+            "name": "sandbox",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by environment: \"true\" for sandbox, \"false\" for production"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Guest nationality report retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "period": {
+                    "current": { "from": "2026-01-24", "to": "2026-02-23" },
+                    "previous": { "from": "2025-12-24", "to": "2026-01-23" }
+                  },
+                  "summary": {
+                    "current_period_total_sales_usd": 15653388.56,
+                    "previous_period_total_sales_usd": 13029255.91,
+                    "total_sales_change_percent": 20.14,
+                    "total_sales_change_amount": 2624132.65,
+                    "total_nationalities": 44
+                  },
+                  "data": [
+                    {
+                      "nationality": "AT",
+                      "current_period": {
+                        "from": "2026-01-24",
+                        "to": "2026-02-23",
+                        "booking_count": 423,
+                        "total_sales_usd": 188613.21,
+                        "avg_booking_value_usd": 445.89
+                      },
+                      "previous_period": {
+                        "from": "2025-12-24",
+                        "to": "2026-01-23",
+                        "booking_count": 346,
+                        "total_sales_usd": 170627.99,
+                        "avg_booking_value_usd": 493.14
+                      },
+                      "change": {
+                        "sales_change_percent": 10.54,
+                        "sales_change_amount": 17985.22,
+                        "booking_count_change": 77
+                      }
+                    },
+                    {
+                      "nationality": "AU",
+                      "current_period": {
+                        "from": "2026-01-24",
+                        "to": "2026-02-23",
+                        "booking_count": 118,
+                        "total_sales_usd": 42812.91,
+                        "avg_booking_value_usd": 362.82
+                      },
+                      "previous_period": null,
+                      "change": {
+                        "sales_change_percent": 100,
+                        "sales_change_amount": 42812.91,
+                        "booking_count_change": 118
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/source-markets-report": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Destinations report (by destination country)",
+        "description": "## Overview\n\nReturns analytics on **destinations** (the country where the hotel is located). Compares the current period to the previous period of equal length, with per-destination booking count, hotel count, sales in USD, average booking value, and period-over-period change.\n\n## When to Use\n\n- **Destination performance** - See which countries (hotel locations) drive the most bookings and sales\n- **Period comparison** - Compare current vs previous period totals and per-destination growth\n- **Geographic dashboards** - Track performance by destination country (ISO code)\n- **Inventory and commercial planning** - Identify growing or declining destinations\n\n## What You Get\n\n- **Period definition** - Date ranges for current and previous periods\n- **Summary** - Total sales (USD), change percent/amount, and count of destination countries\n- **Per-destination data** - For each country: booking count, hotel count, total sales USD, avg booking value; current and previous period; and change (sales percent/amount, booking count change)\n- **New or inactive destinations** - Countries with no previous-period data have `previous_period: null`; destinations with no current-period activity may have zeros and negative change\n\n## Quick Start\n\nPass query parameters `from`, `to`, and `sandbox`. The API derives the previous period (same length, immediately before). Returns period metadata, summary totals, and an array of destination-level metrics.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Start date of the current period YYYY-MM-DD (ISO 8601)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "End date of the current period YYYY-MM-DD (ISO 8601)"
+          },
+          {
+            "name": "sandbox",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by environment: \"true\" for sandbox, \"false\" for production"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destinations (source markets) report retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "period": {
+                    "current": { "from": "2026-01-24", "to": "2026-02-23" },
+                    "previous": { "from": "2025-12-24", "to": "2026-01-23" }
+                  },
+                  "summary": {
+                    "current_period_total_sales_usd": 15653388.57,
+                    "previous_period_total_sales_usd": 13011342.93,
+                    "total_sales_change_percent": 20.31,
+                    "total_sales_change_amount": 2642045.64,
+                    "total_countries": 174
+                  },
+                  "data": [
+                    {
+                      "country": "AD",
+                      "current_period": {
+                        "from": "2026-01-24",
+                        "to": "2026-02-23",
+                        "booking_count": 59,
+                        "hotel_count": 44,
+                        "total_sales_usd": 34010.36,
+                        "avg_booking_value_usd": 576.45
+                      },
+                      "previous_period": {
+                        "from": "2025-12-24",
+                        "to": "2026-01-23",
+                        "booking_count": 73,
+                        "hotel_count": 44,
+                        "total_sales_usd": 51572.27,
+                        "avg_booking_value_usd": 706.47
+                      },
+                      "change": {
+                        "sales_change_percent": -34.05,
+                        "sales_change_amount": -17561.91,
+                        "booking_count_change": -14
+                      }
+                    },
+                    {
+                      "country": "AO",
+                      "current_period": {
+                        "from": "2026-01-24",
+                        "to": "2026-02-23",
+                        "booking_count": 2,
+                        "hotel_count": 1,
+                        "total_sales_usd": 3875.13,
+                        "avg_booking_value_usd": 1937.56
+                      },
+                      "previous_period": null,
+                      "change": {
+                        "sales_change_percent": 100,
+                        "sales_change_amount": 3875.13,
+                        "booking_count_change": 2
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/bookings/hotels-sales-report": {
+      "get": {
+        "tags": ["Analytics"],
+        "summary": "Properties (hotels) sales report",
+        "description": "## Overview\n\nReturns analytics on **properties** (hotels): per-hotel sales, buying price, profit, and profit margin. Compares the current period to the previous period of equal length. Results are ordered by current-period sales (highest first) and limited by the `limit` parameter.\n\n## When to Use\n\n- **Property performance** - See which hotels drive the most sales and profit\n- **Period comparison** - Compare current vs previous period sales, profit, and bookings per hotel\n- **Profit analysis** - Track total_buying_price_usd, total_profit_usd, and profit_margin_percent by property\n- **Top properties dashboards** - Rank hotels by sales or profit\n\n## What You Get\n\n- **Period definition** - Date ranges for current and previous periods\n- **Summary** - Totals for sales (USD), profit (USD), bookings, count of hotels in the result, and average profit margin percent; all with period-over-period change\n- **Per-hotel data** - For each property: hotel_id, hotel_name, city, country; current and previous period (booking_count, total_sales_usd, avg_booking_value_usd, total_buying_price_usd, total_profit_usd, profit_margin_percent); and change (sales/profit percent and amount, booking_count_change)\n- **New properties** - Hotels with no previous-period data have `previous_period: null`\n\n## Quick Start\n\nPass query parameters `from`, `to`, `sandbox`, and optionally `limit` (default controls how many top hotels are returned). The API derives the previous period (same length, immediately before). Returns period metadata, summary totals, and an array of hotel-level metrics.",
+        "parameters": [
+          {
+            "name": "from",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "Start date of the current period YYYY-MM-DD (ISO 8601)"
+          },
+          {
+            "name": "to",
+            "in": "query",
+            "required": true,
+            "schema": { "type": "string", "format": "date" },
+            "description": "End date of the current period YYYY-MM-DD (ISO 8601)"
+          },
+          {
+            "name": "sandbox",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "string" },
+            "description": "Filter by environment: \"true\" for sandbox, \"false\" for production"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": { "type": "integer" },
+            "description": "Maximum number of hotels to return (ordered by current-period sales, highest first)"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Properties (hotels) sales report retrieved successfully",
+            "content": {
+              "application/json": {
+                "example": {
+                  "period": {
+                    "current": { "from": "2026-01-24", "to": "2026-02-23" },
+                    "previous": { "from": "2025-12-24", "to": "2026-01-23" }
+                  },
+                  "summary": {
+                    "current_period_total_sales_usd": 1878964.02,
+                    "previous_period_total_sales_usd": 13011343.35,
+                    "total_sales_change_percent": -85.56,
+                    "total_sales_change_amount": -11132379.33,
+                    "current_period_total_profit_usd": 232995.17,
+                    "previous_period_total_profit_usd": 1460306.42,
+                    "total_profit_change_percent": -84.04,
+                    "total_profit_change_amount": -1227311.25,
+                    "current_period_total_bookings": 846,
+                    "previous_period_total_bookings": 31554,
+                    "total_bookings_change": -30708,
+                    "total_hotels": 100,
+                    "avg_profit_margin_percent": 12.4
+                  },
+                  "data": [
+                    {
+                      "hotel_id": "lp6556acf7",
+                      "hotel_name": "Atlantis The Royal",
+                      "city": "Dubai",
+                      "country": "AE",
+                      "current_period": {
+                        "from": "2026-01-24",
+                        "to": "2026-02-23",
+                        "booking_count": 28,
+                        "total_sales_usd": 145726.91,
+                        "avg_booking_value_usd": 5204.53,
+                        "total_buying_price_usd": 130888.55,
+                        "total_profit_usd": 14838.36,
+                        "profit_margin_percent": 10.18
+                      },
+                      "previous_period": {
+                        "from": "2025-12-24",
+                        "to": "2026-01-23",
+                        "booking_count": 25,
+                        "total_sales_usd": 120754.01,
+                        "avg_booking_value_usd": 4830.16,
+                        "total_buying_price_usd": 105483.18,
+                        "total_profit_usd": 15270.84,
+                        "profit_margin_percent": 12.65
+                      },
+                      "change": {
+                        "sales_change_percent": 20.68,
+                        "sales_change_amount": 24972.9,
+                        "booking_count_change": 3,
+                        "profit_change_percent": -2.83,
+                        "profit_change_amount": -432.48
+                      }
+                    },
+                    {
+                      "hotel_id": "lp74d7e",
+                      "hotel_name": "45 Park Lane - Dorchester Collection",
+                      "city": "London",
+                      "country": "GB",
+                      "current_period": {
+                        "from": "2026-01-24",
+                        "to": "2026-02-23",
+                        "booking_count": 5,
+                        "total_sales_usd": 27682.91,
+                        "avg_booking_value_usd": 5536.58,
+                        "total_buying_price_usd": 26364.71,
+                        "total_profit_usd": 1318.2,
+                        "profit_margin_percent": 4.76
+                      },
+                      "previous_period": null,
+                      "change": {
+                        "sales_change_percent": 100,
+                        "sales_change_amount": 27682.91,
+                        "booking_count_change": 5,
+                        "profit_change_percent": 100,
+                        "profit_change_amount": 1318.2
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
     }
   }
 }
