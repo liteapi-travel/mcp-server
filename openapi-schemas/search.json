@@ -159,14 +159,14 @@
                   },
                   "sort": {
                     "type": "array",
-                    "description": "Sorting criteria for the results. Multiple criteria can be provided, processed in order. The default sorting is by top picks. You can sort by price in ascending or descending order.",
+                    "description": "Sorting criteria for the results. Multiple criteria can be provided, processed in order. The default sorting is by top picks (weighted by search popularity, review quality, and content completeness). Use 'revenue' to sort by historical booking value and monetary performance.",
                     "items": {
                       "type": "object",
                       "properties": {
                         "field": {
                           "type": "string",
-                          "enum": ["top_picks", "price"],
-                          "description": "Criteria to sort by. Top picks is the default sorting criteria.",
+                          "enum": ["top_picks", "price", "revenue"],
+                          "description": "Criteria to sort by. 'top_picks' (default) ranks by search popularity, review quality, and content completeness. 'price' sorts by room rate. 'revenue' ranks by historical booking value and monetary performance.",
                           "example": "top_picks"
                         },
                         "direction": {
@@ -181,7 +181,7 @@
                     "example": [
                       {
                         "field": "top_picks",
-                        "direction": "ascending"
+                        "direction": "descending"
                       }
                     ]
                   },
