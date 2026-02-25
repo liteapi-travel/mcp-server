@@ -3623,6 +3623,12 @@
         "tags": ["Manage bookings"],
         "operationId": "searchBookings",
         "summary": "Search bookings by text",
+        "servers": [
+          {
+            "url": "https://da.liteapi.travel",
+            "description": "API base URL for booking search"
+          }
+        ],
         "description": "## Overview\n\nSearch for bookings by free-text query. Matches guest names, booking IDs, hotel names, and other booking-related fields. Results are paginated.\n\n## When to Use\n\n- **Admin or support lookup** - Find bookings by guest name, hotel name, or partial ID\n- **Text search** - Search across multiple fields with a single query string\n- **Paginated results** - Control page size and page index via request body\n\n## What You Get\n\n- **Matching bookings** - List of bookings matching the query with key fields\n- **Pagination** - `page`, `rowsPerPage`, and the search `query` echoed back\n- **Credit line billing** - When applicable, billing info (credit line ID, billed amount USD, billed at date, payment ID)\n\n## Request Body\n\n- **query** (required) - Text to search for (e.g. guest name, hotel name, booking ID)\n- **page** - Zero-based page index (default 0)\n- **rowsPerPage** - Number of results per page (e.g. 5)\n- **sand_box** - Filter by environment (e.g. \"false\" for production)\n\n## Quick Start\n\nPOST a JSON body with `query`, `page`, and `rowsPerPage`. Response includes `data` array, `success`, and pagination fields.",
         "requestBody": {
           "required": true,
