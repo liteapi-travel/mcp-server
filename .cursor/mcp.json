@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "liteapi": {
+      "type": "stdio",
+      "command": "node",
+      "args": [
+        "--import",
+        "tsx",
+        "${workspaceFolder}/src/index.ts"
+      ],
+      "envFile": "${workspaceFolder}/.env.local"
+    }
+  }
+}
