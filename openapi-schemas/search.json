@@ -1077,6 +1077,7 @@
                   },
                   "occupancies": {
                     "type": "array",
+                    "description": "An array of objects specifying the number of guests per room. Required.",
                     "items": {
                       "type": "object",
                       "required": ["adults"],

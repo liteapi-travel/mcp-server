@@ -696,6 +696,7 @@
           {
             "name": "timeout",
             "in": "query",
+            "description": "Request timeout in seconds for the prebook operation.",
             "schema": {
               "type": "integer"
             },
@@ -1739,6 +1740,7 @@
           {
             "name": "timeout",
             "in": "query",
+            "description": "Request timeout in seconds for the booking operation.",
             "schema": {
               "type": "integer"
             },
@@ -2822,6 +2824,7 @@
           {
             "name": "clientReference",
             "in": "query",
+            "description": "Your internal reference code to look up associated bookings.",
             "schema": {
               "type": "string"
             },
@@ -2830,6 +2833,7 @@
           {
             "name": "guestId",
             "in": "query",
+            "description": "The unique guest identifier to retrieve all bookings for that guest.",
             "schema": {
               "type": "string"
             },
@@ -5113,6 +5117,7 @@
           {
             "name": "bookingId",
             "in": "path",
+            "description": "The unique identifier of the booking to cancel.",
             "schema": {
               "type": "string"
             },
@@ -5958,6 +5963,7 @@
                 "properties": {
                   "holder": {
                     "type": "object",
+                    "description": "Updated information for the booking holder including name and email.",
                     "required": ["firstName", "lastName", "email"],
                     "properties": {
                       "firstName": {

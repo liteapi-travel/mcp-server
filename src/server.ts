@@ -1,10 +1,40 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import { z } from 'zod';
+import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { loadOpenAPISpecs, parseEndpoints, ParsedEndpoint } from './utils/openapi-parser.js';
 import { makeAPIRequest } from './utils/api-client.js';
 
 const API_KEY_ENV = 'LITEAPI_API_KEY';
+
+const READ_ONLY_POST_OPS = new Set([
+  'post_hotels_rates',
+  'post_hotels_min_rates',
+  'post_analytics_weekly',
+  'post_analytics_report',
+  'post_analytics_markets',
+  'post_analytics_hotels',
+  'post_commissions_report',
+  'searchBookings',
+]);
+
+const DESTRUCTIVE_PUT_OPS = new Set([
+  'put_bookings_bookingid',
+]);
+
+function getToolAnnotations(method: string, operationId: string): ToolAnnotations {
+  const isGet = method === 'GET';
+  const isDelete = method === 'DELETE';
+  const readOnly = isGet || READ_ONLY_POST_OPS.has(operationId);
+  const destructive = isDelete || DESTRUCTIVE_PUT_OPS.has(operationId);
+
+  return {
+    readOnlyHint: readOnly,
+    destructiveHint: destructive,
+    idempotentHint: isGet || method === 'PUT',
+    openWorldHint: true,
+  };
+}
 
 export class LiteAPIMCPServer {
   private server: McpServer;
@@ -40,11 +70,13 @@ export class LiteAPIMCPServer {
   private registerTools() {
     for (const endpoint of this.endpoints.values()) {
       const inputSchema = this.createZodShape(endpoint);
+      const annotations = getToolAnnotations(endpoint.method, endpoint.operationId);
       
       this.server.tool(
         endpoint.operationId,
         endpoint.description || endpoint.summary,
         inputSchema as any,
+        annotations,
         async (args: any) => {
           try {
             // Separate path params, query params, and body

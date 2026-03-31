@@ -3,8 +3,38 @@
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
+import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { loadOpenAPISpecs, parseEndpoints } from '../src/utils/openapi-parser';
 import { makeAPIRequest } from '../src/utils/api-client';
+
+const READ_ONLY_POST_OPS = new Set([
+  'post_hotels_rates',
+  'post_hotels_min_rates',
+  'post_analytics_weekly',
+  'post_analytics_report',
+  'post_analytics_markets',
+  'post_analytics_hotels',
+  'post_commissions_report',
+  'searchBookings',
+]);
+
+const DESTRUCTIVE_PUT_OPS = new Set([
+  'put_bookings_bookingid',
+]);
+
+function getToolAnnotations(method: string, operationId: string): ToolAnnotations {
+  const isGet = method === 'GET';
+  const isDelete = method === 'DELETE';
+  const readOnly = isGet || READ_ONLY_POST_OPS.has(operationId);
+  const destructive = isDelete || DESTRUCTIVE_PUT_OPS.has(operationId);
+
+  return {
+    readOnlyHint: readOnly,
+    destructiveHint: destructive,
+    idempotentHint: isGet || method === 'PUT',
+    openWorldHint: true,
+  };
+}
 
 function openAPIToZod(schema: any): z.ZodTypeAny {
   if (!schema || typeof schema !== 'object') {
@@ -92,10 +122,12 @@ export function registerLiteApiTools(server: McpServer, apiKeyOrGetter: string |
 
   for (const endpoint of endpoints.values()) {
     const inputSchema = createZodShape(endpoint);
+    const annotations = getToolAnnotations(endpoint.method, endpoint.operationId);
     server.tool(
       endpoint.operationId,
       endpoint.description || endpoint.summary,
       inputSchema as any,
+      annotations,
       async (args: any, extra: { authInfo?: { extra?: { apiKey?: string } } }) => {
         const apiKey = getApiKey(extra) || process.env.LITEAPI_API_KEY;
         if (!apiKey) throw new Error('API key not found. Pass ?apiKey= in URL or set LITEAPI_API_KEY.');
