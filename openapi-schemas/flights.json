@@ -1,0 +1,4266 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Flights",
+    "version": "3.0.0",
+    "description": "The Flights API provides endpoints for searching flights, managing bookings, and accessing static flight data including airlines and airports."
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "Airline": {
+        "type": "object",
+        "properties": {
+          "active": {
+            "type": "boolean",
+            "description": "Whether the airline is currently active"
+          },
+          "alliance": {
+            "type": "string",
+            "description": "Airline alliance membership (star_alliance, oneworld, skyteam, vanilla_alliance)"
+          },
+          "callsign": {
+            "type": "string",
+            "description": "Airline callsign"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country of origin"
+          },
+          "iata": {
+            "type": "string",
+            "description": "2-letter IATA airline code"
+          },
+          "icao": {
+            "type": "string",
+            "description": "3-letter ICAO airline code"
+          },
+          "logo": {
+            "type": "string",
+            "description": "URL to airline logo"
+          },
+          "name": {
+            "type": "string",
+            "description": "Airline name"
+          }
+        },
+        "description": "Full airline details including name, codes, alliance, and logo"
+      },
+      "AirlineIATA": {
+        "type": "object",
+        "properties": {
+          "iata": {
+            "type": "string",
+            "description": "2-letter IATA airline code"
+          },
+          "name": {
+            "type": "string",
+            "description": "Airline name"
+          }
+        },
+        "description": "Minimal airline representation with IATA code and name"
+      },
+      "Airport": {
+        "type": "object",
+        "properties": {
+          "city": {
+            "type": "string",
+            "description": "City name"
+          },
+          "country": {
+            "type": "string",
+            "description": "Country name"
+          },
+          "iata": {
+            "type": "string",
+            "description": "3-letter IATA airport code"
+          },
+          "icao": {
+            "type": "string",
+            "description": "4-letter ICAO airport code"
+          },
+          "lat": {
+            "type": "number",
+            "description": "Latitude"
+          },
+          "lon": {
+            "type": "number",
+            "description": "Longitude"
+          },
+          "name": {
+            "type": "string",
+            "description": "Airport name"
+          },
+          "state": {
+            "type": "string",
+            "description": "State or province"
+          },
+          "tz": {
+            "type": "string",
+            "description": "Timezone (e.g., America/New_York)"
+          }
+        },
+        "description": "Full airport details including location, codes, and timezone"
+      },
+      "AirportIATA": {
+        "type": "object",
+        "properties": {
+          "iata": {
+            "type": "string",
+            "description": "3-letter IATA airport code"
+          },
+          "name": {
+            "type": "string",
+            "description": "Airport name"
+          }
+        },
+        "description": "Minimal airport representation with IATA code and name"
+      },
+      "FlightSegment": {
+        "type": "object",
+        "properties": {
+          "arrivalTime": {
+            "type": "string",
+            "description": "Arrival time (ISO 8601)"
+          },
+          "carrier": {
+            "type": "object",
+            "properties": {
+              "marketingCode": {
+                "type": "string",
+                "description": "Marketing carrier IATA code"
+              },
+              "marketingLogo": {
+                "type": "string",
+                "description": "Marketing carrier logo path/URL"
+              },
+              "marketingName": {
+                "type": "string",
+                "description": "Marketing carrier name"
+              },
+              "operatingCode": {
+                "type": "string",
+                "description": "Operating carrier IATA code"
+              },
+              "operatingLogo": {
+                "type": "string",
+                "description": "Operating carrier logo path/URL"
+              },
+              "operatingName": {
+                "type": "string",
+                "description": "Operating carrier name"
+              }
+            },
+            "description": "Marketing and operating carrier details for this segment"
+          },
+          "departureTime": {
+            "type": "string",
+            "description": "Departure time (ISO 8601)"
+          },
+          "destinationCode": {
+            "type": "string",
+            "description": "Destination IATA code"
+          },
+          "direction": {
+            "type": "string",
+            "description": "OUTBOUND or INBOUND"
+          },
+          "duration": {
+            "type": "object",
+            "properties": {
+              "iso8601": {
+                "type": "string",
+                "description": "Duration in ISO 8601 format (e.g. PT7H45M)"
+              },
+              "minutes": {
+                "type": "integer",
+                "description": "Duration in minutes"
+              }
+            },
+            "description": "Flight duration in ISO 8601 and minutes"
+          },
+          "flight": {
+            "type": "object",
+            "properties": {
+              "marketingNumber": {
+                "type": "string",
+                "description": "Flight number as marketed to passengers"
+              },
+              "operatingNumber": {
+                "type": "string",
+                "description": "Flight number as operated by the carrier"
+              }
+            },
+            "description": "Marketing and operating flight numbers"
+          },
+          "originCode": {
+            "type": "string",
+            "description": "Origin IATA code"
+          },
+          "originName": {
+            "type": "string",
+            "description": "Full name of the origin airport"
+          },
+          "destinationName": {
+            "type": "string",
+            "description": "Full name of the destination airport"
+          },
+          "segmentKey": {
+            "type": "string",
+            "description": "Unique identifier for this segment, used to link with offers, fares, and amenities"
+          }
+        },
+        "description": "A single flight segment (one takeoff and landing) within a journey"
+      },
+      "FlightPrice": {
+        "type": "object",
+        "properties": {
+          "base": {
+            "type": "number",
+            "description": "Base fare amount (before taxes and fees)"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code"
+          },
+          "fees": {
+            "type": "number",
+            "description": "Service fees and surcharges"
+          },
+          "taxes": {
+            "type": "number",
+            "description": "Total taxes applied to the fare"
+          },
+          "total": {
+            "type": "number",
+            "description": "Total price (base + taxes + fees)"
+          },
+          "perPassenger": {
+            "type": "object",
+            "properties": {
+              "adult": {
+                "type": "object",
+                "properties": {
+                  "base": {
+                    "type": "number",
+                    "description": "Base fare for this passenger type"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code"
+                  },
+                  "fees": {
+                    "type": "number",
+                    "description": "Fees for this passenger type"
+                  },
+                  "taxes": {
+                    "type": "number",
+                    "description": "Taxes for this passenger type"
+                  },
+                  "total": {
+                    "type": "number",
+                    "description": "Total price for this passenger type"
+                  }
+                },
+                "description": "Price breakdown for each adult passenger"
+              },
+              "child": {
+                "type": "object",
+                "properties": {
+                  "base": {
+                    "type": "number",
+                    "description": "Base fare for this passenger type"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code"
+                  },
+                  "fees": {
+                    "type": "number",
+                    "description": "Fees for this passenger type"
+                  },
+                  "taxes": {
+                    "type": "number",
+                    "description": "Taxes for this passenger type"
+                  },
+                  "total": {
+                    "type": "number",
+                    "description": "Total price for this passenger type"
+                  }
+                },
+                "description": "Price breakdown for each child passenger"
+              },
+              "infant": {
+                "type": "object",
+                "properties": {
+                  "base": {
+                    "type": "number",
+                    "description": "Base fare for this passenger type"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code"
+                  },
+                  "fees": {
+                    "type": "number",
+                    "description": "Fees for this passenger type"
+                  },
+                  "taxes": {
+                    "type": "number",
+                    "description": "Taxes for this passenger type"
+                  },
+                  "total": {
+                    "type": "number",
+                    "description": "Total price for this passenger type"
+                  }
+                },
+                "description": "Price breakdown for each infant passenger"
+              }
+            },
+            "description": "Price breakdown per passenger type"
+          }
+        },
+        "description": "Full price breakdown including base fare, taxes, fees, and per-passenger amounts"
+      },
+      "FlightOffer": {
+        "type": "object",
+        "properties": {
+          "offerId": {
+            "type": "string",
+            "description": "Unique offer identifier"
+          },
+          "expiration": {
+            "type": "string",
+            "description": "Offer expiration time (ISO 8601)"
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/FlightOfferPricing",
+            "description": "Pricing breakdown with FX conversion details"
+          },
+          "fare": {
+            "type": "object",
+            "properties": {
+              "family": {
+                "type": "string",
+                "description": "Fare family name (e.g. Economy, Business, First)"
+              },
+              "mixedCabin": {
+                "type": "boolean",
+                "description": "True if outbound and inbound legs are in different cabin classes"
+              },
+              "seatsRemaining": {
+                "type": "integer",
+                "description": "Number of seats remaining at this fare"
+              }
+            },
+            "description": "Fare class information"
+          },
+          "terms": {
+            "type": "object",
+            "properties": {
+              "changeable": {
+                "type": "boolean",
+                "description": "True if the fare allows changes (rebooking)"
+              },
+              "refundable": {
+                "type": "boolean",
+                "description": "True if the fare is refundable"
+              },
+              "summary": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "type": "string",
+                      "description": "Severity: info, warning, or danger"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Policy message text (e.g. Non-refundable, Changes allowed with fee)"
+                    }
+                  }
+                },
+                "description": "Human-readable policy messages with severity levels"
+              }
+            },
+            "description": "Booking terms and conditions for this offer"
+          },
+          "provider": {
+            "type": "object",
+            "description": "Flight provider information",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)",
+                "example": "SABRE"
+              },
+              "logo": {
+                "type": "string",
+                "description": "URL to provider logo",
+                "example": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
+              }
+            }
+          },
+          "baggage": {
+            "type": "object",
+            "description": "Baggage policy for this offer",
+            "properties": {
+              "hasCarryOnBag": {
+                "type": "boolean",
+                "description": "Whether carry-on bag is included"
+              },
+              "hasCheckedBag": {
+                "type": "boolean",
+                "description": "Whether checked bag is included"
+              },
+              "included": {
+                "type": "array",
+                "description": "List of included baggage allowances",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "bagType": {
+                      "type": "string",
+                      "enum": [
+                        "cabin",
+                        "checked"
+                      ],
+                      "description": "Type of bag"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Human-readable baggage description"
+                    },
+                    "passengerType": {
+                      "type": "string",
+                      "enum": [
+                        "ADT",
+                        "CHD",
+                        "INF"
+                      ],
+                      "description": "Passenger type this allowance applies to"
+                    },
+                    "pieces": {
+                      "type": "integer",
+                      "description": "Number of pieces allowed"
+                    },
+                    "pricing": {
+                      "$ref": "#/components/schemas/FlightItemPricing",
+                      "description": "Cost if not free (amount 0 means included)"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "description": "Weight unit (e.g. kg)"
+                    },
+                    "weightKg": {
+                      "type": "number",
+                      "description": "Weight limit in kg"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "segmentFares": {
+            "type": "array",
+            "description": "Per-segment fare details",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingCode": {
+                  "type": "string",
+                  "description": "Booking/RBD class code (e.g. W, Y, J)"
+                },
+                "cabin": {
+                  "type": "string",
+                  "description": "Cabin class (e.g. Economy, Business, First)"
+                },
+                "fareBasisCode": {
+                  "type": "string",
+                  "description": "Fare basis code"
+                },
+                "fareFamily": {
+                  "type": "string",
+                  "description": "Fare family name"
+                },
+                "seatsRemaining": {
+                  "type": "integer",
+                  "description": "Number of seats remaining at this fare"
+                },
+                "segmentKey": {
+                  "type": "string",
+                  "description": "Links to the segment this fare applies to"
+                }
+              }
+            }
+          },
+          "segmentAmenities": {
+            "type": "array",
+            "description": "Per-segment amenity data (each entry linked by segmentKey)",
+            "items": {
+              "$ref": "#/components/schemas/FlightSegmentAmenities"
+            }
+          }
+        },
+        "description": "A bookable offer for a journey, including pricing, baggage policy, fare details, and booking terms"
+      },
+      "FlightSegmentAmenities": {
+        "type": "object",
+        "description": "Amenities for a specific segment (linked by segmentKey)",
+        "properties": {
+          "aircraftType": {
+            "type": "string",
+            "description": "Aircraft model for this segment",
+            "example": "Boeing 787-9"
+          },
+          "amenities": {
+            "type": "array",
+            "description": "List of amenities available on this segment",
+            "items": {
+              "$ref": "#/components/schemas/FlightAmenity"
+            }
+          },
+          "segmentKey": {
+            "type": "string",
+            "description": "Links to the segment this amenities data belongs to (matches segment.segmentKey)",
+            "example": "a3f2b1c9"
+          }
+        }
+      },
+      "FlightAmenity": {
+        "type": "object",
+        "description": "A single in-flight amenity for a segment",
+        "properties": {
+          "available": {
+            "type": "boolean",
+            "description": "Whether this amenity is offered on this segment",
+            "example": true
+          },
+          "category": {
+            "type": "string",
+            "enum": [
+              "wifi",
+              "power",
+              "entertainment",
+              "food",
+              "seat_comfort"
+            ],
+            "description": "Amenity category",
+            "example": "wifi"
+          },
+          "chargeable": {
+            "type": "boolean",
+            "nullable": true,
+            "description": "True if paid, False if free, null if unknown",
+            "example": true
+          },
+          "details": {
+            "type": "string",
+            "nullable": true,
+            "description": "Additional details (e.g. 'Streaming only', '34 inch pitch')",
+            "example": "Available for purchase"
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable amenity name",
+            "example": "Wi-Fi"
+          }
+        }
+      },
+      "FlightJourney": {
+        "type": "object",
+        "properties": {
+          "journeyKey": {
+            "type": "string",
+            "description": "Unique identifier for this journey (hash of route, flights, and times)"
+          },
+          "isCheapest": {
+            "type": "boolean",
+            "description": "True if this is the cheapest journey across all results"
+          },
+          "cheapestOffer": {
+            "$ref": "#/components/schemas/FlightOffer",
+            "description": "Quick reference to the lowest-priced offer for this journey"
+          },
+          "offers": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightOffer"
+            },
+            "description": "All available provider offers for this journey, sorted by price ascending"
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightSegment"
+            },
+            "description": "Ordered list of flight segments that make up this journey"
+          },
+          "parameters": {
+            "type": "object",
+            "properties": {
+              "adults": {
+                "type": "integer",
+                "description": "Number of adult passengers"
+              },
+              "children": {
+                "type": "integer",
+                "description": "Number of child passengers"
+              },
+              "infants": {
+                "type": "integer",
+                "description": "Number of infant passengers"
+              }
+            },
+            "description": "Passenger composition used in the search that produced this journey"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "UTC timestamp when this journey was retrieved from the provider"
+          },
+          "legDurations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightLegDuration"
+            },
+            "description": "Per-direction elapsed times including layovers (outbound and/or inbound)"
+          },
+          "totalDuration": {
+            "$ref": "#/components/schemas/FlightDuration",
+            "description": "Total elapsed time from first departure to last arrival, including all layovers"
+          },
+          "connections": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightConnection"
+            },
+            "description": "Layover details between consecutive segments"
+          }
+        },
+        "description": "A complete journey (one or more segments) with all available offers"
+      },
+      "FlightDuration": {
+        "type": "object",
+        "properties": {
+          "iso8601": {
+            "type": "string",
+            "example": "PT2H30M",
+            "description": "Duration in ISO 8601 format (e.g. PT2H30M)"
+          },
+          "minutes": {
+            "type": "integer",
+            "example": 150,
+            "description": "Duration in minutes"
+          }
+        },
+        "description": "Duration expressed in both ISO 8601 format and minutes"
+      },
+      "FlightLegDuration": {
+        "type": "object",
+        "properties": {
+          "dayChange": {
+            "type": "integer",
+            "description": "Number of calendar days added crossing midnight (0 = same day arrival, 1 = next day, etc.)",
+            "example": 1
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "OUTBOUND",
+              "INBOUND"
+            ],
+            "description": "Which leg this duration applies to",
+            "example": "OUTBOUND"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/FlightDuration",
+            "description": "Elapsed time for this leg including all layovers"
+          },
+          "overnightFlight": {
+            "type": "boolean",
+            "description": "True if the flight departs and arrives on different calendar days",
+            "example": false
+          }
+        },
+        "description": "Total elapsed time for one direction of a journey (outbound or inbound), including layovers"
+      },
+      "FlightMoneyAmount": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Monetary amount"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code"
+          }
+        },
+        "description": "A monetary amount with currency"
+      },
+      "FlightFxInfo": {
+        "type": "object",
+        "properties": {
+          "rate": {
+            "type": "number",
+            "description": "Effective conversion rate applied (may include markup or spread)"
+          },
+          "source": {
+            "type": "string",
+            "description": "Rate source identifier (e.g. nuitee)"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "UTC timestamp when the exchange rate was fetched"
+          }
+        },
+        "description": "Foreign exchange rate details used for currency conversion"
+      },
+      "FlightItemPricing": {
+        "type": "object",
+        "properties": {
+          "display": {
+            "$ref": "#/components/schemas/FlightMoneyAmount",
+            "description": "Customer-facing amount (converted to search currency if applicable)"
+          },
+          "converted": {
+            "type": "boolean",
+            "description": "True if FX currency conversion was applied"
+          },
+          "fxInfo": {
+            "$ref": "#/components/schemas/FlightFxInfo",
+            "nullable": true,
+            "description": "Exchange rate details; present only when converted is true"
+          }
+        },
+        "description": "Pricing for an ancillary item (e.g. baggage) with optional FX conversion details"
+      },
+      "FlightOfferPricing": {
+        "type": "object",
+        "properties": {
+          "display": {
+            "$ref": "#/components/schemas/FlightPrice",
+            "description": "Customer-facing price breakdown (converted to search currency if applicable)"
+          },
+          "converted": {
+            "type": "boolean",
+            "description": "True if FX currency conversion was applied"
+          },
+          "fxInfo": {
+            "$ref": "#/components/schemas/FlightFxInfo",
+            "nullable": true,
+            "description": "Exchange rate details; present only when converted is true"
+          }
+        },
+        "description": "Full offer pricing with per-passenger breakdown and optional FX conversion details"
+      },
+      "FlightVerifyJourney": {
+        "type": "object",
+        "description": "Journey in verify response",
+        "properties": {
+          "journeyKey": {
+            "type": "string",
+            "description": "Unique identifier for this journey"
+          },
+          "offerId": {
+            "type": "string",
+            "description": "Unique offer identifier returned from search, used to identify the verified offer"
+          },
+          "expiration": {
+            "type": "string",
+            "description": "Offer expiration time (ISO 8601)"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "When the journey was generated (ISO 8601)"
+          },
+          "provider": {
+            "type": "object",
+            "description": "Flight provider information",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)"
+              },
+              "logo": {
+                "type": "string",
+                "description": "URL to provider logo"
+              }
+            }
+          },
+          "pricing": {
+            "$ref": "#/components/schemas/FlightOfferPricing",
+            "description": "Pricing breakdown with FX conversion details"
+          },
+          "baggage": {
+            "type": "object",
+            "description": "Baggage policy for this offer",
+            "properties": {
+              "hasCarryOnBag": {
+                "type": "boolean",
+                "description": "True if a carry-on bag is included in this offer"
+              },
+              "hasCheckedBag": {
+                "type": "boolean",
+                "description": "True if a checked bag is included in this offer"
+              },
+              "included": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "bagType": {
+                      "type": "string",
+                      "enum": [
+                        "cabin",
+                        "checked"
+                      ],
+                      "description": "Type of bag: cabin (carry-on) or checked"
+                    },
+                    "description": {
+                      "type": "string",
+                      "description": "Human-readable baggage allowance description"
+                    },
+                    "passengerType": {
+                      "type": "string",
+                      "enum": [
+                        "ADT",
+                        "CHD",
+                        "INF"
+                      ],
+                      "description": "Passenger type this allowance applies to (ADT, CHD, INF)"
+                    },
+                    "pieces": {
+                      "type": "integer",
+                      "description": "Number of bag pieces allowed"
+                    },
+                    "pricing": {
+                      "$ref": "#/components/schemas/FlightItemPricing",
+                      "description": "Cost of this baggage allowance; amount 0 means included at no charge"
+                    },
+                    "unit": {
+                      "type": "string",
+                      "description": "Weight unit (e.g. kg)"
+                    },
+                    "weightKg": {
+                      "type": "number",
+                      "description": "Maximum weight per bag in kg"
+                    }
+                  }
+                },
+                "description": "List of included baggage allowances per passenger type"
+              }
+            }
+          },
+          "fare": {
+            "type": "object",
+            "properties": {
+              "family": {
+                "type": "string",
+                "description": "Fare family name (e.g. Economy, Business, First)"
+              },
+              "mixedCabin": {
+                "type": "boolean",
+                "description": "True if outbound and inbound legs are in different cabin classes"
+              },
+              "seatsRemaining": {
+                "type": "integer",
+                "description": "Number of seats remaining at this fare"
+              }
+            },
+            "description": "Fare class information"
+          },
+          "passengers": {
+            "type": "object",
+            "description": "Passenger counts for this journey",
+            "properties": {
+              "adults": {
+                "type": "integer",
+                "description": "Number of adult passengers"
+              },
+              "children": {
+                "type": "integer",
+                "description": "Number of child passengers"
+              },
+              "infants": {
+                "type": "integer",
+                "description": "Number of infant passengers"
+              }
+            }
+          },
+          "segments": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightSegment"
+            },
+            "description": "Ordered list of flight segments for this journey"
+          },
+          "segmentFares": {
+            "type": "array",
+            "description": "Per-segment fare details",
+            "items": {
+              "type": "object",
+              "properties": {
+                "bookingCode": {
+                  "type": "string",
+                  "description": "Booking/RBD class code (e.g. W, Y, J)"
+                },
+                "cabin": {
+                  "type": "string",
+                  "description": "Cabin class (e.g. Economy, Business, First)"
+                },
+                "fareBasisCode": {
+                  "type": "string",
+                  "description": "Fare basis code used for pricing and rules"
+                },
+                "fareFamily": {
+                  "type": "string",
+                  "description": "Commercial fare family name"
+                },
+                "seatsRemaining": {
+                  "type": "integer",
+                  "description": "Number of seats remaining at this fare"
+                },
+                "segmentKey": {
+                  "type": "string",
+                  "description": "Links this fare to the corresponding segment"
+                }
+              }
+            }
+          },
+          "terms": {
+            "type": "object",
+            "properties": {
+              "changeable": {
+                "type": "boolean",
+                "description": "True if the fare allows changes (rebooking)"
+              },
+              "refundable": {
+                "type": "boolean",
+                "description": "True if the fare is refundable"
+              },
+              "summary": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "level": {
+                      "type": "string",
+                      "description": "Severity: info, warning, or danger"
+                    },
+                    "message": {
+                      "type": "string",
+                      "description": "Policy message text"
+                    }
+                  }
+                },
+                "description": "Human-readable policy messages with severity levels"
+              }
+            },
+            "description": "Booking terms and conditions for this offer"
+          }
+        }
+      },
+      "FlightBooking": {
+        "type": "object",
+        "description": "Flight booking details (maps to provider BookingData)",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "description": "Unique booking identifier"
+          },
+          "bookingRef": {
+            "type": "string",
+            "description": "FlightHub booking reference (FH-YYM-XXXXXXXX)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Booking status: PENDING_CONFIRMATION, CONFIRMED, CANCELLED, PENDING, TICKETED"
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Booking creation time (UTC)"
+          },
+          "offerId": {
+            "type": "string",
+            "description": "Offer ID from verify stage"
+          },
+          "paymentStatus": {
+            "type": "string",
+            "description": "Payment status: pending, completed, failed, not_required"
+          },
+          "providerEnvironment": {
+            "type": "string",
+            "enum": [
+              "sandbox",
+              "production"
+            ],
+            "description": "Provider environment used for this booking (sandbox or production)"
+          },
+          "ticketLimitTime": {
+            "type": "string",
+            "format": "date-time",
+            "description": "Deadline for ticket issuance (UTC)"
+          },
+          "lastRefreshedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "UTC timestamp of the last successful provider API status refresh"
+          },
+          "journey": {
+            "type": "object",
+            "properties": {
+              "journeyKey": {
+                "type": "string",
+                "description": "Unique journey identifier"
+              },
+              "segments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FlightSegment"
+                },
+                "description": "Flight segments in this booking"
+              },
+              "price": {
+                "$ref": "#/components/schemas/FlightPrice",
+                "description": "Journey price at time of booking"
+              }
+            },
+            "description": "Journey details as confirmed by the provider at booking time"
+          },
+          "passengers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Passenger type code (ADT, CHD, INF)"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Passenger title (Mr, Mrs, Ms, etc.)"
+                },
+                "firstName": {
+                  "type": "string",
+                  "description": "Passenger first name as on travel document"
+                },
+                "lastName": {
+                  "type": "string",
+                  "description": "Passenger last name as on travel document"
+                },
+                "middleName": {
+                  "type": "string",
+                  "description": "Passenger middle name"
+                },
+                "dateOfBirth": {
+                  "type": "string",
+                  "description": "Date of birth (YYYY-MM-DD)"
+                },
+                "birthday": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Date of birth (YYYY-MM-DD)"
+                },
+                "gender": {
+                  "type": "string",
+                  "description": "Passenger gender: M or F"
+                },
+                "nationality": {
+                  "type": "string",
+                  "description": "Passenger nationality as ISO country code"
+                },
+                "passengerType": {
+                  "type": "integer",
+                  "description": "0=Adult, 1=Child, 2=Infant"
+                },
+                "documentType": {
+                  "type": "string",
+                  "description": "Type of travel document (e.g. passport, id_card)"
+                },
+                "documentNumber": {
+                  "type": "string",
+                  "description": "Travel document number"
+                },
+                "documentIssueCountry": {
+                  "type": "string",
+                  "description": "ISO country code of the document issuing country"
+                },
+                "documentExpiry": {
+                  "type": "string",
+                  "description": "Travel document expiry date (YYYY-MM-DD)"
+                }
+              }
+            },
+            "description": "Passenger details as submitted and confirmed by the provider"
+          },
+          "contact": {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "description": "Contact first name"
+              },
+              "lastName": {
+                "type": "string",
+                "description": "Contact last name"
+              },
+              "middleName": {
+                "type": "string",
+                "description": "Contact middle name"
+              },
+              "email": {
+                "type": "string",
+                "description": "Contact email address for booking confirmation"
+              },
+              "phoneCountryCode": {
+                "type": "string",
+                "description": "Phone country code without + (e.g. 1 for US, 33 for France)"
+              },
+              "phoneNumber": {
+                "type": "string",
+                "description": "Phone number without country code"
+              }
+            },
+            "description": "Primary contact person for the booking"
+          },
+          "order": {
+            "type": "object",
+            "properties": {
+              "reference": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "description": "Provider order or PNR reference ID"
+                  },
+                  "provider": {
+                    "type": "object",
+                    "properties": {
+                      "code": {
+                        "type": "string",
+                        "description": "Provider code (e.g. SABRE, TRAVELPORT)"
+                      },
+                      "pnr": {
+                        "type": "string",
+                        "description": "Provider PNR (Passenger Name Record) locator code"
+                      }
+                    },
+                    "description": "Provider-level booking reference (code + PNR)"
+                  },
+                  "airlineBookings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "airlineCode": {
+                          "type": "string",
+                          "description": "Airline IATA code"
+                        },
+                        "airlineName": {
+                          "type": "string",
+                          "description": "Airline name"
+                        },
+                        "airlinePnr": {
+                          "type": "string",
+                          "description": "Airline-specific PNR/locator code"
+                        },
+                        "pnr": {
+                          "type": "string",
+                          "description": "PNR locator code for this airline"
+                        }
+                      }
+                    },
+                    "description": "Per-airline booking references and PNR codes"
+                  }
+                },
+                "description": "Provider and airline reference identifiers"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code for this order"
+              },
+              "status": {
+                "type": "string",
+                "description": "Order status from the provider (e.g. ticketed, created)"
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code"
+                  },
+                  "total": {
+                    "type": "number",
+                    "description": "Total order price"
+                  }
+                },
+                "description": "Order price as confirmed by the provider"
+              },
+              "ticketLimitTime": {
+                "type": "string",
+                "description": "Deadline for ticket issuance (UTC)"
+              },
+              "timestamp": {
+                "type": "string",
+                "description": "UTC timestamp when the order was created"
+              }
+            },
+            "description": "Order and provider confirmation details"
+          },
+          "airlineLocators": {
+            "type": "array",
+            "description": "Airline-specific PNR/locator codes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "airlineCode": {
+                  "type": "string",
+                  "description": "Airline IATA code"
+                },
+                "airlinePnr": {
+                  "type": "string",
+                  "description": "Airline-specific PNR/locator code"
+                }
+              }
+            }
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "type": "number",
+                "description": "Subtotal before ancillary services"
+              },
+              "servicesAmount": {
+                "type": "number",
+                "description": "Total cost of attached ancillary services (seats, baggage, etc.)"
+              },
+              "seatsAmount": {
+                "type": "number",
+                "description": "Total cost of seat selections"
+              },
+              "baggageAmount": {
+                "type": "number",
+                "description": "Total cost of additional baggage"
+              },
+              "totalAmount": {
+                "type": "number",
+                "description": "Grand total charged to the customer"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code"
+              }
+            },
+            "description": "Billing breakdown for this booking including base fare and any ancillary services"
+          },
+          "payment": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Amount captured for payment"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code of the payment"
+              }
+            },
+            "description": "Payment amounts captured for this booking"
+          },
+          "remarks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Remark name or category"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Remark content"
+                }
+              }
+            },
+            "description": "Reservation remarks or comments from the provider"
+          },
+          "selectedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedService"
+            },
+            "description": "Ancillary services attached to this booking (seats, baggage, etc.)"
+          },
+          "ticketData": {
+            "type": "object",
+            "properties": {
+              "confirmationId": {
+                "type": "string",
+                "description": "Ticket confirmation identifier"
+              },
+              "ticketedAt": {
+                "type": "string",
+                "description": "UTC timestamp when the ticket was issued"
+              },
+              "provider": {
+                "type": "string",
+                "description": "Provider that issued the ticket"
+              },
+              "source": {
+                "type": "string",
+                "description": "Source system that generated the ticket"
+              }
+            },
+            "description": "Ticket issuance details from the provider"
+          },
+          "timings": {
+            "type": "object",
+            "properties": {
+              "startedAt": {
+                "type": "string",
+                "description": "When the booking flow was initiated"
+              },
+              "persistedAt": {
+                "type": "string",
+                "description": "When the booking record was saved to the database"
+              },
+              "orderSentAt": {
+                "type": "string",
+                "description": "When the order request was sent to the provider"
+              },
+              "pnrReceivedAt": {
+                "type": "string",
+                "description": "When the PNR confirmation was received from the provider"
+              },
+              "paymentStartedAt": {
+                "type": "string",
+                "description": "When payment capture was initiated"
+              },
+              "paymentCompletedAt": {
+                "type": "string",
+                "description": "When payment capture was completed"
+              },
+              "completedAt": {
+                "type": "string",
+                "description": "When the full booking flow was completed"
+              }
+            },
+            "description": "Step-by-step UTC timestamps for booking flow observability"
+          },
+          "settings": {
+            "type": "object",
+            "description": "Booking settings"
+          },
+          "paymentInput": {
+            "type": "object",
+            "description": "Echo of payment submitted when creating the booking; may include additional provider-specific fields",
+            "additionalProperties": true,
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "TRANSACTION_ID",
+                  "CREDIT"
+                ],
+                "description": "How the booking was paid: Stripe (`TRANSACTION_ID`) or credit line (`CREDIT`)"
+              },
+              "transactionId": {
+                "type": "string",
+                "description": "Stripe transaction id when `method` is `TRANSACTION_ID`"
+              }
+            }
+          }
+        }
+      },
+      "SelectedService": {
+        "type": "object",
+        "properties": {
+          "passengerIndex": {
+            "type": "integer",
+            "description": "Zero-based index of the passenger this service is for (matches position in passengers array)",
+            "example": 0
+          },
+          "serviceId": {
+            "type": "string",
+            "description": "Service identifier from servicesAttachable.groups[].services[].serviceId",
+            "example": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAfB6PXCj1w6Fjo1VTRA=="
+          },
+          "quantity": {
+            "type": "integer",
+            "description": "Number of units of this service to attach",
+            "example": 1
+          }
+        },
+        "description": "An ancillary service selected by a passenger (seat, baggage, etc.)"
+      },
+      "Error": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Numeric error code"
+              },
+              "message": {
+                "type": "string",
+                "description": "Short error message"
+              },
+              "description": {
+                "type": "string",
+                "description": "Detailed error description"
+              }
+            },
+            "description": "Error details"
+          }
+        },
+        "description": "Standard error response envelope"
+      },
+      "FlightBookingCreatePayment": {
+        "type": "object",
+        "required": [
+          "method"
+        ],
+        "properties": {
+          "method": {
+            "type": "string",
+            "enum": [
+              "TRANSACTION_ID",
+              "CREDIT"
+            ],
+            "description": "`TRANSACTION_ID` after Stripe SDK confirmation. `CREDIT` when paying on a credit line (eligibility enforced server-side)."
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Stripe payment intent transaction id when using `TRANSACTION_ID`. Omit when using `CREDIT`.",
+            "example": "tr_cts_t0LaZePPxdCM_Kyskafml"
+          }
+        },
+        "description": "Payment for `POST /flights/bookings`: Stripe (`TRANSACTION_ID` + `transactionId`) or credit line (`CREDIT`)"
+      },
+      "FlightBookingCreateRequest": {
+        "title": "Create a flight booking",
+        "type": "object",
+        "required": [
+          "prebookId",
+          "payment"
+        ],
+        "properties": {
+          "prebookId": {
+            "type": "string",
+            "description": "The prebookId from the prebook endpoint (prebook must have completed the book step).",
+            "example": "019d0674-834d-7db7-9c8b-93fe8e46e7b8"
+          },
+          "payment": {
+            "$ref": "#/components/schemas/FlightBookingCreatePayment"
+          }
+        },
+        "description": "Request body to complete a flight booking"
+      },
+      "FlightConnection": {
+        "type": "object",
+        "properties": {
+          "arrivalAirportCode": {
+            "type": "string",
+            "example": "JFK",
+            "description": "IATA code of the airport where the passenger arrives for this connection"
+          },
+          "arrivalAirportName": {
+            "type": "string",
+            "example": "John F Kennedy International Airport",
+            "description": "Full name of the arrival airport for this connection"
+          },
+          "arrivalTime": {
+            "type": "string",
+            "example": "2026-01-20T14:30:00",
+            "description": "UTC ISO 8601 arrival time at the connection airport"
+          },
+          "changeAirport": {
+            "type": "boolean",
+            "example": true,
+            "description": "True if the passenger must change airports during this connection"
+          },
+          "departureAirportCode": {
+            "type": "string",
+            "example": "LGA",
+            "description": "IATA code of the airport from which the passenger departs after layover"
+          },
+          "departureAirportName": {
+            "type": "string",
+            "example": "LaGuardia Airport",
+            "description": "Full name of the departure airport after layover"
+          },
+          "departureTime": {
+            "type": "string",
+            "example": "2026-01-20T17:15:00",
+            "description": "UTC ISO 8601 departure time from the connection airport"
+          },
+          "direction": {
+            "type": "string",
+            "enum": [
+              "OUTBOUND",
+              "INBOUND"
+            ],
+            "description": "Which leg of the journey this connection belongs to (OUTBOUND or INBOUND)"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/FlightDuration",
+            "description": "Connection (layover) duration"
+          },
+          "overnight": {
+            "type": "boolean",
+            "example": false,
+            "description": "True if the layover crosses midnight (arrival and departure on different calendar days)"
+          }
+        },
+        "description": "Layover details between two consecutive flight segments"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Airlines",
+      "description": "Retrieve airline information and IATA codes"
+    },
+    {
+      "name": "Airports",
+      "description": "Retrieve airport information and IATA codes"
+    },
+    {
+      "name": "Flight Search",
+      "description": "Search for available flights and verify offers"
+    },
+    {
+      "name": "Flight Bookings",
+      "description": "Checkout flow: **1.** Create a checkout session (PREBOOK) \u2192 **1.2** Attach services to prebook (optional) \u2192 **2.** Complete a booking. Also includes retrieving a booking by ID."
+    }
+  ],
+  "paths": {
+    "/data/flights/airlines/iatas/{iataCode}": {
+      "get": {
+        "tags": [
+          "Airlines"
+        ],
+        "summary": "Get airline by IATA code",
+        "description": "## Overview\n\nRetrieve full details for a specific airline using its 2-letter IATA code.\n\n## When to Use\n\n- **Airline display** - Show airline name, logo, and alliance for a given IATA code\n- **Flight result enrichment** - Fetch airline details to display alongside search results\n- **Data validation** - Verify an airline code and retrieve its metadata\n\n## What You Get\n\n- **Airline details** including name, IATA/ICAO codes, and country\n- **Alliance membership** (Star Alliance, oneworld, SkyTeam, or Vanilla Alliance)\n- **Logo URL** for displaying the airline's logo in your UI\n- **Active status** indicating whether the airline is currently operating\n\n## Quick Start\n\nProvide the 2-letter IATA code (e.g., `AA` for American Airlines) in the URL path.",
+        "parameters": [
+          {
+            "name": "iataCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "2-letter IATA airline code (e.g., AA)",
+            "example": "AA"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "airline": {
+                            "$ref": "#/components/schemas/Airline",
+                            "description": "Airline details for the requested IATA code"
+                          }
+                        }
+                      },
+                      "description": "Single airline result"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "airline": {
+                        "active": true,
+                        "alliance": "oneworld",
+                        "callsign": "AMERICAN",
+                        "country": "United States",
+                        "iata": "AA",
+                        "icao": "AAL",
+                        "logo": "https://production.nuitee.flights/static/images/airlines/AA.png",
+                        "name": "American Airlines"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Airline not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4040,
+                    "description": "Airline not found",
+                    "message": "not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/flights/airports/iatas/{iataCode}": {
+      "get": {
+        "tags": [
+          "Airports"
+        ],
+        "summary": "Get airport by IATA code",
+        "description": "## Overview\n\nRetrieve detailed information for a specific airport using its 3-letter IATA code.\n\n## When to Use\n\n- **Airport display** - Show airport name, city, and country for a given IATA code\n- **Flight result enrichment** - Fetch airport details to display alongside origin/destination in search results\n- **Autocomplete validation** - Verify an airport code and retrieve its full details\n\n## What You Get\n\n- **Airport details** including name, city, country, and timezone\n- **IATA and ICAO codes** for the airport\n- **Geographic coordinates** (latitude and longitude)\n- **Country and city** information for display purposes\n\n## Quick Start\n\nProvide the 3-letter IATA code (e.g., `JFK` for John F. Kennedy International) in the URL path.",
+        "parameters": [
+          {
+            "name": "iataCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "3-letter IATA airport code (e.g., JFK)",
+            "example": "JFK"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "airport": {
+                            "$ref": "#/components/schemas/Airport",
+                            "description": "Airport details for the requested IATA code"
+                          }
+                        }
+                      },
+                      "description": "Single airport result"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "airport": {
+                        "city": "New York",
+                        "country": "United States",
+                        "iata": "JFK",
+                        "icao": "KJFK",
+                        "lat": 40.63980103,
+                        "lon": -73.77890015,
+                        "name": "John F Kennedy International Airport",
+                        "state": "New York",
+                        "tz": "America/New_York"
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Airport not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4040,
+                    "description": "Airport not found",
+                    "message": "not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/flights/airports/iatas": {
+      "get": {
+        "tags": [
+          "Airports"
+        ],
+        "summary": "List airport IATA codes",
+        "description": "## Overview\n\nRetrieve a lightweight list of airport IATA codes with names for autocomplete and lookup purposes.\n\n## When to Use\n\n- **Autocomplete dropdowns** - Populate airport search inputs with a full list of codes and names\n- **Client-side filtering** - Download the full list once and filter locally\n- **Code validation** - Build a lookup table of valid airport codes\n\n## What You Get\n\n- **IATA codes** for all airports in the database\n- **Airport names** paired with each code\n- **Filtered results** when the `q` query parameter is provided\n\n## Quick Start\n\nCall with no parameters to get all airport codes and names. Use the `q` parameter to filter by name or code.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query",
+            "example": "JFK"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "airports": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/AirportIATA"
+                            },
+                            "description": "List of airport IATA codes and names"
+                          }
+                        }
+                      },
+                      "description": "List of airport IATA result sets"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "airports": [
+                        {
+                          "iata": "JFK",
+                          "name": "John F Kennedy International Airport"
+                        },
+                        {
+                          "iata": "LHR",
+                          "name": "London Heathrow Airport"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/rates": {
+      "post": {
+        "tags": [
+          "Flight Search"
+        ],
+        "summary": "Search for flights",
+        "description": "## Overview\n\nSearch for available flights between any two airports with real-time results from multiple providers. Supports one-way and round-trip searches with flexible filtering options.\n\n## When to Use\n\n- **Display flight listings** with live pricing on your search results page\n- **One-way and round-trip** flight searches for any route\n- **Filter results** by cabin class, number of stops, price, or refundability\n- **Stream results** as they arrive from each provider using SSE\n\n## What You Get\n\n- **Flight offers** from multiple providers with real-time pricing\n- **Complete itineraries** with segments, layovers, and flight durations\n- **Pricing breakdown** including taxes, fees, and fare family details\n- **Baggage allowances** per offer for each passenger type\n\n## Key Features\n\n- **Multi-provider search**: Aggregates results from multiple flight providers in a single request\n- **SSE streaming**: Send `Accept: text/event-stream` to receive results as each provider responds (Server-Sent Events)\n- **Flexible filtering**: Filter by `cabinClass`, `maxStops`, `maxPrice`, `refundableOnly`, departure time range, and more\n- **Round-trip support**: Include `returnDate` for round-trip searches\n\n## Quick Start\n\n**Required fields**: `origin` (IATA code), `destination` (IATA code), `departureDate` (YYYY-MM-DD)\n\n**Tip**: Add `returnDate` for round-trip results. Send `Accept: text/event-stream` for faster time-to-first-result on your search page (SSE).",
+        "parameters": [],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "origin",
+                  "destination",
+                  "departureDate",
+                  "adults",
+                  "currency"
+                ],
+                "properties": {
+                  "origin": {
+                    "type": "string",
+                    "description": "Origin IATA airport code",
+                    "example": "JFK"
+                  },
+                  "destination": {
+                    "type": "string",
+                    "description": "Destination IATA airport code",
+                    "example": "CDG"
+                  },
+                  "departureDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Departure date (YYYY-MM-DD)",
+                    "example": "2026-07-01"
+                  },
+                  "returnDate": {
+                    "type": "string",
+                    "format": "date",
+                    "description": "Return date for round trip (YYYY-MM-DD)",
+                    "example": "2026-08-02"
+                  },
+                  "adults": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "description": "Number of adults (12+)",
+                    "example": 1
+                  },
+                  "children": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of children (2-11)",
+                    "example": 0
+                  },
+                  "infants": {
+                    "type": "integer",
+                    "minimum": 0,
+                    "description": "Number of infants (<2)",
+                    "example": 0
+                  },
+                  "childrenAges": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 2,
+                      "maximum": 11
+                    },
+                    "description": "Age of each child (2\u201311 inclusive, per IATA). Length must equal children count. Optional \u2014 omit if ages are not relevant.",
+                    "example": [
+                      5,
+                      11
+                    ]
+                  },
+                  "infantAges": {
+                    "type": "array",
+                    "items": {
+                      "type": "integer",
+                      "minimum": 0,
+                      "maximum": 1
+                    },
+                    "description": "Age of each infant (under 2, per IATA). Length must equal infants count. Optional \u2014 omit if ages are not relevant.",
+                    "example": [
+                      1
+                    ]
+                  },
+                  "cabinClass": {
+                    "type": "string",
+                    "enum": [
+                      "Economy",
+                      "Business",
+                      "First"
+                    ],
+                    "description": "Cabin class preference",
+                    "example": "Economy"
+                  },
+                  "currency": {
+                    "type": "string",
+                    "minLength": 1,
+                    "description": "ISO 4217 currency code",
+                    "example": "USD"
+                  },
+                  "country": {
+                    "type": "string",
+                    "description": "Optional ISO 3166-1 alpha-2 country code for point of sale",
+                    "example": "US"
+                  },
+                  "maxStops": {
+                    "type": "integer",
+                    "nullable": true,
+                    "minimum": -1,
+                    "maximum": 2,
+                    "description": "Maximum number of stops: -1 or omit = any, 0 = nonstop, 1 = 1 or fewer, 2 = 2 or fewer",
+                    "example": 0
+                  },
+                  "filters": {
+                    "type": "object",
+                    "description": "Optional filters to refine search results",
+                    "example": {
+                      "maxStops": 1,
+                      "maxPrice": 1500,
+                      "includesCheckedBag": false,
+                      "refundableOnly": false
+                    },
+                    "properties": {
+                      "arrivalTimeBefore": {
+                        "type": "string",
+                        "description": "Filter journeys arriving before this time (HH:MM, 24h)",
+                        "example": "18:00",
+                        "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                      },
+                      "cabinClassMatch": {
+                        "type": "string",
+                        "enum": [
+                          "exactly",
+                          "at_least"
+                        ],
+                        "description": "'exactly' for exact match, 'at_least' for selected cabin or better",
+                        "example": "at_least"
+                      },
+                      "changeableOnly": {
+                        "type": "boolean",
+                        "description": "When true, only show offers with changeable (modifiable) fares",
+                        "example": false
+                      },
+                      "departureTimeBefore": {
+                        "type": "string",
+                        "description": "Filter journeys departing before this time (HH:MM, 24h)",
+                        "example": "14:00",
+                        "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$"
+                      },
+                      "excludeConnectionAirports": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Exclude layovers at these airports (e.g. IST, DOH)",
+                        "example": [
+                          "IST",
+                          "DOH"
+                        ]
+                      },
+                      "excludeOvernight": {
+                        "type": "boolean",
+                        "description": "Exclude red-eye flights and overnight layovers",
+                        "example": false
+                      },
+                      "flightNumbers": {
+                        "type": "array",
+                        "items": {
+                          "type": "string"
+                        },
+                        "description": "Filter by flight numbers (e.g. SK500, AF123)",
+                        "example": [
+                          "DE2017",
+                          "DE4265"
+                        ]
+                      },
+                      "flightNumbersMatch": {
+                        "type": "string",
+                        "enum": [
+                          "any",
+                          "all"
+                        ],
+                        "description": "'any' = at least one match, 'all' = all specified flights",
+                        "example": "any"
+                      },
+                      "includesCarryOnBag": {
+                        "type": "boolean",
+                        "description": "Only show offers with carry-on included",
+                        "example": false
+                      },
+                      "includesCheckedBag": {
+                        "type": "boolean",
+                        "description": "Only show offers with checked bag included",
+                        "example": false
+                      },
+                      "legDurations": {
+                        "type": "array",
+                        "description": "Per-leg max duration constraints. Each entry limits one direction (OUTBOUND or INBOUND) independently.",
+                        "example": [
+                          {
+                            "direction": "OUTBOUND",
+                            "maxMinutes": 600
+                          },
+                          {
+                            "direction": "INBOUND",
+                            "maxMinutes": 720
+                          }
+                        ],
+                        "items": {
+                          "type": "object",
+                          "required": [
+                            "direction",
+                            "maxMinutes"
+                          ],
+                          "properties": {
+                            "direction": {
+                              "type": "string",
+                              "enum": [
+                                "OUTBOUND",
+                                "INBOUND"
+                              ],
+                              "description": "Which leg to constrain",
+                              "example": "OUTBOUND"
+                            },
+                            "maxMinutes": {
+                              "type": "integer",
+                              "minimum": 1,
+                              "description": "Maximum leg duration in minutes (inclusive)",
+                              "example": 600
+                            }
+                          }
+                        }
+                      },
+                      "maxDuration": {
+                        "type": "integer",
+                        "minimum": 1,
+                        "nullable": true,
+                        "description": "Maximum total journey duration in minutes (inclusive). Journeys exceeding this duration are excluded.",
+                        "example": 600
+                      },
+                      "maxPrice": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Maximum total price (offer total, in search currency)",
+                        "example": 1500
+                      },
+                      "minPrice": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Minimum total price (offer total, in search currency)",
+                        "example": 200
+                      },
+                      "maxStops": {
+                        "type": "integer",
+                        "nullable": true,
+                        "minimum": -1,
+                        "maximum": 2,
+                        "description": "Maximum stops (same semantics as top-level maxStops)",
+                        "example": 1
+                      },
+                      "refundableOnly": {
+                        "type": "boolean",
+                        "description": "When true, only show offers with refundable fares",
+                        "example": false
+                      },
+                      "showCheapestOfferOnly": {
+                        "type": "boolean",
+                        "description": "Return only cheapest offer per journey",
+                        "example": false
+                      }
+                    }
+                  },
+                  "sort": {
+                    "type": "object",
+                    "description": "Sort options for results",
+                    "example": {
+                      "sortBy": "price",
+                      "sortOrder": "asc"
+                    },
+                    "properties": {
+                      "sortBy": {
+                        "type": "string",
+                        "enum": [
+                          "price",
+                          "duration",
+                          "departure",
+                          "arrival",
+                          "stops"
+                        ],
+                        "description": "Sort by price, duration, departure, arrival, or stops",
+                        "example": "price"
+                      },
+                      "sortOrder": {
+                        "type": "string",
+                        "enum": [
+                          "asc",
+                          "desc"
+                        ],
+                        "description": "asc or desc",
+                        "example": "asc"
+                      }
+                    }
+                  },
+                  "options": {
+                    "type": "object",
+                    "description": "Search execution options",
+                    "example": {
+                      "providers": [
+                        "SABRE"
+                      ]
+                    },
+                    "properties": {
+                      "providers": {
+                        "description": "Filter by specific providers. When set, bypasses cache.",
+                        "example": [
+                          "TRAVELPORT"
+                        ],
+                        "items": {
+                          "enum": [
+                            "ATLAS",
+                            "SABRE",
+                            "TRAVELPORT",
+                            "FLIGHTHUB"
+                          ],
+                          "type": "string"
+                        },
+                        "type": "array",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "origin": "JFK",
+                "destination": "CDG",
+                "departureDate": "2026-07-01",
+                "returnDate": "2026-08-02",
+                "adults": 1,
+                "children": 0,
+                "infants": 0,
+                "currency": "USD",
+                "country": "US",
+                "maxStops": -1,
+                "sort": {
+                  "sortBy": "price",
+                  "sortOrder": "asc"
+                }
+              }
+            }
+          },
+          "description": "Flight search parameters including route, dates, passengers, and optional filters"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "journeys": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/FlightJourney"
+                            },
+                            "description": "Journeys returned by this provider batch, sorted by price ascending"
+                          }
+                        }
+                      },
+                      "description": "List of search result sets, one per provider batch"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "journeys": [
+                        {
+                          "journeyKey": "a3bbe883fe3a4f6b",
+                          "isCheapest": true,
+                          "timestamp": "2026-03-19T12:52:59.494Z",
+                          "totalDuration": {
+                            "iso8601": "PT7H45M",
+                            "minutes": 465
+                          },
+                          "legDurations": [
+                            {
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT7H45M",
+                                "minutes": 465
+                              },
+                              "dayChange": 1,
+                              "overnightFlight": false
+                            }
+                          ],
+                          "parameters": {
+                            "adults": 1,
+                            "children": 0,
+                            "infants": 0
+                          },
+                          "segments": [
+                            {
+                              "segmentKey": "d0a8a7dd",
+                              "originCode": "JFK",
+                              "originName": "John F. Kennedy International Airport",
+                              "destinationCode": "CDG",
+                              "destinationName": "Charles de Gaulle Airport",
+                              "departureTime": "2026-07-01T16:10:00",
+                              "arrivalTime": "2026-07-02T05:55:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT7H45M",
+                                "minutes": 465
+                              },
+                              "flight": {
+                                "marketingNumber": "2017",
+                                "operatingNumber": "2017"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            }
+                          ],
+                          "offers": [
+                            {
+                              "offerId": "h6NwaWTZJDAxOWQwNjFlLWRlMjYtNzI1NC1hZDNmLTA0ZDkwZmMxMDNhZaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAxonJkqjIwMjYtMDgtMDI=",
+                              "expiration": "2026-03-19T12:52:59.494Z",
+                              "pricing": {
+                                "display": {
+                                  "total": 753.87,
+                                  "currency": "USD",
+                                  "base": 403.63,
+                                  "fees": 0,
+                                  "taxes": 350.24,
+                                  "perPassenger": {
+                                    "adult": {
+                                      "base": 403.63,
+                                      "currency": "USD",
+                                      "fees": 0,
+                                      "taxes": 350.24,
+                                      "total": 753.87
+                                    },
+                                    "child": {
+                                      "base": 0,
+                                      "currency": "USD",
+                                      "fees": 0,
+                                      "taxes": 0,
+                                      "total": 0
+                                    },
+                                    "infant": {
+                                      "base": 0,
+                                      "currency": "USD",
+                                      "fees": 0,
+                                      "taxes": 0,
+                                      "total": 0
+                                    }
+                                  }
+                                },
+                                "converted": false,
+                                "fxInfo": null
+                              },
+                              "provider": {
+                                "code": "SABRE",
+                                "logo": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
+                              },
+                              "fare": {
+                                "family": "Economy",
+                                "mixedCabin": false,
+                                "seatsRemaining": 7
+                              },
+                              "baggage": {
+                                "hasCarryOnBag": true,
+                                "hasCheckedBag": false,
+                                "included": [
+                                  {
+                                    "bagType": "cabin",
+                                    "description": "1 carry-on bag up to 8 kg",
+                                    "passengerType": "ADT",
+                                    "pieces": 1,
+                                    "pricing": {
+                                      "display": {
+                                        "amount": 0,
+                                        "currency": "USD"
+                                      },
+                                      "converted": false
+                                    },
+                                    "unit": "kg",
+                                    "weightKg": 8
+                                  }
+                                ]
+                              },
+                              "terms": {
+                                "changeable": false,
+                                "refundable": false,
+                                "summary": [
+                                  {
+                                    "level": "danger",
+                                    "message": "Non-refundable fare"
+                                  }
+                                ]
+                              },
+                              "segmentFares": [
+                                {
+                                  "segmentKey": "d0a8a7dd",
+                                  "bookingCode": "W",
+                                  "cabin": "Economy",
+                                  "fareBasisCode": "WRAQ1",
+                                  "fareFamily": "Economy",
+                                  "seatsRemaining": 7
+                                }
+                              ],
+                              "segmentAmenities": [
+                                {
+                                  "segmentKey": "d0a8a7dd",
+                                  "aircraftType": "339",
+                                  "amenities": [
+                                    {
+                                      "available": true,
+                                      "category": "wifi",
+                                      "chargeable": true,
+                                      "name": "Wi-Fi",
+                                      "details": "Available for purchase"
+                                    },
+                                    {
+                                      "available": true,
+                                      "category": "entertainment",
+                                      "chargeable": false,
+                                      "name": "In-seat entertainment",
+                                      "details": null
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              },
+              "text/event-stream": {
+                "schema": {
+                  "type": "string",
+                  "description": "When the request includes `Accept: text/event-stream`. SSE stream; each event: data: {json}\n\n"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4002,
+                    "description": "Missing required parameters: origin, destination, departureDate are required",
+                    "message": "bad request"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/verify": {
+      "post": {
+        "tags": [
+          "Flight Search"
+        ],
+        "summary": "Verify flight offer",
+        "description": "## Overview\n\nConfirm a flight offer is still available and retrieve the latest pricing before proceeding to booking. Always verify before prebooking to avoid price discrepancies.\n\n## When to Use\n\n- **Pre-booking validation** - Confirm offer availability after user selects a flight\n- **Price confirmation** - Show users the guaranteed price before they enter payment details\n- **Fare rule retrieval** - Get the latest cancellation and change policies\n\n## What You Get\n\n- **Verified pricing** with up-to-date fare breakdown\n- **Fare family details** including name and included amenities\n- **Baggage policy** for each passenger type and segment\n- **Booking terms** including cancellation and change fee rules\n\n## Key Features\n\n- **Real-time price check**: Confirms current availability and price with the provider\n- **Updated baggage info**: Returns the latest baggage allowances at time of verification\n- **Fare rules**: Includes cancellation and change fee policies before commitment\n\n## Quick Start\n\nProvide the `offerId` from `/flights/rates` search results. Use the verified offer data to populate a booking summary page before proceeding to `/flights/prebook`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "offerId"
+                ],
+                "properties": {
+                  "offerId": {
+                    "type": "string",
+                    "description": "The offerId from the search results"
+                  }
+                }
+              },
+              "example": {
+                "offerId": "h6NwaWTZJDAxOWQwNjIwLWQzMDItNzBiYS04OGUxLTdlMTdkMzYyZDQ0MKJ0cMtAkdkUeuFHrqJtdcsAAAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAxonJkqjIwMjYtMDgtMDI="
+              }
+            }
+          },
+          "description": "The offerId to verify before booking"
+        },
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "journey": {
+                            "$ref": "#/components/schemas/FlightVerifyJourney",
+                            "description": "Verified journey with updated pricing, baggage, and terms"
+                          }
+                        }
+                      },
+                      "description": "Verified journey result"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "journey": {
+                        "journeyKey": "26b2fa3085dc22b2",
+                        "offerId": "019d0620-d302-70ba-88e1-7e17d362d440",
+                        "expiration": "2026-03-19T13:15:09.485Z",
+                        "timestamp": "2026-03-19T12:45:07.715Z",
+                        "provider": {
+                          "code": "SABRE",
+                          "logo": "https://production.nuitee.flights/static/providers/sabre.svg"
+                        },
+                        "pricing": {
+                          "display": {
+                            "total": 1423.42,
+                            "currency": "USD",
+                            "base": 1127.92,
+                            "fees": 0,
+                            "taxes": 295.5,
+                            "perPassenger": {
+                              "adult": {
+                                "base": 1127.92,
+                                "currency": "USD",
+                                "fees": 0,
+                                "taxes": 295.5,
+                                "total": 1423.42
+                              },
+                              "child": {
+                                "base": 0,
+                                "currency": "USD",
+                                "fees": 0,
+                                "taxes": 0,
+                                "total": 0
+                              },
+                              "infant": {
+                                "base": 0,
+                                "currency": "USD",
+                                "fees": 0,
+                                "taxes": 0,
+                                "total": 0
+                              }
+                            }
+                          },
+                          "converted": true,
+                          "fxInfo": {
+                            "rate": 1.35241967,
+                            "source": "nuitee",
+                            "timestamp": "2026-03-19T12:45:20.772Z"
+                          }
+                        },
+                        "baggage": {
+                          "hasCarryOnBag": true,
+                          "hasCheckedBag": true,
+                          "included": [
+                            {
+                              "bagType": "checked",
+                              "description": "",
+                              "passengerType": "ADT",
+                              "pieces": 1,
+                              "pricing": {
+                                "display": {
+                                  "amount": 0,
+                                  "currency": "EUR"
+                                },
+                                "converted": false
+                              },
+                              "weightKg": 23
+                            },
+                            {
+                              "bagType": "cabin",
+                              "description": "Cabin bag",
+                              "passengerType": "ADT",
+                              "pieces": 1,
+                              "pricing": {
+                                "display": {
+                                  "amount": 0,
+                                  "currency": "EUR"
+                                },
+                                "converted": false
+                              },
+                              "unit": "kg",
+                              "weightKg": 8
+                            }
+                          ]
+                        },
+                        "fare": {
+                          "family": "Economy",
+                          "mixedCabin": false,
+                          "seatsRemaining": 9
+                        },
+                        "passengers": {
+                          "adults": 1,
+                          "children": 0,
+                          "infants": 0
+                        },
+                        "segments": [
+                          {
+                            "segmentKey": "096fada4",
+                            "originCode": "JFK",
+                            "originName": "John F. Kennedy International Airport",
+                            "destinationCode": "FRA",
+                            "destinationName": "Frankfurt Main Airport",
+                            "departureTime": "2026-07-01T16:25:00",
+                            "arrivalTime": "2026-07-02T06:10:00",
+                            "direction": "OUTBOUND",
+                            "duration": {
+                              "iso8601": "PT7H45M",
+                              "minutes": 465
+                            },
+                            "flight": {
+                              "marketingNumber": "2017",
+                              "operatingNumber": "2017"
+                            },
+                            "carrier": {
+                              "marketingCode": "DE",
+                              "marketingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "marketingName": "Condor Flugdienst",
+                              "operatingCode": "DE",
+                              "operatingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "operatingName": "Condor Flugdienst"
+                            }
+                          },
+                          {
+                            "segmentKey": "8528a309",
+                            "originCode": "FRA",
+                            "originName": "Frankfurt Main Airport",
+                            "destinationCode": "CDG",
+                            "destinationName": "Charles de Gaulle International Airport",
+                            "departureTime": "2026-07-02T08:55:00",
+                            "arrivalTime": "2026-07-02T10:15:00",
+                            "direction": "OUTBOUND",
+                            "duration": {
+                              "iso8601": "PT1H20M",
+                              "minutes": 80
+                            },
+                            "flight": {
+                              "marketingNumber": "4265",
+                              "operatingNumber": "4265"
+                            },
+                            "carrier": {
+                              "marketingCode": "DE",
+                              "marketingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "marketingName": "Condor Flugdienst",
+                              "operatingCode": "DE",
+                              "operatingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "operatingName": "Condor Flugdienst"
+                            }
+                          },
+                          {
+                            "segmentKey": "f15d5c4e",
+                            "originCode": "CDG",
+                            "originName": "Charles de Gaulle International Airport",
+                            "destinationCode": "FRA",
+                            "destinationName": "Frankfurt Main Airport",
+                            "departureTime": "2026-08-02T08:25:00",
+                            "arrivalTime": "2026-08-02T09:55:00",
+                            "direction": "INBOUND",
+                            "duration": {
+                              "iso8601": "PT1H30M",
+                              "minutes": 90
+                            },
+                            "flight": {
+                              "marketingNumber": "4292",
+                              "operatingNumber": "4292"
+                            },
+                            "carrier": {
+                              "marketingCode": "DE",
+                              "marketingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "marketingName": "Condor Flugdienst",
+                              "operatingCode": "DE",
+                              "operatingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "operatingName": "Condor Flugdienst"
+                            }
+                          },
+                          {
+                            "segmentKey": "af5b7649",
+                            "originCode": "FRA",
+                            "originName": "Frankfurt Main Airport",
+                            "destinationCode": "JFK",
+                            "destinationName": "John F. Kennedy International Airport",
+                            "departureTime": "2026-08-02T11:40:00",
+                            "arrivalTime": "2026-08-02T14:25:00",
+                            "direction": "INBOUND",
+                            "duration": {
+                              "iso8601": "PT8H45M",
+                              "minutes": 525
+                            },
+                            "flight": {
+                              "marketingNumber": "2016",
+                              "operatingNumber": "2016"
+                            },
+                            "carrier": {
+                              "marketingCode": "DE",
+                              "marketingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "marketingName": "Condor Flugdienst",
+                              "operatingCode": "DE",
+                              "operatingLogo": "https://production.nuitee.flights/static/images/airlines/DE.png",
+                              "operatingName": "Condor Flugdienst"
+                            }
+                          }
+                        ],
+                        "segmentFares": [
+                          {
+                            "segmentKey": "096fada4",
+                            "bookingCode": "U",
+                            "cabin": "Economy",
+                            "fareBasisCode": "URA1",
+                            "fareFamily": "Economy",
+                            "seatsRemaining": 9
+                          },
+                          {
+                            "segmentKey": "8528a309",
+                            "bookingCode": "W",
+                            "cabin": "Economy",
+                            "fareBasisCode": "URA1",
+                            "fareFamily": "Economy",
+                            "seatsRemaining": 9
+                          },
+                          {
+                            "segmentKey": "f15d5c4e",
+                            "bookingCode": "W",
+                            "cabin": "Economy",
+                            "fareBasisCode": "KRA1",
+                            "fareFamily": "Economy",
+                            "seatsRemaining": 9
+                          },
+                          {
+                            "segmentKey": "af5b7649",
+                            "bookingCode": "K",
+                            "cabin": "Economy",
+                            "fareBasisCode": "KRA1",
+                            "fareFamily": "Economy",
+                            "seatsRemaining": 9
+                          }
+                        ],
+                        "terms": {
+                          "changeable": false,
+                          "refundable": false,
+                          "summary": [
+                            {
+                              "level": "danger",
+                              "message": "Non-refundable"
+                            },
+                            {
+                              "level": "danger",
+                              "message": "Changes not allowed"
+                            },
+                            {
+                              "level": "info",
+                              "message": "Book by: 2026-03-22 12:44"
+                            }
+                          ]
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4002,
+                    "description": "offerId is required",
+                    "message": "bad request"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offer expired or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4004,
+                    "description": "offer expired or invalid: the offer has expired or is invalid. Please search for new flights",
+                    "message": "entity not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/prebook": {
+      "post": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "1. Create a checkout session (PREBOOK)",
+        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services \u2014 all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true \u2014 for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer \u2192 payment setup (Stripe payment intent or credit line) \u2192 books with provider \u2192 fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** (sandbox or whitelabel) and an **enabled credit line**; the API rejects the request if neither Stripe nor an eligible credit line applies\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, phone), `passengers` (with birthday, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` only when a credit line is enabled for the account; otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "offerId",
+                  "contact",
+                  "passengers"
+                ],
+                "properties": {
+                  "offerId": {
+                    "type": "string",
+                    "description": "The offerId from the search results (msgpack-encoded; unpacks to provider offerId)",
+                    "example": "h6NwaWTZJDAxOWQwNjZhLWNjMTktNzcyNi04ODM1LTEyMjFjNWRjN2UxNaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAyonJkqjIwMjYtMDgtMDI="
+                  },
+                  "usePaymentSdk": {
+                    "type": "boolean",
+                    "description": "If true, a Stripe payment intent is created (`transactionId`, `secretKey`). If false, a credit line must be enabled for the user (with payment bypass); otherwise the request is rejected.",
+                    "default": true,
+                    "example": true
+                  },
+                  "payment": {
+                    "type": "object",
+                    "description": "Payment configuration options",
+                    "properties": {
+                      "descriptorSuffix": {
+                        "type": "string",
+                        "description": "Suffix appended to the Stripe payment descriptor (visible on customer's bank statement)",
+                        "example": "FLIGHT"
+                      }
+                    }
+                  },
+                  "contact": {
+                    "type": "object",
+                    "description": "Primary contact person for the booking (receives confirmation emails)",
+                    "required": [
+                      "firstName",
+                      "lastName",
+                      "email",
+                      "phoneNumber"
+                    ],
+                    "properties": {
+                      "email": {
+                        "type": "string",
+                        "description": "Contact email address for booking confirmation",
+                        "example": "j.doe@example.com"
+                      },
+                      "firstName": {
+                        "type": "string",
+                        "description": "Contact first name",
+                        "example": "John"
+                      },
+                      "lastName": {
+                        "type": "string",
+                        "description": "Contact last name",
+                        "example": "Doe"
+                      },
+                      "middleName": {
+                        "type": "string",
+                        "description": "Contact middle name (optional)",
+                        "example": "Joshua"
+                      },
+                      "phoneCountryCode": {
+                        "type": "string",
+                        "description": "Phone country code without + (e.g. 1 for US, 33 for France)",
+                        "example": "33"
+                      },
+                      "phoneNumber": {
+                        "type": "string",
+                        "description": "Phone number without country code",
+                        "example": "670-355-3640"
+                      }
+                    }
+                  },
+                  "passengers": {
+                    "type": "array",
+                    "description": "List of passengers travelling. Length must match the adults+children+infants counts from the search.",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "birthday": {
+                          "type": "string",
+                          "description": "Date of birth (YYYY-MM-DD)",
+                          "example": "1996-04-28"
+                        },
+                        "documentExpiry": {
+                          "type": "string",
+                          "description": "Travel document expiry date (YYYY-MM-DD)",
+                          "example": "2030-04-28"
+                        },
+                        "documentIssueCountry": {
+                          "type": "string",
+                          "description": "ISO country code of the document issuing country",
+                          "example": "US"
+                        },
+                        "documentNumber": {
+                          "type": "string",
+                          "description": "Travel document number",
+                          "example": "123456789"
+                        },
+                        "documentType": {
+                          "type": "string",
+                          "description": "Type of travel document (e.g. passport, id_card)",
+                          "example": "passport"
+                        },
+                        "firstName": {
+                          "type": "string",
+                          "description": "Passenger first name (as on travel document)",
+                          "example": "John"
+                        },
+                        "gender": {
+                          "type": "string",
+                          "description": "Passenger gender: M or F",
+                          "example": "M"
+                        },
+                        "lastName": {
+                          "type": "string",
+                          "description": "Passenger last name (as on travel document)",
+                          "example": "Doe"
+                        },
+                        "middleName": {
+                          "type": "string",
+                          "description": "Passenger middle name (optional)",
+                          "example": "Joshua"
+                        },
+                        "nationality": {
+                          "type": "string",
+                          "description": "Passenger nationality as ISO country code",
+                          "example": "US"
+                        },
+                        "passengerType": {
+                          "type": "integer",
+                          "description": "Passenger type: 0 = adult, 1 = child, 2 = infant",
+                          "example": 0
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "example": {
+                "offerId": "h6NwaWTZJDAxOWQwNjZhLWNjMTktNzcyNi04ODM1LTEyMjFjNWRjN2UxNaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAyonJkqjIwMjYtMDgtMDI=",
+                "usePaymentSdk": true,
+                "payment": {
+                  "descriptorSuffix": "FLIGHT"
+                },
+                "contact": {
+                  "email": "j.doe@example.com",
+                  "firstName": "John",
+                  "lastName": "Doe",
+                  "middleName": "Joshua",
+                  "phoneCountryCode": "33",
+                  "phoneNumber": "670-355-3640"
+                },
+                "passengers": [
+                  {
+                    "birthday": "1996-04-28",
+                    "documentExpiry": "2030-04-28",
+                    "documentIssueCountry": "US",
+                    "documentNumber": "123456789",
+                    "documentType": "passport",
+                    "firstName": "John",
+                    "gender": "M",
+                    "lastName": "Doe",
+                    "middleName": "Joshua",
+                    "nationality": "US",
+                    "passengerType": 0
+                  }
+                ]
+              }
+            }
+          },
+          "description": "Offer, passenger, contact, and payment configuration to initiate a prebook"
+        },
+        "responses": {
+          "200": {
+            "description": "Prebook created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "prebookId": {
+                            "type": "string",
+                            "description": "Unique prebook identifier \u2014 use this in /bookings to complete the booking"
+                          },
+                          "booking": {
+                            "$ref": "#/components/schemas/FlightBooking",
+                            "description": "Booking record created with the provider, including journey, passengers, and order reference"
+                          },
+                          "servicesAttachable": {
+                            "type": "object",
+                            "properties": {
+                              "expiresAt": {
+                                "type": "string",
+                                "description": "Expiry time for attaching services (ISO 8601)"
+                              },
+                              "groups": {
+                                "type": "array",
+                                "description": "Groups of available ancillary services",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "category": {
+                                      "type": "string",
+                                      "description": "Service category (e.g. seat, baggage)"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "description": "Human-readable group label"
+                                    },
+                                    "services": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "serviceId": {
+                                            "type": "string",
+                                            "description": "Unique service identifier (use in attachService)"
+                                          },
+                                          "name": {
+                                            "type": "string",
+                                            "description": "Service name (e.g. Seat 7A)"
+                                          },
+                                          "category": {
+                                            "type": "string",
+                                            "description": "Service category (e.g. seat, baggage)"
+                                          },
+                                          "passengerType": {
+                                            "type": "string",
+                                            "description": "Applicable passenger type (ALL, ADT, CHD, INF)"
+                                          },
+                                          "segmentKey": {
+                                            "type": "string",
+                                            "description": "Links to the segment this service applies to"
+                                          },
+                                          "pricing": {
+                                            "$ref": "#/components/schemas/FlightItemPricing",
+                                            "description": "Price of this service (amount 0 means included)"
+                                          },
+                                          "metadata": {
+                                            "type": "object",
+                                            "description": "Category-specific metadata (e.g. seat details)"
+                                          }
+                                        }
+                                      },
+                                      "description": "Available services in this group"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "description": "Ancillary services available to attach before booking (seats, baggage, etc.)"
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Total price to charge (in the currency field)"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "ISO 4217 currency code for price and secretKey"
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "description": "When `usePaymentSdk` was true: Stripe transaction ID \u2014 use as `payment.transactionId` with `payment.method: TRANSACTION_ID` when calling `/flights/bookings`. Empty or omitted when prebooking on a credit line only."
+                          },
+                          "secretKey": {
+                            "type": "string",
+                            "description": "When `usePaymentSdk` was true: Stripe payment intent client secret \u2014 use with the Stripe SDK before calling `/flights/bookings`"
+                          },
+                          "publishableKey": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "When `usePaymentSdk` was true: Stripe publishable key (null if not applicable)"
+                          },
+                          "offerId": {
+                            "type": "string",
+                            "description": "The offerId used to create this prebook"
+                          }
+                        }
+                      },
+                      "description": "Prebook result array (always one item)"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "prebookId": "019d0674-834d-7db7-9c8b-93fe8e46e7b8",
+                      "booking": {
+                        "timestamp": "2026-03-19T14:16:40Z",
+                        "journey": {
+                          "journeyKey": "30073d47d441f174",
+                          "segments": [
+                            {
+                              "segmentKey": "b4cd7e77",
+                              "originCode": "JFK",
+                              "originName": "John F. Kennedy International Airport",
+                              "destinationCode": "FRA",
+                              "destinationName": "Frankfurt Main Airport",
+                              "departureTime": "2026-07-02T16:10:00",
+                              "arrivalTime": "2026-07-03T05:55:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT7H45M",
+                                "minutes": 465
+                              },
+                              "flight": {
+                                "marketingNumber": "2017",
+                                "operatingNumber": "2017"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "35125125",
+                              "originCode": "FRA",
+                              "originName": "Frankfurt Main Airport",
+                              "destinationCode": "CDG",
+                              "destinationName": "Charles de Gaulle International Airport",
+                              "departureTime": "2026-07-03T08:30:00",
+                              "arrivalTime": "2026-07-03T09:50:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT1H20M",
+                                "minutes": 80
+                              },
+                              "flight": {
+                                "marketingNumber": "4265",
+                                "operatingNumber": "4265"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "f15d5c4e",
+                              "originCode": "CDG",
+                              "originName": "Charles de Gaulle International Airport",
+                              "destinationCode": "FRA",
+                              "destinationName": "Frankfurt Main Airport",
+                              "departureTime": "2026-08-02T08:25:00",
+                              "arrivalTime": "2026-08-02T09:55:00",
+                              "direction": "INBOUND",
+                              "duration": {
+                                "iso8601": "PT1H30M",
+                                "minutes": 90
+                              },
+                              "flight": {
+                                "marketingNumber": "4292",
+                                "operatingNumber": "4292"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "7eccefc8",
+                              "originCode": "FRA",
+                              "originName": "Frankfurt Main Airport",
+                              "destinationCode": "JFK",
+                              "destinationName": "John F. Kennedy International Airport",
+                              "departureTime": "2026-08-02T11:25:00",
+                              "arrivalTime": "2026-08-02T14:10:00",
+                              "direction": "INBOUND",
+                              "duration": {
+                                "iso8601": "PT8H45M",
+                                "minutes": 525
+                              },
+                              "flight": {
+                                "marketingNumber": "2016",
+                                "operatingNumber": "2016"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            }
+                          ],
+                          "pricing": {
+                            "display": {
+                              "total": 740.27,
+                              "currency": "USD",
+                              "base": 421.87,
+                              "fees": 0,
+                              "taxes": 318.4,
+                              "perPassenger": {
+                                "adult": {
+                                  "base": 421.87,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 318.4,
+                                  "total": 740.27
+                                },
+                                "child": {
+                                  "base": 0,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 0,
+                                  "total": 0
+                                },
+                                "infant": {
+                                  "base": 0,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 0,
+                                  "total": 0
+                                }
+                              }
+                            },
+                            "converted": true,
+                            "fxInfo": {
+                              "rate": 1.16860517,
+                              "source": "nuitee",
+                              "timestamp": "2026-03-19T13:53:04.287Z"
+                            }
+                          }
+                        },
+                        "passengers": [
+                          {
+                            "firstName": "John",
+                            "lastName": "Doe",
+                            "middleName": "Joshua",
+                            "birthday": "1996-04-28",
+                            "gender": "M",
+                            "nationality": "US",
+                            "documentType": "passport",
+                            "documentNumber": "123456789",
+                            "documentIssueCountry": "US",
+                            "documentExpiry": "2030-04-28"
+                          }
+                        ],
+                        "order": {
+                          "reference": {
+                            "orderId": "OQTYXX",
+                            "airlineBookings": [
+                              {
+                                "airlineCode": "DE",
+                                "airlineName": "Condor Flugdienst",
+                                "airlinePnr": "DCDE"
+                              }
+                            ]
+                          }
+                        },
+                        "contact": {
+                          "firstName": "John",
+                          "email": "j.doe@example.com"
+                        }
+                      },
+                      "price": 740.27,
+                      "currency": "USD",
+                      "transactionId": "tr_cts_WaTMwICRB0h_dOfyvLvvN",
+                      "secretKey": "pi_3TChNEA4FXPoRk9Y1hbH6uVq_secret_CRhCAan4jSlXcwLs8N3r1qN6D",
+                      "servicesAttachable": {
+                        "expiresAt": "2026-03-19T14:31:42.493Z",
+                        "groups": [
+                          {
+                            "category": "seat",
+                            "label": "Seat Selection",
+                            "services": [
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hYWY1LTczMjktODhiNy03OTdlNTc5YWJmZjWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Seat 7A",
+                                "category": "seat",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 21.83,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true,
+                                  "fxInfo": {
+                                    "rate": 1.16860517,
+                                    "source": "nuitee",
+                                    "timestamp": "2026-03-19T13:53:04.287Z"
+                                  }
+                                },
+                                "metadata": {
+                                  "available": true,
+                                  "seat": {
+                                    "available": true,
+                                    "seatColumn": "A",
+                                    "seatNumber": "7A",
+                                    "seatRow": 7,
+                                    "seatType": "window"
+                                  }
+                                }
+                              },
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hYWY1LTczMjktODhiNy03OTdmZmYzMTczMGWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Seat 7B",
+                                "category": "seat",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 21.83,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true,
+                                  "fxInfo": {
+                                    "rate": 1.16860517,
+                                    "source": "nuitee",
+                                    "timestamp": "2026-03-19T13:53:04.287Z"
+                                  }
+                                },
+                                "metadata": {
+                                  "available": true,
+                                  "seat": {
+                                    "available": true,
+                                    "seatColumn": "B",
+                                    "seatNumber": "7B",
+                                    "seatRow": 7,
+                                    "seatType": "middle"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingOfferId": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "offerId is required",
+                        "message": "bad request"
+                      }
+                    }
+                  },
+                  "paymentOptionRequired": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "usePaymentSdk must be true, or a credit line must be enabled",
+                        "message": "bad request"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Offer expired or invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4004,
+                    "description": "offer expired or invalid: the offer has expired or is invalid. Please search for new flights",
+                    "message": "entity not found"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 5000,
+                    "description": "Failed to create prebook",
+                    "message": "unable to process request"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/prebooks/{prebookId}/services": {
+      "post": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "1.2 Attach services to prebook (Optional)",
+        "description": "## Overview\n\nAdd ancillary services such as seat selection or extra baggage to an existing prebook before confirming the final booking.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Price update** - Required when services change the total booking cost\n\n## What You Get\n\n- **Updated prebook** with the selected services attached\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price\n- **Same response format** as the prebook endpoint for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Updated payment**: Automatically creates a new Stripe payment intent with the adjusted price\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and a `services` array in the request body. Use the new `transactionId` from the response when completing the booking at `POST /flights/bookings`.",
+        "parameters": [
+          {
+            "name": "prebookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The prebook ID (must have provider_booking_id from initial prebook)",
+            "example": "019d0674-834d-7db7-9c8b-93fe8e46e7b8"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "selectedServices"
+                ],
+                "properties": {
+                  "selectedServices": {
+                    "type": "array",
+                    "items": {
+                      "$ref": "#/components/schemas/SelectedService"
+                    },
+                    "description": "Services to attach (from servicesAttachable.groups in prebook response)"
+                  }
+                }
+              },
+              "example": {
+                "selectedServices": [
+                  {
+                    "passengerIndex": 0,
+                    "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAfB6PXCj1w6Fjo1VTRA==",
+                    "quantity": 1
+                  }
+                ]
+              }
+            }
+          },
+          "description": "Selected ancillary services to attach to the prebook"
+        },
+        "responses": {
+          "200": {
+            "description": "Services attached successfully; returns updated prebook data with new price and transactionId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "prebookId": {
+                            "type": "string",
+                            "description": "Unique prebook identifier"
+                          },
+                          "booking": {
+                            "$ref": "#/components/schemas/FlightBooking",
+                            "description": "Updated booking record after attaching services"
+                          },
+                          "servicesAttachable": {
+                            "type": "object",
+                            "properties": {
+                              "expiresAt": {
+                                "type": "string",
+                                "description": "Expiry time for attaching services (ISO 8601)"
+                              },
+                              "groups": {
+                                "type": "array",
+                                "description": "Remaining available ancillary services after attachment",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "category": {
+                                      "type": "string",
+                                      "description": "Service category (e.g. seat, baggage)"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "description": "Human-readable group label"
+                                    },
+                                    "services": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "serviceId": {
+                                            "type": "string",
+                                            "description": "Unique service identifier \u2014 use this in selectedServices when attaching"
+                                          },
+                                          "name": {
+                                            "type": "string",
+                                            "description": "Human-readable service name (e.g. Seat 7A)"
+                                          },
+                                          "category": {
+                                            "type": "string",
+                                            "description": "Service category (e.g. seat, baggage)"
+                                          },
+                                          "passengerType": {
+                                            "type": "string",
+                                            "description": "Applicable passenger type (ALL, ADT, CHD, INF)"
+                                          },
+                                          "segmentKey": {
+                                            "type": "string",
+                                            "description": "The segment this service applies to"
+                                          },
+                                          "pricing": {
+                                            "$ref": "#/components/schemas/FlightItemPricing",
+                                            "description": "Price of this service (amount 0 means included)"
+                                          },
+                                          "metadata": {
+                                            "type": "object",
+                                            "description": "Category-specific metadata (e.g. seat position and availability details)"
+                                          }
+                                        }
+                                      },
+                                      "description": "Available services in this group"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "description": "Remaining ancillary services available to attach"
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Updated total price including attached services"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "ISO 4217 currency code for the updated price"
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "description": "New Stripe transaction ID reflecting the updated price \u2014 use this (not the prebook transactionId) when calling /bookings"
+                          },
+                          "secretKey": {
+                            "type": "string",
+                            "description": "New Stripe payment intent secret key for SDK confirmation"
+                          }
+                        }
+                      },
+                      "description": "Updated prebook result after attaching services"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "prebookId": "019d0674-834d-7db7-9c8b-93fe8e46e7b8",
+                      "booking": {
+                        "timestamp": "2026-03-19T14:16:40Z",
+                        "journey": {
+                          "journeyKey": "30073d47d441f174",
+                          "segments": [
+                            {
+                              "segmentKey": "b4cd7e77",
+                              "originCode": "JFK",
+                              "originName": "John F. Kennedy International Airport",
+                              "destinationCode": "FRA",
+                              "destinationName": "Frankfurt Main Airport",
+                              "departureTime": "2026-07-02T16:10:00",
+                              "arrivalTime": "2026-07-03T05:55:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT7H45M",
+                                "minutes": 465
+                              },
+                              "flight": {
+                                "marketingNumber": "2017",
+                                "operatingNumber": "2017"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "35125125",
+                              "originCode": "FRA",
+                              "originName": "Frankfurt Main Airport",
+                              "destinationCode": "CDG",
+                              "destinationName": "Charles de Gaulle International Airport",
+                              "departureTime": "2026-07-03T08:30:00",
+                              "arrivalTime": "2026-07-03T09:50:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT1H20M",
+                                "minutes": 80
+                              },
+                              "flight": {
+                                "marketingNumber": "4265",
+                                "operatingNumber": "4265"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "f15d5c4e",
+                              "originCode": "CDG",
+                              "originName": "Charles de Gaulle International Airport",
+                              "destinationCode": "FRA",
+                              "destinationName": "Frankfurt Main Airport",
+                              "departureTime": "2026-08-02T08:25:00",
+                              "arrivalTime": "2026-08-02T09:55:00",
+                              "direction": "INBOUND",
+                              "duration": {
+                                "iso8601": "PT1H30M",
+                                "minutes": 90
+                              },
+                              "flight": {
+                                "marketingNumber": "4292",
+                                "operatingNumber": "4292"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "7eccefc8",
+                              "originCode": "FRA",
+                              "originName": "Frankfurt Main Airport",
+                              "destinationCode": "JFK",
+                              "destinationName": "John F. Kennedy International Airport",
+                              "departureTime": "2026-08-02T11:25:00",
+                              "arrivalTime": "2026-08-02T14:10:00",
+                              "direction": "INBOUND",
+                              "duration": {
+                                "iso8601": "PT8H45M",
+                                "minutes": 525
+                              },
+                              "flight": {
+                                "marketingNumber": "2016",
+                                "operatingNumber": "2016"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            }
+                          ],
+                          "pricing": {
+                            "display": {
+                              "total": 740.27,
+                              "currency": "USD",
+                              "base": 421.87,
+                              "fees": 0,
+                              "taxes": 318.4,
+                              "perPassenger": {
+                                "adult": {
+                                  "base": 421.87,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 318.4,
+                                  "total": 740.27
+                                },
+                                "child": {
+                                  "base": 0,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 0,
+                                  "total": 0
+                                },
+                                "infant": {
+                                  "base": 0,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 0,
+                                  "total": 0
+                                }
+                              }
+                            },
+                            "converted": true,
+                            "fxInfo": {
+                              "rate": 1.16860517,
+                              "source": "nuitee",
+                              "timestamp": "2026-03-19T13:53:04.287Z"
+                            }
+                          }
+                        },
+                        "passengers": [
+                          {
+                            "firstName": "JOHN",
+                            "lastName": "Doe",
+                            "middleName": "Joshua",
+                            "birthday": "1996-04-28",
+                            "gender": "M",
+                            "nationality": "TN",
+                            "documentType": "passport",
+                            "documentNumber": "123456789",
+                            "documentIssueCountry": "US",
+                            "documentExpiry": "2030-04-28"
+                          }
+                        ],
+                        "order": {
+                          "reference": {
+                            "orderId": "OQTYXX",
+                            "airlineBookings": [
+                              {
+                                "airlineCode": "DE",
+                                "airlineName": "Condor Flugdienst",
+                                "airlinePnr": "DCDE"
+                              }
+                            ]
+                          }
+                        },
+                        "contact": {
+                          "firstName": "JOHN",
+                          "email": "j.doe@example.com"
+                        },
+                        "selectedServices": [
+                          {
+                            "passengerIndex": 0,
+                            "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAfB6PXCj1w6Fjo1VTRA==",
+                            "quantity": 1
+                          }
+                        ]
+                      },
+                      "price": 1149.28,
+                      "currency": "USD",
+                      "transactionId": "tr_cts_t0LaZePPxdCM_Kyskafml",
+                      "secretKey": "pi_3TChUfA4FXPoRk9Y0tQbfO9i_secret_fwHM73I5dHKOmcWJ3K468UX3g",
+                      "servicesAttachable": {
+                        "expiresAt": "2026-03-19T14:31:42.493Z",
+                        "groups": [
+                          {
+                            "category": "seat",
+                            "label": "Seat Selection",
+                            "services": [
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hYWY1LTczMjktODhiNy03OTdlNTc5YWJmZjWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Seat 7A",
+                                "category": "seat",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 21.83,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true,
+                                  "fxInfo": {
+                                    "rate": 1.16860517,
+                                    "source": "nuitee",
+                                    "timestamp": "2026-03-19T13:53:04.287Z"
+                                  }
+                                },
+                                "metadata": {
+                                  "available": true,
+                                  "seat": {
+                                    "available": true,
+                                    "seatColumn": "A",
+                                    "seatNumber": "7A",
+                                    "seatRow": 7,
+                                    "seatType": "window"
+                                  }
+                                }
+                              },
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hYWY1LTczMjktODhiNy03OTdmZmYzMTczMGWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Seat 7B",
+                                "category": "seat",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 21.83,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true,
+                                  "fxInfo": {
+                                    "rate": 1.16860517,
+                                    "source": "nuitee",
+                                    "timestamp": "2026-03-19T13:53:04.287Z"
+                                  }
+                                },
+                                "metadata": {
+                                  "available": true,
+                                  "seat": {
+                                    "available": true,
+                                    "seatColumn": "B",
+                                    "seatNumber": "7B",
+                                    "seatRow": 7,
+                                    "seatType": "middle"
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prebook not found or has no provider_booking_id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/bookings/{bookingId}": {
+      "get": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "Get booking details",
+        "description": "## Overview\n\nRetrieve complete details of a confirmed flight booking using its unique booking ID.\n\n## When to Use\n\n- **Booking confirmation page** - Display full itinerary after booking completes\n- **Booking management** - Retrieve details for an existing reservation\n- **Itinerary display** - Show passengers, segments, and confirmation numbers\n- **Status checks** - Verify booking status for a given booking ID\n\n## What You Get\n\n- **Complete itinerary** with all flight segments and connection details\n- **Passenger manifest** with names, documents, and seat assignments\n- **Booking status** and provider confirmation reference\n- **Pricing breakdown** including taxes and fees paid\n\n## Key Features\n\n- **Full booking record**: Returns all data associated with the confirmed booking\n- **Provider reference**: Includes the provider-side booking confirmation number\n- **Passenger details**: Complete passenger information for all travelers\n\n## Quick Start\n\nProvide the `bookingId` (returned from `POST /flights/bookings`) in the URL path. Returns the complete booking record.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique booking identifier",
+            "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "booking": {
+                            "$ref": "#/components/schemas/FlightBooking",
+                            "description": "Full booking record including status, journey, passengers, order reference, and payment details"
+                          }
+                        }
+                      },
+                      "description": "Booking result array (always one item)"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "booking": {
+                        "bookingId": "1297abe4-57c5-4605-b8e7-5caad983c4a7",
+                        "status": "CONFIRMED",
+                        "timestamp": "2026-02-09T14:20:32.416Z",
+                        "journey": {
+                          "journeyKey": "a3bbe883fe3a4f6b",
+                          "segments": [
+                            {
+                              "arrivalTime": "2026-04-10T18:40:00",
+                              "carrier": {
+                                "marketingCode": "B6",
+                                "marketingLogo": "/static/images/airlines/B6.png",
+                                "marketingName": "JetBlue Airways",
+                                "operatingCode": "B6",
+                                "operatingLogo": "/static/images/airlines/B6.png",
+                                "operatingName": "JetBlue Airways"
+                              },
+                              "departureTime": "2026-04-10T15:30:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT6H10M",
+                                "minutes": 370
+                              },
+                              "flight": {
+                                "marketingNumber": "723",
+                                "operatingNumber": "723"
+                              },
+                              "segmentKey": "c52f4148",
+                              "originCode": "JFK",
+                              "destinationCode": "LAX"
+                            }
+                          ],
+                          "price": {
+                            "base": 238.32,
+                            "currency": "USD",
+                            "fees": 0,
+                            "taxes": 48.7,
+                            "total": 287.02
+                          }
+                        },
+                        "passengers": [
+                          {
+                            "type": "",
+                            "title": "",
+                            "firstName": "TEST",
+                            "lastName": "COLUMNS",
+                            "gender": "M"
+                          }
+                        ],
+                        "order": {
+                          "reference": {
+                            "orderId": "019c42c6-69b4-779b-a627-d8914743d509",
+                            "airlineBookings": [
+                              {
+                                "airlineCode": "1G",
+                                "pnr": ""
+                              }
+                            ]
+                          }
+                        },
+                        "contact": {
+                          "firstName": "TEST",
+                          "email": "test.json@example.com"
+                        }
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4040,
+                    "description": "Booking not found",
+                    "message": "not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/flights/airlines": {
+      "get": {
+        "tags": [
+          "Airlines"
+        ],
+        "summary": "List airlines",
+        "description": "## Overview\n\nRetrieve a list of airlines with optional filtering by name, alliance, and active status.\n\n## When to Use\n\n- **Airline directory** - Build a searchable list of airlines for display or filtering\n- **Alliance filtering** - Filter airlines by alliance membership (Star Alliance, oneworld, SkyTeam)\n- **Active airlines** - Retrieve only currently operating airlines\n\n## What You Get\n\n- **Full airline records** including name, IATA/ICAO codes, country, alliance, and logo URL\n- **Alliance membership** for each airline\n- **Active status** to identify currently operating carriers\n- **Filtered results** based on query, alliance, and active status parameters\n\n## Quick Start\n\nCall with no parameters to get all airlines. Use `q` to search by name, `alliance` to filter by alliance, and `activeOnly=true` to exclude inactive carriers.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query (e.g., 'AA' or 'American')",
+            "example": "American"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "schema": {
+              "type": "integer",
+              "default": 20
+            },
+            "description": "Maximum number of results",
+            "example": 20
+          },
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Only return currently active airlines",
+            "example": true
+          },
+          {
+            "name": "alliance",
+            "in": "query",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "star_alliance",
+                "oneworld",
+                "skyteam",
+                "vanilla_alliance"
+              ]
+            },
+            "description": "Filter by airline alliance",
+            "example": "star_alliance"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "airlines": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/Airline"
+                            },
+                            "description": "List of airlines matching the query"
+                          }
+                        }
+                      },
+                      "description": "List of airline result sets"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "airlines": [
+                        {
+                          "active": true,
+                          "alliance": "oneworld",
+                          "callsign": "AMERICAN",
+                          "country": "United States",
+                          "iata": "AA",
+                          "icao": "AAL",
+                          "logo": "/static/images/airlines/AA.png",
+                          "name": "American Airlines"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 5000,
+                    "description": "Failed to retrieve airlines",
+                    "message": "unable to process request"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/flights/airlines/iatas": {
+      "get": {
+        "tags": [
+          "Airlines"
+        ],
+        "summary": "List airline IATA codes",
+        "description": "## Overview\n\nRetrieve a lightweight list of airline IATA codes with names for autocomplete and lookup purposes.\n\n## When to Use\n\n- **Autocomplete dropdowns** - Populate airline search inputs with a minimal list\n- **Client-side filtering** - Download the full list once and filter locally\n- **Code validation** - Build a lookup table of valid airline codes\n\n## What You Get\n\n- **IATA codes** for all airlines in the database\n- **Airline names** paired with each code\n- **Active filtering** available via the `activeOnly` parameter\n\n## Quick Start\n\nCall with no parameters to get all airline IATA codes and names. Use `activeOnly=true` to filter out inactive airlines.",
+        "parameters": [
+          {
+            "name": "activeOnly",
+            "in": "query",
+            "schema": {
+              "type": "boolean",
+              "default": true
+            },
+            "description": "Only return currently active airlines",
+            "example": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "airlines": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/AirlineIATA"
+                            },
+                            "description": "List of airline IATA codes and names"
+                          }
+                        }
+                      },
+                      "description": "List of airline IATA result sets"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "airlines": [
+                        {
+                          "iata": "AA",
+                          "name": "American Airlines"
+                        },
+                        {
+                          "iata": "AF",
+                          "name": "Air France"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/flights/airports": {
+      "get": {
+        "tags": [
+          "Airports"
+        ],
+        "summary": "Search airports",
+        "description": "## Overview\n\nSearch for airports by name, city, or IATA code using a text query. Returns matching airports for use in autocomplete and search inputs.\n\n## When to Use\n\n- **Airport autocomplete** - Power origin/destination search inputs with type-ahead suggestions\n- **Airport discovery** - Find airports in a city or region by name\n- **Search validation** - Look up airports before constructing a flight search request\n\n## What You Get\n\n- **Matching airports** ranked by relevance to the query\n- **IATA codes** for use in `/flights/rates` searches\n- **City and country** details for display purposes\n- **Geographic coordinates** for map-based interfaces\n\n## Quick Start\n\nProvide a `q` query string (minimum 2 characters) to search by airport name, city, or code. Returns matching airports ordered by relevance.",
+        "parameters": [
+          {
+            "name": "q",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Search query (minimum 2 characters, e.g., 'JFK' or 'New York')",
+            "example": "JFK"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "airports": {
+                            "type": "array",
+                            "items": {
+                              "$ref": "#/components/schemas/Airport"
+                            },
+                            "description": "List of airports matching the query"
+                          },
+                          "count": {
+                            "type": "integer",
+                            "description": "Total number of airports matching the query"
+                          }
+                        }
+                      },
+                      "description": "List of airport result sets"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "airports": [
+                        {
+                          "city": "New York",
+                          "country": "United States",
+                          "iata": "JFK",
+                          "icao": "KJFK",
+                          "lat": 40.63980103,
+                          "lon": -73.77890015,
+                          "name": "John F Kennedy International Airport",
+                          "state": "New York",
+                          "tz": "America/New_York"
+                        }
+                      ],
+                      "count": 1
+                    }
+                  ]
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/bookings": {
+      "post": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "2. Complete a booking",
+        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`) or bill an enabled **credit line** (`CREDIT`)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking if one already exists for the given `prebookId`\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebook`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlightBookingCreateRequest"
+              },
+              "examples": {
+                "stripeAfterPaymentSdk": {
+                  "summary": "Stripe after Payment SDK",
+                  "description": "`payment.method` is `TRANSACTION_ID`; use `transactionId` from prebook or attach-services after confirming with Stripe.",
+                  "value": {
+                    "prebookId": "019d0674-834d-7db7-9c8b-93fe8e46e7b8",
+                    "payment": {
+                      "method": "TRANSACTION_ID",
+                      "transactionId": "tr_cts_t0LaZePPxdCM_Kyskafml"
+                    }
+                  }
+                },
+                "creditLine": {
+                  "summary": "Credit line",
+                  "description": "`payment.method` is `CREDIT` when the account has an enabled credit line and payment bypass; omit `transactionId`.",
+                  "value": {
+                    "prebookId": "019d0674-834d-7db7-9c8b-93fe8e46e7b8",
+                    "payment": {
+                      "method": "CREDIT"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "description": "Prebook ID and payment: `TRANSACTION_ID` + `transactionId` (Stripe) or `CREDIT` (credit line), subject to server-side eligibility"
+        },
+        "responses": {
+          "201": {
+            "description": "Booking created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "booking": {
+                            "$ref": "#/components/schemas/FlightBooking",
+                            "description": "Confirmed booking record with status, journey, passengers, order reference, and payment details"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "Informational message about the booking (e.g. idempotency notice)"
+                          }
+                        }
+                      },
+                      "description": "Booking result array (always one item)"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

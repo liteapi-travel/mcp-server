@@ -76,6 +76,7 @@ export function loadOpenAPISpecs(specsDir: string): Map<string, OpenAPISpec> {
     'loyalty.json',
     'supplyCustomization.json',
     'prices.json',
+    'flights.json',
   ];
 
   for (const file of specFiles) {
