@@ -1,0 +1,340 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Experiences",
+    "version": "3.0.0",
+    "description": "The Experiences API lets you search tours and activities, check availability, reviews, and booking options. Discovery endpoints proxy to experiences-api. Access requires `experiences_access` on your account."
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "Experiences",
+      "description": "Search tours, check availability, reviews, and booking options for tours and activities."
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    },
+    "parameters": {
+      "language": {
+        "name": "language",
+        "in": "query",
+        "required": true,
+        "description": "ISO language code for localized content",
+        "schema": { "type": "string" },
+        "example": "en"
+      },
+      "currency": {
+        "name": "currency",
+        "in": "query",
+        "required": true,
+        "description": "ISO 4217 currency code for prices",
+        "schema": { "type": "string" },
+        "example": "EUR"
+      },
+      "tourId": {
+        "name": "id",
+        "in": "path",
+        "required": true,
+        "description": "Tour identifier",
+        "schema": { "type": "string" },
+        "example": "1218792"
+      }
+    },
+    "schemas": {
+      "SuccessEnvelope": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": {
+            "description": "Dispatcher-standard envelope. Mirrors the normalized experiences-api payload: an object for single-resource responses (e.g. tour detail, availability) or an array when the provider returns a JSON array.",
+            "oneOf": [
+              { "type": "object" },
+              { "type": "array", "items": { "type": "object" } }
+            ]
+          }
+        }
+      },
+      "ExperienceBookingData": {
+        "type": "object",
+        "properties": {
+          "bookingId": { "type": "string" },
+          "prebookId": { "type": "string" },
+          "status": { "type": "string", "enum": ["PENDING_CONFIRMATION", "CONFIRMED", "FAILED", "CANCELLED"], "example": "PENDING_CONFIRMATION" },
+          "providerStatus": { "type": "string", "example": "completed" },
+          "cartId": { "type": "string" },
+          "experienceBookingId": { "type": "string" },
+          "providerBookingId": { "type": "string" },
+          "tourId": { "type": "integer" },
+          "optionId": { "type": "integer" },
+          "dateTime": { "type": "string", "format": "date-time" },
+          "price": { "type": "number" },
+          "currency": { "type": "string" },
+          "paymentStatus": { "type": "string" },
+          "paymentTransactionId": { "type": "string" },
+          "voucher": { "type": "object" },
+          "providerPayment": { "type": "object" }
+        }
+      },
+      "ExperienceBookingResponse": {
+        "type": "object",
+        "required": ["data"],
+        "properties": {
+          "data": { "$ref": "#/components/schemas/ExperienceBookingData" }
+        }
+      },
+      "Error": {
+        "type": "object",
+        "required": ["error"],
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": { "type": "integer", "description": "Machine-readable error code" },
+              "message": { "type": "string", "description": "Human-readable error message" },
+              "description": { "description": "Additional error context" }
+            }
+          }
+        }
+      }
+    },
+    "responses": {
+      "BadRequest": {
+        "description": "Validation error",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Unauthorized": {
+        "description": "Authentication required",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "Forbidden": {
+        "description": "Experiences access is not enabled for this account",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "NotFound": {
+        "description": "Resource not found",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      },
+      "BadGateway": {
+        "description": "Failed to reach the experiences provider",
+        "content": { "application/json": { "schema": { "$ref": "#/components/schemas/Error" } } }
+      }
+    }
+  },
+  "paths": {
+    "/experiences/tours": {
+      "get": {
+        "operationId": "searchExperienceTours",
+        "summary": "Search tours",
+        "description": "## Overview\n\nSearch available tours and activities with localized content and prices in your chosen currency.\n\n## When to Use\n\n- **Search results** - Populate a tours listing or map view\n- **Destination pages** - Show activities available in a city or region\n- **Category browsing** - Filter tours by type, duration, or rating\n\n## What You Get\n\n- **Tour listings** - Titles, descriptions, images, and ratings\n- **Localized content** - Names and descriptions in the requested language\n- **Prices** - Amounts in the requested currency\n\n## Quick Start\n\nProvide required `language` and `currency` query parameters. Returns a paginated list of matching tours.",
+        "tags": ["Experiences"],
+        "parameters": [
+          { "$ref": "#/components/parameters/language" },
+          { "$ref": "#/components/parameters/currency" }
+        ],
+        "responses": {
+          "200": { "description": "List of tours", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/tours/{id}": {
+      "get": {
+        "operationId": "getExperienceTour",
+        "summary": "Get tour details",
+        "description": "## Overview\n\nRetrieve full details for a specific tour, including description, media, inclusions, and pricing context.\n\n## When to Use\n\n- **Product pages** - Display a tour detail view before the user selects dates\n- **Comparison** - Show full metadata when comparing activities\n- **Content enrichment** - Fetch descriptions and images for marketing surfaces\n\n## What You Get\n\n- **Complete tour profile** - Title, description, duration, and highlights\n- **Media** - Images and cover assets\n- **Practical info** - Meeting points, cancellation policy, and inclusions\n- **Localized pricing** - Prices in the requested currency\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters.",
+        "tags": ["Experiences"],
+        "parameters": [
+          { "$ref": "#/components/parameters/tourId" },
+          { "$ref": "#/components/parameters/language" },
+          { "$ref": "#/components/parameters/currency" }
+        ],
+        "responses": {
+          "200": { "description": "Tour details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/tours/{id}/availability": {
+      "get": {
+        "operationId": "getExperienceTourAvailability",
+        "summary": "Get tour availability",
+        "description": "## Overview\n\nRetrieve available dates and time slots for a specific tour so users can pick when to attend.\n\n## When to Use\n\n- **Date pickers** - Populate a calendar or slot selector on the tour page\n- **Availability checks** - Confirm a tour runs on the user's travel dates\n- **Booking flow** - Gate the checkout path until a valid slot is selected\n\n## What You Get\n\n- **Available dates** - Days the tour can be booked\n- **Time slots** - Start times per date where applicable\n- **Capacity hints** - Whether slots are still bookable\n\n## Quick Start\n\nProvide the tour `id` in the URL path and the required `language` query parameter.",
+        "tags": ["Experiences"],
+        "parameters": [
+          { "$ref": "#/components/parameters/tourId" },
+          { "$ref": "#/components/parameters/language" }
+        ],
+        "responses": {
+          "200": { "description": "Availability", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/tours/{id}/reviews": {
+      "get": {
+        "operationId": "getExperienceTourReviews",
+        "summary": "Get tour reviews",
+        "description": "## Overview\n\nRetrieve normalized guest reviews and ratings for a specific tour.\n\n## When to Use\n\n- **Review sections** - Display guest feedback on tour detail pages\n- **Trust building** - Show authentic ratings before booking\n- **Decision support** - Help users evaluate tours before selecting dates\n\n## What You Get\n\n- **Guest reviews** - Review text, ratings, and dates\n- **Pagination** - `limit` and `offset` query parameters\n- **Localized content** - Reviews in the requested language where available\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters.",
+        "tags": ["Experiences"],
+        "parameters": [
+          { "$ref": "#/components/parameters/tourId" },
+          { "$ref": "#/components/parameters/language" },
+          { "$ref": "#/components/parameters/currency" }
+        ],
+        "responses": {
+          "200": { "description": "Tour reviews", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/tours/{id}/booking-options": {
+      "post": {
+        "operationId": "getExperienceTourBookingOptions",
+        "summary": "Get merged booking options",
+        "description": "## Overview\n\nResolve priced booking options, time slots, and required guest inputs for a selected tour date and participant mix.\n\n## When to Use\n\n- **Option/slot pickers** - Show available variants and start times for a date\n- **Live pricing** - Display authoritative slot `retailPrice` values\n- **Checkout forms** - Collect `requiredInputs` before proceeding to payment (future checkout slice)\n\n## What You Get\n\n- **Booking options** - `optionId`, title, and `requiredInputs`\n- **Time slots** - `dateTime`, `isAvailable`, and slot-level `pricing.priceSummary.retailPrice`\n- **Participant mapping** - Uses `ticketCategory` keys from availability (e.g. `adult`, `child`)\n\n## Quick Start\n\nPOST a body with `language`, `currency`, `date` (`YYYY-MM-DD`), and `participants` to `/experiences/tours/{id}/booking-options`. Use slot `retailPrice` for display and checkout handoff.",
+        "tags": ["Experiences"],
+        "parameters": [{ "$ref": "#/components/parameters/tourId" }],
+        "requestBody": {
+          "required": true,
+          "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } }
+        },
+        "responses": {
+          "200": { "description": "Booking options", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/tours/{id}/prebooks": {
+      "post": {
+        "operationId": "prebookExperienceTour",
+        "summary": "Create experience prebook (validate + Stripe intent)",
+        "description": "Temp hold via experiences-api validate and Stripe PaymentIntent creation. Phase 1 requires `usePaymentSdk: true`.",
+        "tags": ["Experiences"],
+        "parameters": [{ "$ref": "#/components/parameters/tourId" }],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["selection", "language", "currency", "usePaymentSdk"],
+                "properties": {
+                  "selection": { "type": "object" },
+                  "language": { "type": "string", "example": "en" },
+                  "currency": { "type": "string", "example": "EUR" },
+                  "clientReferenceId": { "type": "string" },
+                  "usePaymentSdk": { "type": "boolean", "example": true }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Prebook created with transactionId and secretKey", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/SuccessEnvelope" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/bookings": {
+      "post": {
+        "operationId": "createExperienceBooking",
+        "summary": "Confirm experience booking (capture + book cart)",
+        "description": "Capture Stripe payment then confirm cart with experiences-api. Cart status `completed` maps to dispatcher `PENDING_CONFIRMATION`; final `CONFIRMED` arrives via webhook. Cart status `ERROR` returns 502.",
+        "tags": ["Experiences"],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["prebookId", "billing", "traveler", "payment"],
+                "properties": {
+                  "prebookId": { "type": "string" },
+                  "billing": { "type": "object" },
+                  "traveler": { "type": "object" },
+                  "payment": {
+                    "type": "object",
+                    "required": ["method"],
+                    "properties": {
+                      "method": { "type": "string", "enum": ["TRANSACTION_ID"] },
+                      "transactionId": { "type": "string" }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": { "description": "Booking accepted (PENDING_CONFIRMATION) or idempotent return", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceBookingResponse" } } } },
+          "400": { "$ref": "#/components/responses/BadRequest" },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" },
+          "409": { "description": "Booking already exists for prebookId" },
+          "502": { "$ref": "#/components/responses/BadGateway" }
+        }
+      }
+    },
+    "/experiences/bookings/{bookingId}": {
+      "get": {
+        "operationId": "getExperienceBooking",
+        "summary": "Get experience booking status",
+        "description": "Poll booking status while pending confirmation or retrieve voucher after webhook confirms.",
+        "tags": ["Experiences"],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": { "type": "string" },
+            "description": "Dispatcher booking ID returned from POST /experiences/bookings"
+          }
+        ],
+        "responses": {
+          "200": { "description": "Booking details", "content": { "application/json": { "schema": { "$ref": "#/components/schemas/ExperienceBookingResponse" } } } },
+          "401": { "$ref": "#/components/responses/Unauthorized" },
+          "403": { "$ref": "#/components/responses/Forbidden" },
+          "404": { "$ref": "#/components/responses/NotFound" }
+        }
+      }
+    }
+  }
+}
