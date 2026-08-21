@@ -41,7 +41,10 @@
             }
           }
         },
-        "required": ["hotelId", "prices"]
+        "required": [
+          "hotelId",
+          "prices"
+        ]
       },
       "PriceIndexEntry": {
         "type": "object",
@@ -60,7 +63,10 @@
             "example": 107
           }
         },
-        "required": ["day", "avgPriceUsd"]
+        "required": [
+          "day",
+          "avgPriceUsd"
+        ]
       },
       "PriceIndexCityResponse": {
         "type": "object",
@@ -84,7 +90,11 @@
             }
           }
         },
-        "required": ["countryCode", "cityName", "prices"]
+        "required": [
+          "countryCode",
+          "cityName",
+          "prices"
+        ]
       },
       "ErrorResponse": {
         "type": "object",
@@ -98,7 +108,142 @@
             "description": "Error code"
           }
         },
-        "required": ["message", "code"]
+        "required": [
+          "message",
+          "code"
+        ]
+      },
+      "PublicPriceOffer": {
+        "type": "object",
+        "description": "A public price offer from a booking provider",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "description": "Total stay amount from this provider",
+            "example": 156
+          },
+          "nightly": {
+            "type": "number",
+            "description": "Nightly amount from this provider",
+            "example": 39
+          },
+          "provider": {
+            "type": "string",
+            "description": "Normalized provider identifier",
+            "example": "cheaptickets"
+          },
+          "rawProvider": {
+            "type": "string",
+            "description": "Raw provider display name as observed",
+            "example": "CheapTickets.com"
+          }
+        },
+        "required": [
+          "amount",
+          "nightly",
+          "provider",
+          "rawProvider"
+        ]
+      },
+      "PublicPrice": {
+        "type": "object",
+        "description": "Cached public price for a hotel and occupancy",
+        "properties": {
+          "hotelId": {
+            "type": "string",
+            "description": "The liteAPI hotel ID",
+            "example": "lpec902"
+          },
+          "checkin": {
+            "type": "string",
+            "format": "date",
+            "description": "Check-in date in YYYY-MM-DD format",
+            "example": "2026-08-24"
+          },
+          "checkout": {
+            "type": "string",
+            "format": "date",
+            "description": "Check-out date in YYYY-MM-DD format",
+            "example": "2026-08-28"
+          },
+          "amount": {
+            "type": "number",
+            "description": "The best (lowest) cached public price amount for the stay",
+            "example": 156
+          },
+          "nightlyAmount": {
+            "type": "number",
+            "description": "The best (lowest) nightly public price amount",
+            "example": 39
+          },
+          "currency": {
+            "type": "string",
+            "description": "Currency code",
+            "example": "USD"
+          },
+          "provider": {
+            "type": "string",
+            "description": "Normalized provider identifier for the best offer",
+            "example": "cheaptickets"
+          },
+          "rawObservedText": {
+            "type": "string",
+            "description": "Raw observed price text from the source",
+            "example": "39 USD"
+          },
+          "adults": {
+            "type": "integer",
+            "description": "Number of adult guests for this occupancy",
+            "example": 2
+          },
+          "offers": {
+            "type": "array",
+            "description": "Public price offers from multiple booking providers",
+            "items": {
+              "$ref": "#/components/schemas/PublicPriceOffer"
+            }
+          },
+          "fetchedAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the price was last retrieved from the source",
+            "example": "2026-07-30T12:16:11.352517242Z"
+          },
+          "expiresAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When this cached price expires",
+            "example": "2026-08-24T23:59:59.999999999Z"
+          }
+        },
+        "required": [
+          "hotelId",
+          "checkin",
+          "checkout",
+          "amount",
+          "nightlyAmount",
+          "currency",
+          "provider",
+          "rawObservedText",
+          "adults",
+          "offers",
+          "fetchedAt",
+          "expiresAt"
+        ]
+      },
+      "PublicPriceNotFound": {
+        "type": "object",
+        "description": "Returned when there is no cache entry or a negative cache entry",
+        "properties": {
+          "status": {
+            "type": "string",
+            "description": "Status indicator",
+            "example": "not_found"
+          }
+        },
+        "required": [
+          "status"
+        ]
       }
     }
   },
@@ -111,7 +256,9 @@
   "paths": {
     "/prices/city": {
       "get": {
-        "tags": ["Price Index"],
+        "tags": [
+          "Price Index"
+        ],
         "summary": "Get aggregated price index for a city",
         "description": "## Overview\n\nRetrieve aggregated historical price index data for all hotels in a specific city. Returns average per-night prices aggregated by calendar day across all hotels in the city, providing city-level pricing trends.\n\n**⚠️ Beta Feature**: This endpoint is currently in beta. The API structure and behavior may change in future versions.\n\n**Pricing**: $0.05 per request\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **City-level price analysis** - Analyze average pricing trends for an entire city\n- **Market research** - Compare pricing across different cities\n- **Destination pricing** - Get aggregated pricing data for a destination\n- **City pricing dashboards** - Build visualizations of city-level price trends\n\n## What You Get\n\n- **City-level aggregation** - Average prices aggregated across all hotels in the city (up to 1,000 hotels)\n- **Per-night prices** - Average price per night for each calendar day\n- **Daily aggregation** - One entry per day with aggregated pricing data\n- **Future dates only** - Only returns data for future check-in dates (defaults to today onwards)\n\n## Key Features\n\n- **Automatic hotel discovery** - Automatically finds hotels in the specified city (up to 1,000)\n- **City-level aggregation** - Prices are averaged across all hotels in the city, not per hotel\n- **Per-night pricing** - Prices are normalized to per-night rates\n- **Future-focused** - Only queries check-in dates in the future by default\n- **Flexible date ranges** - Optional date filtering with sensible defaults\n\n## Parameters\n\n- `countryCode` (required): ISO-2 country code (e.g., 'US', 'GB', 'FR')\n- `cityName` (required): City name (case-insensitive)\n- `fromDate` (optional): Start date in YYYY-MM-DD format. Defaults to today.\n- `toDate` (optional): End date in YYYY-MM-DD format. Defaults to 1 year from today.",
         "operationId": "getPriceIndexCity",
@@ -230,7 +377,9 @@
     },
     "/prices/hotels": {
       "get": {
-        "tags": ["Price Index"],
+        "tags": [
+          "Price Index"
+        ],
         "summary": "Get price index for hotels",
         "description": "## Overview\n\nRetrieve historical price index data for a list of hotels. Returns average per-night prices aggregated by calendar day, allowing you to analyze pricing trends and patterns.\n\n**⚠️ Beta Feature**: This endpoint is currently in beta. The API structure and behavior may change in future versions.\n\n**Pricing**: $0.05 per request\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Price trend analysis** - Analyze how hotel prices change over time\n- **Price forecasting** - Use historical data to predict future pricing\n- **Market research** - Compare pricing across multiple hotels\n- **Pricing dashboards** - Build visualizations of hotel price trends\n\n## What You Get\n\n- **Per-night prices** - Average price per night for each calendar day\n- **Daily aggregation** - One entry per day with aggregated pricing data\n- **Multiple hotels** - Query up to 50 hotels in a single request\n- **Future dates only** - Only returns data for future check-in dates (defaults to today onwards)\n\n## Key Features\n\n- **Per-night pricing** - Prices are normalized to per-night rates regardless of stay duration\n- **Daily aggregation** - Each day has a single entry with the average per-night price across all stays that include that day\n- **Future-focused** - Only queries check-in dates in the future by default\n- **Flexible date ranges** - Optional date filtering with sensible defaults\n- **Hotel limit** - Maximum 50 hotel IDs per request\n\n## Parameters\n\n- `hotelIds` (required): Comma-separated list of hotel IDs. Maximum 50 hotel IDs allowed.\n- `fromDate` (optional): Start date in YYYY-MM-DD format. Defaults to today.\n- `toDate` (optional): End date in YYYY-MM-DD format. Defaults to 1 year from today.",
         "operationId": "getPriceIndexHotels",
@@ -310,6 +459,258 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            },
+            "headers": {
+              "Retry-After": {
+                "description": "Number of seconds to wait before retrying",
+                "schema": {
+                  "type": "integer",
+                  "example": 60
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/prices/public": {
+      "get": {
+        "tags": [
+          "Price Index"
+        ],
+        "summary": "Get cached public price for a hotel",
+        "description": "## Overview\n\nRetrieve cached public price data for a specific hotel and occupancy. This endpoint returns pricing information sourced from public booking platforms (e.g., Booking.com, Expedia) that has been pre-fetched and cached. It applies occupancy canonicalization automatically, so callers don't need to replicate that logic.\n\n**⚠️ Beta Feature**: This endpoint is currently in beta. The API structure and behavior may change in future versions.\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Price comparison** - Compare your negotiated rates against publicly available prices\n- **Rate validation** - Verify that your offered rates are competitive before displaying to end users\n- **Market intelligence** - Understand public pricing trends for specific hotels and dates\n\n## What You Get\n\n- **amount** - The best (lowest) cached public price for the stay in the specified currency\n- **nightlyAmount** - The best (lowest) nightly public price\n- **currency** - Currency code (USD)\n- **provider** - Normalized provider identifier for the best offer (e.g., `cheaptickets`)\n- **rawObservedText** - Raw observed price text from the source\n- **offers** - Public price offers from multiple booking providers\n- **fetchedAt** - When the price was last retrieved from the source\n- **expiresAt** - When this cached price expires and should no longer be used\n\n## Key Features\n\n- **Occupancy-specific** - Prices are stored per occupancy configuration; query params must match write-time occupancy\n- **Negative cache aware** - Returns 404 for both cache misses and negative cache entries (hotels with no public price found)\n- **Low latency** - Direct cache lookup, no upstream API calls\n\n## Parameters\n\n- `hotelId` (required): The liteAPI hotel ID (e.g., `lpec902`)\n- `checkin` (required): Check-in date in YYYY-MM-DD format\n- `checkout` (required): Check-out date in YYYY-MM-DD format\n- `adults` (required): Number of adult guests\n- `childrenAges` (optional): Comma-separated ages of children (e.g., `5,8`)\n- `currency` (optional): Currency code; if present, must be `USD`",
+        "operationId": "getPublicPrice",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelId",
+            "in": "query",
+            "required": true,
+            "description": "The liteAPI hotel ID",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lpec902"
+          },
+          {
+            "name": "checkin",
+            "in": "query",
+            "required": true,
+            "description": "Check-in date in YYYY-MM-DD format",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-08-24"
+          },
+          {
+            "name": "checkout",
+            "in": "query",
+            "required": true,
+            "description": "Check-out date in YYYY-MM-DD format",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            },
+            "example": "2026-08-28"
+          },
+          {
+            "name": "adults",
+            "in": "query",
+            "required": true,
+            "description": "Number of adult guests",
+            "schema": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "example": 2
+          },
+          {
+            "name": "childrenAges",
+            "in": "query",
+            "required": false,
+            "description": "Comma-separated ages of children (e.g., '5,8'). Occupancy params must match those used at write time.",
+            "schema": {
+              "type": "string"
+            },
+            "example": "5,8"
+          },
+          {
+            "name": "currency",
+            "in": "query",
+            "required": false,
+            "description": "Currency code. If present, must be USD.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "USD"
+              ]
+            },
+            "example": "USD"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successfully retrieved cached public price",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PublicPrice"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "adults": 2,
+                    "amount": 156,
+                    "checkin": "2026-08-24",
+                    "checkout": "2026-08-28",
+                    "currency": "USD",
+                    "expiresAt": "2026-08-24T23:59:59.999999999Z",
+                    "fetchedAt": "2026-07-30T12:16:11.352517242Z",
+                    "hotelId": "lpec902",
+                    "nightlyAmount": 39,
+                    "offers": [
+                      {
+                        "amount": 156,
+                        "nightly": 39,
+                        "provider": "cheaptickets",
+                        "rawProvider": "CheapTickets.com"
+                      },
+                      {
+                        "amount": 156,
+                        "nightly": 39,
+                        "provider": "expedia",
+                        "rawProvider": "Expedia.com"
+                      },
+                      {
+                        "amount": 156,
+                        "nightly": 39,
+                        "provider": "hotels",
+                        "rawProvider": "Hotels.com"
+                      },
+                      {
+                        "amount": 156,
+                        "nightly": 39,
+                        "provider": "orbitz",
+                        "rawProvider": "Orbitz.com"
+                      },
+                      {
+                        "amount": 156,
+                        "nightly": 39,
+                        "provider": "travelocity",
+                        "rawProvider": "Travelocity.com"
+                      },
+                      {
+                        "amount": 172,
+                        "nightly": 43,
+                        "provider": "booking",
+                        "rawProvider": "Booking.com"
+                      },
+                      {
+                        "amount": 172,
+                        "nightly": 43,
+                        "provider": "oyo",
+                        "rawProvider": "OYO"
+                      },
+                      {
+                        "amount": 180,
+                        "nightly": 45,
+                        "provider": "hometogo",
+                        "rawProvider": "HomeToGo"
+                      },
+                      {
+                        "amount": 180,
+                        "nightly": 45,
+                        "provider": "priceline",
+                        "rawProvider": "Priceline"
+                      },
+                      {
+                        "amount": 180,
+                        "nightly": 45,
+                        "provider": "reservationday",
+                        "rawProvider": "Reservation Day"
+                      },
+                      {
+                        "amount": 180,
+                        "nightly": 45,
+                        "provider": "super",
+                        "rawProvider": "Super.com"
+                      },
+                      {
+                        "amount": 184,
+                        "nightly": 46,
+                        "provider": "bluepillow",
+                        "rawProvider": "Bluepillow.com"
+                      }
+                    ],
+                    "provider": "cheaptickets",
+                    "rawObservedText": "39 USD"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - Invalid parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized - Missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Not Found - No cache entry or negative cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PublicPriceNotFound"
+                },
+                "example": {
+                  "status": "not_found"
                 }
               }
             }

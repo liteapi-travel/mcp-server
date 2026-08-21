@@ -8,6 +8,254 @@
     }
   ],
   "paths": {
+    "/data/hotel/{hotelId}/tax-schema": {
+      "get": {
+        "tags": [
+          "Hotels"
+        ],
+        "operationId": "getHotelTaxSchema",
+        "summary": "Get the normalized tax schema of a hotel",
+        "description": "## Overview\n\nReturns the tax schema of a hotel as normalized static data, independent of the supply provider the rules were learned from. Each entry describes one tax or fee: whether it is already included in the room rate, whether it is a percentage of the rate or a fixed amount, and how fixed amounts scale (per adult and/or per night).\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Excluded taxes are typically collected at the hotel\n- **Tax auditing** - Compare supplier-declared taxes against the reference schema\n\n## Notes\n\n- Fixed amounts are expressed in USD\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- The schema is learned by an offline pipeline; hotels without learned data return 404",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of the hotel, in 'lp' format or numeric.",
+            "required": true,
+            "example": "lp3803c"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "headers": {
+              "Content-Type": {
+                "schema": {
+                  "type": "string",
+                  "example": "application/json; charset=utf-8"
+                }
+              },
+              "Content-Encoding": {
+                "schema": {
+                  "type": "string",
+                  "example": "gzip"
+                }
+              }
+            },
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "hotelId",
+                        "taxes"
+                      ],
+                      "properties": {
+                        "hotelId": {
+                          "type": "string",
+                          "description": "Hotel identifier in 'lp' format.",
+                          "example": "lp3803c"
+                        },
+                        "lastUpdated": {
+                          "type": "string",
+                          "description": "When the tax schema was last refreshed by the tax pipeline.",
+                          "example": "2026-07-01T10:15:00Z"
+                        },
+                        "taxes": {
+                          "type": "array",
+                          "description": "Normalized list of taxes and fees applying to this hotel.",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "name",
+                              "included",
+                              "type"
+                            ],
+                            "properties": {
+                  "name": {
+                    "type": "string",
+                    "description": "Public-facing display name of the tax or fee.",
+                    "example": "City Tax"
+                  },
+                              "included": {
+                                "type": "boolean",
+                                "description": "Whether the tax is already included in the room rate (true) or collected separately, e.g. at the property (false).",
+                                "example": false
+                              },
+                              "type": {
+                                "type": "string",
+                                "enum": [
+                                  "percentage",
+                                  "fixed"
+                                ],
+                                "description": "'fixed' when a fixed amount is known for this tax (the authoritative form), 'percentage' otherwise.",
+                                "example": "fixed"
+                              },
+                              "percentageRate": {
+                                "type": "number",
+                                "description": "Highest percentage of the room rate observed for this tax, rounded to two decimals (e.g. 13.5 means 13.5%). May be present alongside fixedAmount when the tax was observed in both forms.",
+                                "example": 13.5
+                              },
+                              "fixedAmount": {
+                                "type": "number",
+                                "description": "Highest flat amount per unit (see perAdult/perNight) observed for this tax. Only present when type is 'fixed'.",
+                                "example": 5
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "Currency of fixedAmount. Only present when type is 'fixed'.",
+                                "example": "USD"
+                              },
+                              "perAdult": {
+                                "type": "boolean",
+                                "description": "Whether a fixed amount applies per adult.",
+                                "example": false
+                              },
+                              "perNight": {
+                                "type": "boolean",
+                                "description": "Whether a fixed amount applies per night.",
+                                "example": true
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Machine-readable error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Additional details about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Machine-readable error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Additional details about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No tax schema found for this hotel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Machine-readable error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Additional details about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Machine-readable error code"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Human-readable error message"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Additional details about the error"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/data/places": {
       "get": {
         "tags": ["Places"],
@@ -2278,9 +2526,22 @@
                             "instructions": {
                               "type": "array",
                               "items": {
-                                "type": "string"
+                                "type": "object",
+                                "properties": {
+                                  "id": {
+                                    "type": "integer",
+                                    "description": "Identifier of the instruction, when available."
+                                  },
+                                  "instruction": {
+                                    "type": "string",
+                                    "description": "Check-in or check-out instruction text."
+                                  }
+                                },
+                                "required": [
+                                  "instruction"
+                                ]
                               },
-                              "description": "Check-in and check-out instructions."
+                              "description": "Check-in and check-out instructions, always returned as an array of objects."
                             },
                             "special_instructions": {
                               "type": "string",
@@ -2530,6 +2791,17 @@
                                     }
                                   }
                                 }
+                              },
+                              "bedRelation": {
+                                "type": "string",
+                                "enum": [
+                                  "NONE",
+                                  "AND",
+                                  "OR",
+                                  "COMPLEX"
+                                ],
+                                "description": "How the entries in `bedTypes` relate to one another.\n\n- `NONE` - no relation applies, the room has a single bed configuration (or none is published).\n- `AND` - every listed bed is present in the room at the same time, e.g. a King **and** a sofa bed.\n- `OR` - the listed beds are alternatives, the room is made up with one of them, e.g. a King **or** two Queens.\n- `COMPLEX` - the setup does not reduce to a single `AND` or `OR`, e.g. a King **or** two Queens, **and** a sofa bed.",
+                                "example": "OR"
                               }
                             }
                           }
@@ -3053,7 +3325,12 @@
                           "checkout": "11:00 AM",
                           "checkin_start": "04:00 PM",
                           "checkin_end": "12:00 AM",
-                          "instructions": [],
+                          "instructions": [
+                            {
+                              "id": 10397,
+                              "instruction": "Government-issued photo identification and a credit card, debit card, or cash deposit may be required at check-in for incidental charges"
+                            }
+                          ],
                           "special_instructions": ""
                         },
                         "hotelImages": [
@@ -3499,7 +3776,8 @@
                                 "classOrder": 0,
                                 "hd_url": "https://static.cupid.travel/rooms-large-pictures/592392806.jpg"
                               }
-                            ]
+                            ],
+                            "bedRelation": "NONE"
                           },
                           {
                             "id": 2617265,
@@ -3651,7 +3929,8 @@
                                 "classOrder": 0,
                                 "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489114.jpg"
                               }
-                            ]
+                            ],
+                            "bedRelation": "NONE"
                           },
                           {
                             "id": 2617266,
@@ -3804,7 +4083,8 @@
                                 "classOrder": 0,
                                 "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489112.jpg"
                               }
-                            ]
+                            ],
+                            "bedRelation": "NONE"
                           },
                           {
                             "id": 2617267,
@@ -3998,7 +4278,8 @@
                                 "classOrder": 0,
                                 "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489116.jpg"
                               }
-                            ]
+                            ],
+                            "bedRelation": "NONE"
                           },
                           {
                             "id": 2617268,
@@ -4156,7 +4437,8 @@
                                 "classOrder": 0,
                                 "hd_url": "https://static.cupid.travel/rooms-large-pictures/524489039.jpg"
                               }
-                            ]
+                            ],
+                            "bedRelation": "NONE"
                           },
                           {
                             "id": 2617269,
@@ -4357,7 +4639,8 @@
                                 "classOrder": 0,
                                 "hd_url": "https://static.cupid.travel/rooms-large-pictures/618690410.jpg"
                               }
-                            ]
+                            ],
+                            "bedRelation": "NONE"
                           }
                         ],
                         "phone": "",
@@ -7995,12 +8278,20 @@
                           "name": "Japanese"
                         },
                         {
+                          "code": "ko",
+                          "name": "Korean"
+                        },
+                        {
                           "code": "lt",
                           "name": "Lithuanian"
                         },
                         {
                           "code": "lv",
                           "name": "Latvian"
+                        },
+                        {
+                          "code": "ms",
+                          "name": "Malay"
                         },
                         {
                           "code": "nb",

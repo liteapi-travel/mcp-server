@@ -127,8 +127,8 @@
                   },
                   "boardType": {
                     "type": "string",
-                    "description": "Filter results by board type(s). Can be a single value (e.g., 'BB') or comma-separated values (e.g., 'BB,BB1,BB2') for OR logic. Example values: RO (Room Only), BB (Bed & Breakfast), HB (Half Board), BB1, BB2, BB3, etc.",
-                    "example": "BB,BB1,BB2"
+                    "description": "Filter results by board type(s). Can be a single value (e.g., 'BI') or comma-separated values (e.g., 'BI,HB') for OR logic. Example values: RO (Room Only), BI (Breakfast Included), HB (Half Board), FB (Full Board), AI (All Inclusive), DI (Dinner Included), LI (Lunch Included), BDI (Breakfast and Dinner Included), BLI (Breakfast and Lunch Included), LDI (Lunch and Dinner Included).",
+                    "example": "BI,HB"
                   },
                   "refundableRatesOnly": {
                     "type": "boolean",

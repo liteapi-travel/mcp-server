@@ -6957,14 +6957,6 @@
                             "type": "string",
                             "description": "The hotel ID — same as the original booking."
                           },
-                          "checkin": {
-                            "type": "string",
-                            "description": "The check-in date for this alternative in YYYY-MM-DD format."
-                          },
-                          "checkout": {
-                            "type": "string",
-                            "description": "The check-out date for this alternative in YYYY-MM-DD format."
-                          },
                           "currency": {
                             "type": "string",
                             "description": "Currency for all prices in this prebook — inherited from the original booking."
@@ -6973,56 +6965,15 @@
                             "type": "string",
                             "description": "Terms and conditions for this alternative rate."
                           },
-                          "price": {
-                            "type": "number",
-                            "description": "Total price for all rooms in this prebook session."
-                          },
-                          "priceType": {
-                            "type": "string",
-                            "description": "Pricing model. `commission` means the price includes the client commission."
-                          },
-                          "priceDifferencePercent": {
-                            "type": "number",
-                            "description": "Percentage difference between this alternative's total price and the **original booking's selling price** (currency-converted into this alternative's currency). 0 means the same price; positive values mean the alternative is more expensive, negative values mean it is cheaper. Floored to an integer."
-                          },
-                          "commission": {
-                            "type": "number",
-                            "description": "Client commission amount included in the total price."
-                          },
-                          "suggestedSellingPrice": {
-                            "type": "number",
-                            "description": "Minimum public selling price (MSP) for all rooms combined."
-                          },
-                          "cancellationChanged": {
-                            "type": "boolean",
-                            "description": "True if the cancellation policy for this alternative differs from the original offer."
-                          },
-                          "boardChanged": {
-                            "type": "boolean",
-                            "description": "True if the meal plan (board type) for this alternative differs from the original offer."
-                          },
-                          "supplier": {
-                            "type": "string",
-                            "description": "Name of the supplier providing this rate."
-                          },
-                          "supplierId": {
-                            "type": "integer",
-                            "description": "Numeric identifier of the supplier."
-                          },
-                          "paymentTypes": {
-                            "type": "array",
-                            "items": { "type": "string" },
-                            "description": "Supported payment methods for this prebook session."
-                          },
                           "roomTypes": {
                             "type": "array",
-                            "description": "Room and rate details for this alternative.",
+                            "description": "Room and rate details for this alternative. Same shape as `POST /rates/prebook` roomTypes.",
                             "items": {
                               "type": "object",
                               "properties": {
                                 "name": {
                                   "type": "string",
-                                  "description": "Room type name."
+                                  "description": "Room type name. Often omitted when the supplier does not return a room-type-level name."
                                 },
                                 "rates": {
                                   "type": "array",
@@ -7036,19 +6987,15 @@
                                       },
                                       "occupancyNumber": {
                                         "type": "integer",
-                                        "description": "Which occupancy slot this rate belongs to."
+                                        "description": "Which occupancy slot this rate belongs to (1-based)."
                                       },
                                       "name": {
                                         "type": "string",
                                         "description": "Room name for this rate."
                                       },
-                                      "boardType": {
-                                        "type": "string",
-                                        "description": "Meal plan code (e.g. `RO`, `BB`)."
-                                      },
-                                      "boardName": {
-                                        "type": "string",
-                                        "description": "Full meal plan name (e.g. `Room Only`, `Bed & Breakfast`)."
+                                      "maxOccupancy": {
+                                        "type": "integer",
+                                        "description": "Maximum number of guests allowed in this room."
                                       },
                                       "adultCount": {
                                         "type": "integer",
@@ -7063,13 +7010,25 @@
                                         "items": { "type": "integer" },
                                         "description": "Ages of children included in this rate."
                                       },
+                                      "boardType": {
+                                        "type": "string",
+                                        "description": "Meal plan code (e.g. `RO`, `BB`)."
+                                      },
+                                      "boardName": {
+                                        "type": "string",
+                                        "description": "Full meal plan name (e.g. `Room Only`, `Bed & Breakfast`)."
+                                      },
+                                      "remarks": {
+                                        "type": "string",
+                                        "description": "Supplier remarks for this rate (may be empty)."
+                                      },
                                       "priceType": {
                                         "type": "string",
-                                        "description": "Pricing model for this rate."
+                                        "description": "Pricing model for this rate (typically `commission`)."
                                       },
                                       "commission": {
                                         "type": "array",
-                                        "description": "Commission breakdown per stay night or per room.",
+                                        "description": "Client commission breakdown for this rate.",
                                         "items": {
                                           "type": "object",
                                           "properties": {
@@ -7099,7 +7058,19 @@
                                               "properties": {
                                                 "amount": { "type": "number" },
                                                 "currency": { "type": "string" },
-                                                "source": { "type": "string" }
+                                                "source": { "type": "string", "description": "MSP source when known (may be empty)." }
+                                              }
+                                            }
+                                          },
+                                          "initialPrice": {
+                                            "type": "array",
+                                            "nullable": true,
+                                            "description": "Hotel's standard listed price before discounts. May be `null` when not provided.",
+                                            "items": {
+                                              "type": "object",
+                                              "properties": {
+                                                "amount": { "type": "number" },
+                                                "currency": { "type": "string" }
                                               }
                                             }
                                           },
@@ -7126,7 +7097,10 @@
                                             "items": {
                                               "type": "object",
                                               "properties": {
-                                                "cancelTime": { "type": "string", "description": "Deadline before a fee applies (ISO 8601)." },
+                                                "cancelTime": {
+                                                  "type": "string",
+                                                  "description": "Deadline before a fee applies. Typically `YYYY-MM-DD HH:MM:SS` in the policy timezone (usually GMT)."
+                                                },
                                                 "amount": { "type": "number", "description": "Cancellation fee amount (0 = fully refundable)." },
                                                 "currency": { "type": "string" },
                                                 "type": { "type": "string", "description": "Fee type, e.g. `amount`." },
@@ -7144,15 +7118,127 @@
                                           }
                                         }
                                       },
+                                      "mappedRoomId": {
+                                        "type": "integer",
+                                        "nullable": true,
+                                        "description": "Mapped static-content room ID when room mapping is available."
+                                      },
                                       "paymentTypes": {
                                         "type": "array",
-                                        "items": { "type": "string" }
+                                        "nullable": true,
+                                        "items": { "type": "string" },
+                                        "description": "Supported payment methods for this rate (e.g. `NUITEE_PAY`, `PROPERTY_PAY`). May be `null` when not returned by the supplier."
+                                      },
+                                      "providerCommission": {
+                                        "type": "object",
+                                        "description": "Provider-side commission when available.",
+                                        "properties": {
+                                          "amount": { "type": "number" },
+                                          "currency": { "type": "string" }
+                                        }
+                                      },
+                                      "provider_net_price": {
+                                        "type": "number",
+                                        "description": "Net price from the provider before client margin/commission."
+                                      },
+                                      "perks": {
+                                        "type": "array",
+                                        "nullable": true,
+                                        "description": "Perks or benefits associated with this rate. May be `null` or empty.",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "perkId": { "type": "integer" },
+                                            "name": { "type": "string" },
+                                            "amount": { "type": "number" },
+                                            "currency": { "type": "string" },
+                                            "level": { "type": "string" }
+                                          }
+                                        }
+                                      },
+                                      "promotions": {
+                                        "type": "array",
+                                        "nullable": true,
+                                        "description": "Promotions applied to this rate. May be `null` or empty.",
+                                        "items": {
+                                          "type": "object",
+                                          "properties": {
+                                            "name": { "type": "string" },
+                                            "from": { "type": "string" },
+                                            "to": { "type": "string" },
+                                            "discount": { "type": "number" },
+                                            "discountType": { "type": "string" },
+                                            "promotionCode": { "type": "string" },
+                                            "currency": { "type": "string" }
+                                          }
+                                        }
                                       }
                                     }
                                   }
                                 }
                               }
                             }
+                          },
+                          "suggestedSellingPrice": {
+                            "type": "number",
+                            "description": "Minimum public selling price (MSP) for all rooms combined."
+                          },
+                          "isPackageRate": {
+                            "type": "boolean",
+                            "nullable": true,
+                            "description": "Whether this alternative is a package rate. May be `null` when unknown."
+                          },
+                          "commission": {
+                            "type": "number",
+                            "description": "Client commission amount included in the total price."
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Total price for all rooms in this prebook session."
+                          },
+                          "priceType": {
+                            "type": "string",
+                            "description": "Pricing model. `commission` means the price includes the client commission."
+                          },
+                          "priceDifferencePercent": {
+                            "type": "number",
+                            "description": "Percentage difference between this alternative's total price and the **original booking's selling price** (currency-converted into this alternative's currency). 0 means the same price; positive values mean the alternative is more expensive, negative values mean it is cheaper. Floored to an integer."
+                          },
+                          "cancellationChanged": {
+                            "type": "boolean",
+                            "description": "True if the cancellation policy for this alternative differs from the original offer."
+                          },
+                          "boardChanged": {
+                            "type": "boolean",
+                            "description": "True if the meal plan (board type) for this alternative differs from the original offer."
+                          },
+                          "supplier": {
+                            "type": "string",
+                            "description": "Name of the supplier providing this rate."
+                          },
+                          "supplierId": {
+                            "type": "integer",
+                            "description": "Numeric identifier of the supplier."
+                          },
+                          "paymentTypes": {
+                            "type": "array",
+                            "nullable": true,
+                            "items": { "type": "string" },
+                            "description": "Supported payment methods for this prebook session (e.g. `NUITEE_PAY`, `PROPERTY_PAY`). May be `null` when not returned by the supplier."
+                          },
+                          "checkin": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "The check-in date for this alternative in YYYY-MM-DD format."
+                          },
+                          "checkout": {
+                            "type": "string",
+                            "format": "date",
+                            "description": "The check-out date for this alternative in YYYY-MM-DD format."
+                          },
+                          "sellingPriceToUser": {
+                            "type": "number",
+                            "description": "Amount the end user pays for this alternative (`price` minus any voucher amount)."
                           }
                         }
                       }
@@ -7172,57 +7258,68 @@
                     "value": {
                       "data": [
                         {
-                          "prebookId": "aB1cD2eF3",
-                          "offerId": "GE5ESNBSIZKVEQ2O...",
-                          "hotelId": "lp12345",
-                          "checkin": "2026-02-28",
-                          "checkout": "2026-03-02",
-                          "currency": "USD",
+                          "prebookId": "75n9uOzH-",
+                          "offerId": "3gAWonJzkd4AEaRzcmlk2gEw...",
+                          "hotelId": "lpe9ef8",
+                          "currency": "EUR",
                           "termsAndConditions": "",
-                          "price": 320.50,
-                          "priceType": "commission",
-                          "priceDifferencePercent": 5,
-                          "commission": 16.02,
-                          "suggestedSellingPrice": 350.00,
-                          "cancellationChanged": false,
-                          "boardChanged": false,
-                          "supplier": "nuitee",
-                          "supplierId": 2,
-                          "paymentTypes": ["CREDIT_CARD"],
                           "roomTypes": [
                             {
-                              "name": "Standard King Room",
                               "rates": [
                                 {
-                                  "rateId": "I42FUVCPJZB...",
+                                  "rateId": "I5GVSVCFJVBFOTKJGNCFGTSU...",
                                   "occupancyNumber": 1,
-                                  "name": "Standard King Room - Room only",
-                                  "boardType": "RO",
-                                  "boardName": "Room Only",
+                                  "name": "1 King Bed | Non-Smoking",
+                                  "maxOccupancy": 2,
                                   "adultCount": 2,
                                   "childCount": 0,
                                   "childrenAges": [],
+                                  "boardType": "RO",
+                                  "boardName": "Room Only",
+                                  "remarks": "",
                                   "priceType": "commission",
-                                  "commission": [{ "amount": 16.02, "currency": "USD" }],
+                                  "commission": [{ "amount": 13.54, "currency": "EUR" }],
                                   "retailRate": {
-                                    "total": [{ "amount": 320.50, "currency": "USD" }],
-                                    "suggestedSellingPrice": [{ "amount": 350.00, "currency": "USD", "source": "expedia.com" }],
+                                    "total": [{ "amount": 284.41, "currency": "EUR" }],
+                                    "suggestedSellingPrice": [{ "amount": 311.5, "currency": "EUR", "source": "" }],
+                                    "initialPrice": null,
                                     "taxesAndFees": [
-                                      { "included": false, "description": "Resort Fee", "amount": 43.61, "currency": "USD" }
+                                      { "included": false, "description": "City tax", "amount": 24.38, "currency": "EUR" },
+                                      { "included": false, "description": "TAX", "amount": 16.25, "currency": "EUR" },
+                                      { "included": false, "description": "government tax", "amount": 5.42, "currency": "EUR" }
                                     ]
                                   },
                                   "cancellationPolicies": {
                                     "cancelPolicyInfos": [
-                                      { "cancelTime": "2026-02-21T00:00:00Z", "amount": 320.50, "currency": "USD", "type": "amount", "timezone": "GMT" }
+                                      { "cancelTime": "2026-08-28 02:00:00", "amount": 147.9, "currency": "EUR", "type": "amount", "timezone": "GMT" }
                                     ],
                                     "hotelRemarks": [],
-                                    "refundableTag": "NRFN"
+                                    "refundableTag": "RFN"
                                   },
-                                  "paymentTypes": ["CREDIT_CARD"]
+                                  "mappedRoomId": 4421060,
+                                  "paymentTypes": null,
+                                  "providerCommission": { "amount": 0, "currency": "" },
+                                  "provider_net_price": 252.72,
+                                  "perks": null,
+                                  "promotions": null
                                 }
                               ]
                             }
-                          ]
+                          ],
+                          "suggestedSellingPrice": 311.5,
+                          "isPackageRate": true,
+                          "commission": 13.54,
+                          "price": 284.41,
+                          "priceType": "commission",
+                          "priceDifferencePercent": 93,
+                          "cancellationChanged": false,
+                          "boardChanged": false,
+                          "supplier": "nuitee",
+                          "supplierId": 2,
+                          "paymentTypes": null,
+                          "checkin": "2026-08-29",
+                          "checkout": "2026-09-01",
+                          "sellingPriceToUser": 284.41
                         }
                       ],
                       "guestLevel": 0

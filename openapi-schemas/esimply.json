@@ -1,0 +1,1986 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: eSIMply",
+    "version": "3.0.0",
+    "description": "The eSIMply API lets partners browse destinations and data packages, provision eSIMs in real time, top up existing eSIMs, and monitor usage. Access is gated by `users.esimply_access`. Use a `sand_*` API key for the eSIMply sandbox environment and a `prod_*` key for production."
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "tags": [
+    {
+      "name": "eSIMply catalog",
+      "description": "Destinations and data packages"
+    },
+    {
+      "name": "eSIMply orders",
+      "description": "Cart, purchase, top-up, order history, and usage"
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    },
+    "parameters": {
+      "CurrencyHeader": {
+        "name": "Currency",
+        "in": "header",
+        "required": false,
+        "schema": {
+          "type": "string",
+          "example": "EUR"
+        },
+        "description": "Optional ISO-4217 currency code. When set, priced fields are converted using liteAPI exchange rates only (not forwarded to eSIMply)."
+      },
+      "IdempotencyKeyHeader": {
+        "name": "Idempotency-Key",
+        "in": "header",
+        "required": true,
+        "schema": {
+          "type": "string",
+          "format": "uuid",
+          "example": "550e8400-e29b-41d4-a716-446655440000"
+        },
+        "description": "Required UUID idempotency key for safe retries of top-up submit."
+      }
+    },
+    "schemas": {
+      "ErrorResponse": {
+        "type": "object",
+        "properties": {
+          "error": {
+            "type": "object",
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "liteAPI error code",
+                "example": 61001
+              },
+              "message": {
+                "type": "string",
+                "example": "validation error"
+              },
+              "description": {
+                "type": "string",
+                "example": "lang must be en or fr"
+              }
+            }
+          }
+        },
+        "example": {
+          "error": {
+            "code": 61001,
+            "message": "validation error",
+            "description": "lang must be en or fr"
+          }
+        }
+      },
+      "Destination": {
+        "type": "object",
+        "properties": {
+          "iso2": {
+            "type": "string",
+            "example": "MA"
+          },
+          "iso3": {
+            "type": "string",
+            "example": "MAR"
+          },
+          "name": {
+            "type": "string",
+            "example": "Morocco"
+          },
+          "flag": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg"
+          },
+          "imageCover": {
+            "type": "string",
+            "format": "uri",
+            "example": ""
+          },
+          "isPackage": {
+            "type": "boolean",
+            "example": false
+          },
+          "isFeatured": {
+            "type": "boolean",
+            "example": true
+          }
+        }
+      },
+      "DestinationsResponse": {
+        "type": "object",
+        "properties": {
+          "destinations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Destination"
+            }
+          },
+          "destinationsGroup": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Destination"
+            }
+          }
+        },
+        "example": {
+          "destinations": [
+            {
+              "iso2": "MA",
+              "iso3": "MAR",
+              "name": "Morocco",
+              "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+              "imageCover": "",
+              "isPackage": false,
+              "isFeatured": true
+            }
+          ],
+          "destinationsGroup": [
+            {
+              "iso2": "EURMED",
+              "iso3": "EURMED",
+              "name": "Euro-Mediterranean",
+              "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/global.svg",
+              "imageCover": "",
+              "isPackage": true,
+              "isFeatured": false
+            }
+          ]
+        }
+      },
+      "CatalogPackage": {
+        "type": "object",
+        "properties": {
+          "packageId": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "1 GB"
+          },
+          "dataSizeMb": {
+            "type": "integer",
+            "example": 1024
+          },
+          "validityDays": {
+            "type": "integer",
+            "example": 7
+          },
+          "providerId": {
+            "type": "integer",
+            "example": 4
+          },
+          "calculatedPrice": {
+            "type": "integer",
+            "description": "Selling price in the smallest currency unit or provider-defined integer price",
+            "example": 3
+          },
+          "b2bPrice": {
+            "type": "number",
+            "nullable": true,
+            "example": 3.46
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "destinationFlag": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg"
+          }
+        },
+        "example": {
+          "packageId": 1,
+          "name": "1 GB",
+          "dataSizeMb": 1024,
+          "validityDays": 7,
+          "providerId": 4,
+          "calculatedPrice": 3,
+          "b2bPrice": 3.46,
+          "currency": "EUR",
+          "destinationFlag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg"
+        }
+      },
+      "CartRequest": {
+        "type": "object",
+        "required": [
+          "packageId",
+          "destinationCode",
+          "startDate",
+          "endDate"
+        ],
+        "properties": {
+          "packageId": {
+            "type": "integer",
+            "example": 1
+          },
+          "destinationCode": {
+            "type": "string",
+            "example": "MA"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-08-20"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-08-27"
+          }
+        },
+        "example": {
+          "packageId": 1,
+          "destinationCode": "MA",
+          "startDate": "2026-08-20",
+          "endDate": "2026-08-27"
+        }
+      },
+      "CartResponse": {
+        "type": "object",
+        "properties": {
+          "cartKey": {
+            "type": "string",
+            "description": "Opaque cart token used to submit the order",
+            "example": "EXAMPLECARTKEY00000000000000001"
+          }
+        },
+        "example": {
+          "cartKey": "EXAMPLECARTKEY00000000000000001"
+        }
+      },
+      "OrderSubmitRequest": {
+        "type": "object",
+        "required": [
+          "cartKey",
+          "endUserEmail",
+          "endUserPhone",
+          "endUserFirstName",
+          "endUserLastName"
+        ],
+        "properties": {
+          "cartKey": {
+            "type": "string",
+            "example": "EXAMPLECARTKEY00000000000000001"
+          },
+          "endUserEmail": {
+            "type": "string",
+            "format": "email",
+            "example": "traveler@example.com"
+          },
+          "endUserPhone": {
+            "type": "string",
+            "example": "+14155552671"
+          },
+          "endUserFirstName": {
+            "type": "string",
+            "example": "Jane"
+          },
+          "endUserLastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "clientReference": {
+            "type": "string",
+            "description": "Your internal reference for reconciliation",
+            "example": "demo-001"
+          }
+        },
+        "example": {
+          "cartKey": "EXAMPLECARTKEY00000000000000001",
+          "endUserEmail": "traveler@example.com",
+          "endUserPhone": "+14155552671",
+          "endUserFirstName": "Jane",
+          "endUserLastName": "Doe",
+          "clientReference": "demo-001"
+        }
+      },
+      "OrderRecord": {
+        "type": "object",
+        "properties": {
+          "esimId": {
+            "type": "integer",
+            "example": 10001
+          },
+          "packageName": {
+            "type": "string",
+            "example": "1 GB"
+          },
+          "dataSizeMb": {
+            "type": "integer",
+            "example": 1024
+          },
+          "remainingData": {
+            "type": "integer",
+            "example": 1024
+          },
+          "destinationCode": {
+            "type": "string",
+            "example": "MA"
+          },
+          "destinationName": {
+            "type": "string",
+            "example": "Morocco"
+          },
+          "price": {
+            "type": "number",
+            "example": 3.46
+          },
+          "b2bPrice": {
+            "type": "number",
+            "example": 3.46
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "iccid": {
+            "type": "string",
+            "example": "89000000000000000001"
+          },
+          "qrCode": {
+            "type": "string",
+            "description": "LPA QR string for eSIM installation",
+            "example": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001"
+          },
+          "smdpAddress": {
+            "type": "string",
+            "example": "smdp.example.com"
+          },
+          "activationCode": {
+            "type": "string",
+            "example": "EXAMPLEACTIVATIONCODE0001"
+          },
+          "esimProviderId": {
+            "type": "integer",
+            "example": 4
+          },
+          "externalPackageId": {
+            "type": "string",
+            "example": "MA|1024"
+          },
+          "validityDays": {
+            "type": "integer",
+            "example": 7
+          },
+          "flag": {
+            "type": "string",
+            "example": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-12T16:12:49Z"
+          },
+          "startDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-20T00:00:00Z"
+          },
+          "endDate": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-27T00:00:00Z"
+          },
+          "packageId": {
+            "type": "integer",
+            "example": 1
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "active",
+              "expired"
+            ],
+            "description": "eSIM plan status: expired when remaining data is 0 or the end date has passed, otherwise active. Returned on order history (`GET /esimply/orders` and `GET /esimply/orders/{iccid}`); omitted from submit and top-up purchase records.",
+            "example": "active"
+          }
+        },
+        "example": {
+          "esimId": 10001,
+          "packageName": "1 GB",
+          "dataSizeMb": 1024,
+          "remainingData": 1024,
+          "destinationCode": "MA",
+          "destinationName": "Morocco",
+          "price": 3.46,
+          "b2bPrice": 3.46,
+          "currency": "EUR",
+          "iccid": "89000000000000000001",
+          "qrCode": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001",
+          "smdpAddress": "smdp.example.com",
+          "activationCode": "EXAMPLEACTIVATIONCODE0001",
+          "esimProviderId": 4,
+          "externalPackageId": "MA|1024",
+          "validityDays": 7,
+          "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+          "createdAt": "2026-08-12T16:12:49Z",
+          "startDate": "2026-08-20T00:00:00Z",
+          "endDate": "2026-08-27T00:00:00Z",
+          "packageId": 1,
+          "status": "active"
+        }
+      },
+      "OrderSubmitResponse": {
+        "type": "object",
+        "properties": {
+          "orderId": {
+            "type": "string",
+            "description": "Public eSIMply order identifier. orders use the provider format (e.g. ord_ plus 16 hex chars). Historical rows may be numeric strings.",
+            "example": "ord_8a9b2c3d4e5f6789"
+          },
+          "purchases": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/OrderRecord"
+            }
+          }
+        },
+        "example": {
+          "orderId": "ord_8a9b2c3d4e5f6789",
+          "purchases": [
+            {
+              "esimId": 10001,
+              "packageName": "1 GB",
+              "dataSizeMb": 1024,
+              "remainingData": 1024,
+              "destinationCode": "MA",
+              "destinationName": "Morocco",
+              "price": 3.46,
+              "b2bPrice": 3.46,
+              "currency": "EUR",
+              "iccid": "89000000000000000001",
+              "qrCode": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001",
+              "smdpAddress": "smdp.example.com",
+              "activationCode": "EXAMPLEACTIVATIONCODE0001",
+              "esimProviderId": 4,
+              "externalPackageId": "MA|1024",
+              "validityDays": 7,
+              "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+              "createdAt": "2026-08-12T16:12:49Z",
+              "startDate": "2026-08-20T00:00:00Z",
+              "endDate": "2026-08-27T00:00:00Z",
+              "packageId": 1
+            }
+          ]
+        }
+      },
+      "TopUpPackage": {
+        "type": "object",
+        "properties": {
+          "packageId": {
+            "type": "integer",
+            "example": 1
+          },
+          "name": {
+            "type": "string",
+            "example": "1 GB"
+          },
+          "dataSizeMb": {
+            "type": "integer",
+            "example": 1024
+          },
+          "validityDays": {
+            "type": "integer",
+            "example": 7
+          },
+          "providerId": {
+            "type": "integer",
+            "example": 3
+          },
+          "providerPackageId": {
+            "type": "integer",
+            "example": 13354
+          },
+          "price": {
+            "type": "number",
+            "example": 0
+          },
+          "externalPackageId": {
+            "type": "string",
+            "example": "choukran-7days-1gb"
+          },
+          "calculatedPrice": {
+            "type": "integer",
+            "example": 7
+          },
+          "rn": {
+            "type": "integer",
+            "example": 1
+          }
+        },
+        "example": {
+          "packageId": 1,
+          "name": "1 GB",
+          "dataSizeMb": 1024,
+          "validityDays": 7,
+          "providerId": 3,
+          "providerPackageId": 13354,
+          "price": 0,
+          "externalPackageId": "choukran-7days-1gb",
+          "calculatedPrice": 7,
+          "rn": 1
+        }
+      },
+      "TopUpSubmitRequest": {
+        "type": "object",
+        "required": [
+          "iccid",
+          "packageId",
+          "externalPackageId",
+          "endUserEmail",
+          "endUserPhone",
+          "endUserFirstName",
+          "endUserLastName"
+        ],
+        "properties": {
+          "iccid": {
+            "type": "string",
+            "example": "89000000000000000001"
+          },
+          "packageId": {
+            "type": "string",
+            "description": "Package ID as string (provider contract)",
+            "example": "1"
+          },
+          "externalPackageId": {
+            "type": "string",
+            "example": "choukran-7days-1gb"
+          },
+          "endUserEmail": {
+            "type": "string",
+            "format": "email",
+            "example": "traveler@example.com"
+          },
+          "endUserPhone": {
+            "type": "string",
+            "example": "+14155552671"
+          },
+          "endUserFirstName": {
+            "type": "string",
+            "example": "Jane"
+          },
+          "endUserLastName": {
+            "type": "string",
+            "example": "Doe"
+          },
+          "clientReference": {
+            "type": "string",
+            "example": "demo-topup-001"
+          }
+        },
+        "example": {
+          "iccid": "89000000000000000001",
+          "packageId": "1",
+          "externalPackageId": "choukran-7days-1gb",
+          "endUserEmail": "traveler@example.com",
+          "endUserPhone": "+14155552671",
+          "endUserFirstName": "Jane",
+          "endUserLastName": "Doe",
+          "clientReference": "demo-topup-001"
+        }
+      },
+      "DataUsage": {
+        "type": "object",
+        "properties": {
+          "remaining": {
+            "type": "integer",
+            "description": "Remaining data in MB",
+            "example": 1024
+          },
+          "total": {
+            "type": "integer",
+            "description": "Total data allowance in MB",
+            "example": 1024
+          },
+          "expiredAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-08-27T00:00:00Z"
+          },
+          "status": {
+            "type": "string",
+            "example": "active"
+          }
+        },
+        "example": {
+          "remaining": 1024,
+          "total": 1024,
+          "expiredAt": "2026-08-27T00:00:00Z",
+          "status": "active"
+        }
+      },
+      "ESimplySuccessEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "description": "Service entity: object for single resources, array for list endpoints"
+          }
+        }
+      }
+    }
+  },
+  "paths": {
+    "/data/esimply/destinations": {
+      "get": {
+        "tags": [
+          "eSIMply catalog"
+        ],
+        "summary": "List eSIMply destinations",
+        "operationId": "getESimplyDestinations",
+        "description": "## Overview\n\nRetrieve the list of countries and regions where eSIM data packages are available. Use this as the entry point for destination pickers in your app or website.\n\n## When to Use\n\n- **Destination picker** - Populate a list of countries travelers can buy eSIM coverage for\n- **Featured destinations** - Highlight featured or package destinations in marketing UI\n- **Localized catalogs** - Request English or French destination names with `lang`\n\n## What You Get\n\n- **Destination list** - ISO codes, display names, flags, and cover images\n- **Grouped destinations** - Optional grouped catalog entries for multi-country packages\n- **Feature flags** - `isPackage` and `isFeatured` for UI prioritization\n\n## Key Features\n\n- **Language support**: Optional `lang=en|fr` for localized names\n- **Sandbox vs production**: `sand_*` keys hit the eSIMply sandbox; `prod_*` keys hit production\n- **Access control**: Requires `esimply_access` enabled on the partner account",
+        "parameters": [
+          {
+            "name": "lang",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "en",
+                "fr"
+              ],
+              "default": "en"
+            },
+            "description": "Response language for destination names"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Destinations retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DestinationsResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "destinations": [
+                      {
+                        "iso2": "MA",
+                        "iso3": "MAR",
+                        "name": "Morocco",
+                        "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+                        "imageCover": "",
+                        "isPackage": false,
+                        "isFeatured": true
+                      }
+                    ],
+                    "destinationsGroup": [
+                      {
+                        "iso2": "EURMED",
+                        "iso3": "EURMED",
+                        "name": "Euro-Mediterranean",
+                        "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/global.svg",
+                        "imageCover": "",
+                        "isPackage": true,
+                        "isFeatured": false
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid query parameters",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidLang": {
+                    "summary": "Invalid lang query param",
+                    "value": {
+                      "error": {
+                        "code": 61001,
+                        "message": "validation error",
+                        "description": "lang must be en or fr"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/esimply/destinations/{destinationCode}/packages": {
+      "get": {
+        "tags": [
+          "eSIMply catalog"
+        ],
+        "summary": "List packages for a destination",
+        "operationId": "getESimplyPackagesByDestination",
+        "description": "## Overview\n\nRetrieve available eSIM data packages for a specific destination, including data size, validity, and pricing.\n\n## When to Use\n\n- **Package selection UI** - Show travelers the plans available for a chosen country\n- **Price display** - Present selling prices in the traveler's preferred currency\n- **Inventory checks** - Confirm which packages can be added to a cart\n\n## What You Get\n\n- **Package catalog** - Name, data size (MB), validity days, and package IDs\n- **Pricing** - `calculatedPrice`, optional `b2bPrice`, and `currency`\n- **Destination branding** - Flag URL for UI display\n\n## Key Features\n\n- **Currency conversion**: Optional `Currency` header converts prices via liteAPI FX rates\n- **Destination-scoped**: Pass the destination ISO2/code from the destinations list\n- **Ready for cart**: Use `packageId` with create-cart to start a purchase",
+        "parameters": [
+          {
+            "name": "destinationCode",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "MA"
+            },
+            "description": "Destination code (typically ISO2)"
+          },
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Packages retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/CatalogPackage"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "packageId": 1,
+                      "name": "1 GB",
+                      "dataSizeMb": 1024,
+                      "validityDays": 7,
+                      "providerId": 4,
+                      "calculatedPrice": 3,
+                      "b2bPrice": 3.46,
+                      "currency": "EUR",
+                      "destinationFlag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid destination code or currency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidCurrency": {
+                    "summary": "Invalid Currency header",
+                    "value": {
+                      "error": {
+                        "code": 61101,
+                        "message": "validation error",
+                        "description": "invalid currency 'INVALID', valid currencies: AED, AFN, ALL, AMD, ..., USD, UYU, UZS, VND, VUV, WST, XAF, XCD, XOF, XPF, YER, ZAR, ZMW"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/orders/cart": {
+      "post": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "Create an eSIMply cart",
+        "operationId": "createESimplyCart",
+        "description": "## Overview\n\nInitialize a shopping cart for a selected eSIM package and travel dates. The returned `cartKey` is required to submit the purchase.\n\n## When to Use\n\n- **Start checkout** - After the traveler selects a package and travel window\n- **Hold a package** - Create a short-lived cart before collecting traveler details\n- **Multi-step flows** - Separate package selection from payment/provisioning\n\n## What You Get\n\n- **Cart key** - Opaque `cartKey` used by submit order\n\n## Key Features\n\n- **Date-bound**: Requires `startDate` and `endDate` for the travel period\n- **Package-scoped**: Uses `packageId` and `destinationCode` from the catalog\n- **Idempotent submit later**: Reuse the same `cartKey` safely when submitting",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CartRequest"
+              },
+              "example": {
+                "packageId": 1,
+                "destinationCode": "MA",
+                "startDate": "2026-08-20",
+                "endDate": "2026-08-27"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Cart created successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/CartResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "cartKey": "EXAMPLECARTKEY00000000000000001"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "missingRequiredFields": {
+                    "summary": "Missing required body fields",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "Key: 'ESimplyCartRequest.DestinationCode' Error:Field validation for 'DestinationCode' failed on the 'required' tag\nKey: 'ESimplyCartRequest.StartDate' Error:Field validation for 'StartDate' failed on the 'required' tag\nKey: 'ESimplyCartRequest.EndDate' Error:Field validation for 'EndDate' failed on the 'required' tag"
+                      }
+                    }
+                  },
+                  "invalidDateFormat": {
+                    "summary": "Invalid startDate format",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "Key: 'ESimplyCartRequest.StartDate' Error:Field validation for 'StartDate' failed on the 'datetime' tag"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/orders/submit": {
+      "post": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "Submit an eSIMply order",
+        "operationId": "submitESimplyOrder",
+        "description": "## Overview\n\nFinalize a cart and provision the eSIM. On success you receive the order ID, ICCID, QR / LPA install payload, and purchase details. Successful orders are persisted for the partner account.\n\n## When to Use\n\n- **Complete purchase** - After collecting traveler contact details\n- **Provision eSIM** - Generate installable QR / activation data for the traveler\n- **Partner reconciliation** - Attach your `clientReference` for support and reporting\n- **Safe retries** - Resubmit the same `cartKey` after timeouts; liteAPI returns the stored order without buying again\n\n## What You Get\n\n- **Order ID** - Provider order identifier\n- **Purchases** - ICCID, QR code, SM-DP address, activation code, package and pricing\n- **Traveler-ready install data** - Everything needed to install the eSIM on a device\n\n## Key Features\n\n- **Idempotent by cartKey**: Retrying submit with an already-completed `cartKey` returns the persisted order\n- **Currency conversion**: Optional `Currency` header converts priced fields via liteAPI FX\n- **End-user details required**: Email, phone, first and last name\n- **Persistent records**: Successful submits are stored in liteAPI (`esimply_orders` / `esimply_purchases`)",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrderSubmitRequest"
+              },
+              "example": {
+                "cartKey": "EXAMPLECARTKEY00000000000000001",
+                "endUserEmail": "traveler@example.com",
+                "endUserPhone": "+14155552671",
+                "endUserFirstName": "Jane",
+                "endUserLastName": "Doe",
+                "clientReference": "demo-001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Order submitted and eSIM provisioned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrderSubmitResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "orderId": "ord_8a9b2c3d4e5f6789",
+                    "purchases": [
+                      {
+                        "esimId": 10001,
+                        "packageName": "1 GB",
+                        "dataSizeMb": 1024,
+                        "remainingData": 1024,
+                        "destinationCode": "MA",
+                        "destinationName": "Morocco",
+                        "price": 3.46,
+                        "b2bPrice": 3.46,
+                        "currency": "EUR",
+                        "iccid": "89000000000000000001",
+                        "qrCode": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001",
+                        "smdpAddress": "smdp.example.com",
+                        "activationCode": "EXAMPLEACTIVATIONCODE0001",
+                        "esimProviderId": 4,
+                        "externalPackageId": "MA|1024",
+                        "validityDays": 7,
+                        "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+                        "createdAt": "2026-08-12T16:12:49Z",
+                        "startDate": "2026-08-20T00:00:00Z",
+                        "endDate": "2026-08-27T00:00:00Z",
+                        "packageId": 1
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidEmail": {
+                    "summary": "Invalid endUserEmail",
+                    "value": {
+                      "error": {
+                        "code": 63001,
+                        "message": "validation error",
+                        "description": "Key: 'ESimplyOrderSubmitRequest.EndUserEmail' Error:Field validation for 'EndUserEmail' failed on the 'email' tag"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/orders": {
+      "get": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "List eSIMply orders",
+        "operationId": "getESimplyOrders",
+        "description": "## Overview\n\nRetrieve eSIM order history for the authenticated partner account, with optional filters for destination, date range, and client reference.\n\n## When to Use\n\n- **Partner dashboard** - Show past eSIM purchases and top-ups\n- **Support lookup** - Find orders by destination or your `clientReference`\n- **Reporting** - Pull order history for a travel date window\n\n## What You Get\n\n- **Order records** - Packages, ICCIDs, pricing, destinations, install metadata, and plan `status` (`active` or `expired`)\n- **Filterable history** - Narrow results by destination, dates, or client reference\n\n## Key Features\n\n- **Flexible filters**: `destination`, `startDate`, `endDate`, `clientReference`\n- **Currency conversion**: Optional `Currency` header for priced fields\n- **Environment-aware**: Sandbox and production histories are separate by API key",
+        "parameters": [
+          {
+            "name": "destination",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "MA"
+            }
+          },
+          {
+            "name": "startDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-01-01"
+            }
+          },
+          {
+            "name": "endDate",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "format": "date",
+              "example": "2026-12-31"
+            }
+          },
+          {
+            "name": "clientReference",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "example": "demo-001"
+            },
+            "example": "demo-001"
+          },
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Orders retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/OrderRecord"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "esimId": 10001,
+                      "packageName": "1 GB",
+                      "dataSizeMb": 1024,
+                      "remainingData": 1024,
+                      "destinationCode": "MA",
+                      "destinationName": "Morocco",
+                      "price": 3.46,
+                      "b2bPrice": 3.46,
+                      "currency": "EUR",
+                      "iccid": "89000000000000000001",
+                      "qrCode": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001",
+                      "smdpAddress": "smdp.example.com",
+                      "activationCode": "EXAMPLEACTIVATIONCODE0001",
+                      "esimProviderId": 4,
+                      "externalPackageId": "MA|1024",
+                      "validityDays": 7,
+                      "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+                      "createdAt": "2026-08-12T16:12:49Z",
+                      "startDate": "2026-08-20T00:00:00Z",
+                      "endDate": "2026-08-27T00:00:00Z",
+                      "packageId": 1,
+                      "status": "active"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid filters or currency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidCurrency": {
+                    "summary": "Invalid Currency header",
+                    "value": {
+                      "error": {
+                        "code": 65001,
+                        "message": "validation error",
+                        "description": "invalid currency 'INVALID', valid currencies: AED, AFN, ALL, AMD, ..., USD, UYU, UZS, VND, VUV, WST, XAF, XCD, XOF, XPF, YER, ZAR, ZMW"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/orders/topups/{iccid}": {
+      "get": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "List top-ups for an eSIM",
+        "operationId": "getESimplyTopUps",
+        "description": "## Overview\n\nRetrieve top-up packages that can be applied to an existing eSIM identified by ICCID.\n\n## When to Use\n\n- **Top-up UI** - Show add-on data packs for a traveler's active eSIM\n- **Upsell after purchase** - Offer more data when usage is low\n- **Eligibility check** - Confirm which packages are valid for a given ICCID\n\n## What You Get\n\n- **Top-up packages** - Package IDs, sizes, validity, and prices\n- **External package IDs** - Required when submitting a top-up\n\n## Key Features\n\n- **ICCID-scoped**: Returns only packages eligible for that eSIM\n- **Currency conversion**: Optional `Currency` header for priced fields\n- **Feeds POST /esimply/orders/submit-topup**: Use returned IDs in the top-up submit request",
+        "parameters": [
+          {
+            "name": "iccid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "89000000000000000001"
+            },
+            "description": "eSIM ICCID",
+            "example": "89000000000000000001"
+          },
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Top-ups retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/TopUpPackage"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "packageId": 1,
+                      "name": "1 GB",
+                      "dataSizeMb": 1024,
+                      "validityDays": 7,
+                      "providerId": 3,
+                      "providerPackageId": 13354,
+                      "price": 0,
+                      "externalPackageId": "choukran-7days-1gb",
+                      "calculatedPrice": 7,
+                      "rn": 1
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ICCID or currency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 64001,
+                    "message": "validation error",
+                    "description": "ICCID is required"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found for ICCID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 64003,
+                    "message": "order not found",
+                    "description": "order not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/orders/submit-topup": {
+      "post": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "Submit an eSIMply top-up",
+        "operationId": "submitESimplyTopUp",
+        "description": "## Overview\n\nApply a top-up package to an existing eSIM in a single request. On success you receive an order response with updated purchase details. Successful top-ups are persisted for the partner account.\n\n## When to Use\n\n- **Add more data** - Traveler needs additional MB on an existing eSIM\n- **Extend connectivity** - Apply a package without issuing a new ICCID\n- **Safe retries** - Resubmit with the same `Idempotency-Key` after network failures\n\n## What You Get\n\n- **Order ID** - Provider order identifier for the top-up\n- **Purchase details** - Updated package, pricing, and eSIM identifiers\n\n## Key Features\n\n- **Idempotency**: Required `Idempotency-Key` header for safe retries\n- **Currency conversion**: Optional `Currency` header for priced fields\n- **Persistent records**: Successful top-ups are stored in liteAPI",
+        "parameters": [
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          },
+          {
+            "$ref": "#/components/parameters/IdempotencyKeyHeader"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopUpSubmitRequest"
+              },
+              "example": {
+                "iccid": "89000000000000000001",
+                "packageId": "1",
+                "externalPackageId": "choukran-7days-1gb",
+                "endUserEmail": "traveler@example.com",
+                "endUserPhone": "+14155552671",
+                "endUserFirstName": "Jane",
+                "endUserLastName": "Doe",
+                "clientReference": "demo-topup-001"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Top-up submitted successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrderSubmitResponse"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "orderId": "ord_8a9b2c3d4e5f6789",
+                    "purchases": [
+                      {
+                        "esimId": 10002,
+                        "packageName": "1 GB",
+                        "dataSizeMb": 1024,
+                        "remainingData": 1024,
+                        "destinationCode": "MA",
+                        "destinationName": "Morocco",
+                        "price": 7.0,
+                        "b2bPrice": 7.0,
+                        "currency": "EUR",
+                        "iccid": "89000000000000000001",
+                        "qrCode": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001",
+                        "smdpAddress": "smdp.example.com",
+                        "activationCode": "EXAMPLEACTIVATIONCODE0001",
+                        "esimProviderId": 4,
+                        "externalPackageId": "choukran-7days-1gb",
+                        "validityDays": 7,
+                        "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+                        "createdAt": "2026-08-12T16:12:49Z",
+                        "startDate": "2026-08-20T00:00:00Z",
+                        "endDate": "2026-08-27T00:00:00Z",
+                        "packageId": 1
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "missingIdempotencyKey": {
+                    "summary": "Missing Idempotency-Key header",
+                    "value": {
+                      "error": {
+                        "code": 64101,
+                        "message": "validation error",
+                        "description": "Idempotency-Key header is required"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found for ICCID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 64103,
+                    "message": "order not found",
+                    "description": "order not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/orders/{iccid}": {
+      "get": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "Get an eSIMply order by ICCID",
+        "operationId": "getESimplyOrderByICCID",
+        "description": "## Overview\n\nRetrieve a single eSIM order (purchase details, install metadata, and plan status) using its ICCID.\n\n## When to Use\n\n- **Order detail page** - Show one eSIM's package, pricing, and QR install data\n- **Customer support** - Look up a traveler's eSIM by ICCID\n- **Re-display QR** - Recover LPA / activation details after purchase\n\n## What You Get\n\n- **Full order record** - Package, destination, prices, ICCID, QR, SM-DP, activation code, and `status` (`active` or `expired`)\n- **Lifecycle dates** - Created, start, and end timestamps when available\n\n## Key Features\n\n- **ICCID lookup**: Direct access without scanning the full order list\n- **Currency conversion**: Optional `Currency` header for priced fields\n- **Not found handling**: Returns a not-found error when the ICCID is unknown",
+        "parameters": [
+          {
+            "name": "iccid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "89000000000000000001"
+            },
+            "example": "89000000000000000001"
+          },
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Order retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/OrderRecord"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "esimId": 10001,
+                    "packageName": "1 GB",
+                    "dataSizeMb": 1024,
+                    "remainingData": 1024,
+                    "destinationCode": "MA",
+                    "destinationName": "Morocco",
+                    "price": 3.46,
+                    "b2bPrice": 3.46,
+                    "currency": "EUR",
+                    "iccid": "89000000000000000001",
+                    "qrCode": "LPA:1$smdp.example.com$EXAMPLEACTIVATIONCODE0001",
+                    "smdpAddress": "smdp.example.com",
+                    "activationCode": "EXAMPLEACTIVATIONCODE0001",
+                    "esimProviderId": 4,
+                    "externalPackageId": "MA|1024",
+                    "validityDays": 7,
+                    "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg",
+                    "createdAt": "2026-08-12T16:12:49Z",
+                    "startDate": "2026-08-20T00:00:00Z",
+                    "endDate": "2026-08-27T00:00:00Z",
+                    "packageId": 1,
+                    "status": "active"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ICCID or currency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 65101,
+                    "message": "validation error",
+                    "description": "ICCID is required"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found for ICCID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 65103,
+                    "message": "order not found",
+                    "description": "order not found"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/esimply/usage/{iccid}": {
+      "get": {
+        "tags": [
+          "eSIMply orders"
+        ],
+        "summary": "Get eSIM data usage by ICCID",
+        "operationId": "getESimplyDataUsageByICCID",
+        "description": "## Overview\n\nRetrieve live data usage for an eSIM: remaining allowance, total allowance, expiry, and status.\n\n## When to Use\n\n- **Usage meters** - Show travelers how much data remains\n- **Top-up prompts** - Trigger upsell when remaining data is low\n- **Status checks** - Confirm whether an eSIM is still active\n\n## What You Get\n\n- **Remaining / total** - Data volumes in MB\n- **Expiry** - When the current allowance expires\n- **Status** - Current eSIM usage status\n\n## Key Features\n\n- **Live provider data**: Usage is fetched from eSIMply for the given ICCID\n- **Lightweight**: No pricing or catalog payload\u2014usage only\n- **Pairs with top-ups**: Use remaining data to decide when to offer top-ups",
+        "parameters": [
+          {
+            "name": "iccid",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "example": "89000000000000000001"
+            },
+            "example": "89000000000000000001"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Data usage retrieved successfully",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/DataUsage"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "remaining": 1024,
+                    "total": 1024,
+                    "expiredAt": "2026-08-27T00:00:00Z",
+                    "status": "active"
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid ICCID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 65201,
+                    "message": "validation error",
+                    "description": "ICCID is required"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Order not found for ICCID",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 65203,
+                    "message": "order not found",
+                    "description": "order not found"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}

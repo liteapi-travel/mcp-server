@@ -418,6 +418,22 @@
             },
             "description": "Booking terms and conditions for this offer"
           },
+          "provider": {
+            "type": "object",
+            "description": "Flight provider information",
+            "properties": {
+              "code": {
+                "type": "string",
+                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)",
+                "example": "SABRE"
+              },
+              "logo": {
+                "type": "string",
+                "description": "URL to provider logo",
+                "example": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
+              }
+            }
+          },
           "baggage": {
             "type": "object",
             "description": "Baggage policy for this offer",
@@ -850,6 +866,66 @@
           }
         },
         "description": "Pricing for an ancillary item (e.g. baggage)"
+      },
+      "FlightBaggageItem": {
+        "type": "object",
+        "description": "A single included or paid baggage option on the journey",
+        "properties": {
+          "bagType": {
+            "type": "string",
+            "enum": [
+              "cabin",
+              "checked",
+              "personal"
+            ],
+            "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+            "example": "cabin"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable baggage allowance description from the carrier",
+            "example": "1 cabin bag up to 8 kg"
+          },
+          "passengerType": {
+            "type": "string",
+            "enum": [
+              "ADT",
+              "CHD",
+              "INF",
+              "ALL"
+            ],
+            "description": "Passenger type this allowance applies to: ADT (adult), CHD (child), INF (infant), or ALL",
+            "example": "ADT"
+          },
+          "pieces": {
+            "type": "integer",
+            "description": "Number of bag pieces for this option",
+            "example": 1
+          },
+          "pricing": {
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/FlightItemPricing"
+              }
+            ],
+            "description": "Pricing for this baggage item. Included allowances usually have amount 0; paid options carry the surcharge in display.amount / display.currency."
+          },
+          "size": {
+            "type": "string",
+            "description": "Bag size / dimensions when published by the carrier (e.g. 55x40x20)",
+            "example": "55x40x20"
+          },
+          "unit": {
+            "type": "string",
+            "description": "Weight unit for the allowance (e.g. kg)",
+            "example": "kg"
+          },
+          "weightKg": {
+            "type": "number",
+            "description": "Maximum weight per bag in kilograms",
+            "example": 8
+          }
+        }
       },
       "FlightFee": {
         "type": "object",
@@ -1344,7 +1420,23 @@
           },
           "status": {
             "type": "string",
-            "description": "Booking status: PENDING_CONFIRMATION, CONFIRMED, CANCELLED, PENDING, TICKETED"
+            "description": "Normalized dispatcher booking status. Provider statuses such as PENDING/TICKETED are mapped before being returned (e.g. PENDING→CREATED, TICKETED→CONFIRMED).",
+            "enum": [
+              "CREATED",
+              "PENDING_CONFIRMATION",
+              "CONFIRMED",
+              "CANCELLED",
+              "CANCELLED_WITH_CHARGES",
+              "FAILED",
+              "EXPIRED"
+            ],
+            "example": "CONFIRMED"
+          },
+          "cancelIntentAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "Set when a cancellation was requested and is awaiting airline confirmation (or retained after finalize as evidence). Present on `GET /flights/bookings/{bookingId}` while cancellation is in progress. Omitted when null. Not applicable to prebook endpoints."
           },
           "timestamp": {
             "type": "string",
@@ -1372,7 +1464,7 @@
               "sandbox",
               "production"
             ],
-            "description": "Provider environment used for this booking (sandbox or production)"
+            "description": "Provider environment used for this booking (sandbox or production). Not returned on prebook endpoints."
           },
           "ticketLimitTime": {
             "type": "string",
@@ -1423,6 +1515,7 @@
                     "description": "Baggage included in the fare",
                     "items": {
                       "type": "object",
+                      "description": "A single included or paid baggage option on the journey",
                       "properties": {
                         "bagType": {
                           "type": "string",
@@ -1430,10 +1523,14 @@
                             "cabin",
                             "checked",
                             "personal"
-                          ]
+                          ],
+                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "example": "cabin"
                         },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Human-readable baggage allowance description from the carrier",
+                          "example": "1 cabin bag up to 8 kg"
                         },
                         "passengerType": {
                           "type": "string",
@@ -1442,22 +1539,37 @@
                             "CHD",
                             "INF",
                             "ALL"
-                          ]
+                          ],
+                          "description": "Passenger type this allowance applies to: ADT (adult), CHD (child), INF (infant), or ALL",
+                          "example": "ADT"
                         },
                         "pieces": {
-                          "type": "integer"
+                          "type": "integer",
+                          "description": "Number of bag pieces for this option",
+                          "example": 1
                         },
                         "pricing": {
-                          "$ref": "#/components/schemas/FlightItemPricing"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FlightItemPricing"
+                            }
+                          ],
+                          "description": "Pricing for this baggage item. Included allowances usually have amount 0; paid options carry the surcharge in display.amount / display.currency."
                         },
                         "size": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Bag size / dimensions when published by the carrier (e.g. 55x40x20)",
+                          "example": "55x40x20"
                         },
                         "unit": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Weight unit for the allowance (e.g. kg)",
+                          "example": "kg"
                         },
                         "weightKg": {
-                          "type": "number"
+                          "type": "number",
+                          "description": "Maximum weight per bag in kilograms",
+                          "example": 8
                         }
                       }
                     }
@@ -1467,6 +1579,7 @@
                     "description": "Available paid baggage options",
                     "items": {
                       "type": "object",
+                      "description": "A single included or paid baggage option on the journey",
                       "properties": {
                         "bagType": {
                           "type": "string",
@@ -1474,10 +1587,14 @@
                             "cabin",
                             "checked",
                             "personal"
-                          ]
+                          ],
+                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "example": "cabin"
                         },
                         "description": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Human-readable baggage allowance description from the carrier",
+                          "example": "1 cabin bag up to 8 kg"
                         },
                         "passengerType": {
                           "type": "string",
@@ -1486,22 +1603,37 @@
                             "CHD",
                             "INF",
                             "ALL"
-                          ]
+                          ],
+                          "description": "Passenger type this allowance applies to: ADT (adult), CHD (child), INF (infant), or ALL",
+                          "example": "ADT"
                         },
                         "pieces": {
-                          "type": "integer"
+                          "type": "integer",
+                          "description": "Number of bag pieces for this option",
+                          "example": 1
                         },
                         "pricing": {
-                          "$ref": "#/components/schemas/FlightItemPricing"
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FlightItemPricing"
+                            }
+                          ],
+                          "description": "Pricing for this baggage item. Included allowances usually have amount 0; paid options carry the surcharge in display.amount / display.currency."
                         },
                         "size": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Bag size / dimensions when published by the carrier (e.g. 55x40x20)",
+                          "example": "55x40x20"
                         },
                         "unit": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Weight unit for the allowance (e.g. kg)",
+                          "example": "kg"
                         },
                         "weightKg": {
-                          "type": "number"
+                          "type": "number",
+                          "description": "Maximum weight per bag in kilograms",
+                          "example": 8
                         }
                       }
                     }
@@ -1510,44 +1642,148 @@
               },
               "terms": {
                 "type": "object",
-                "nullable": true,
-                "description": "Booking terms from the provider",
                 "properties": {
                   "changeable": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True if the fare allows changes (rebooking)"
                   },
                   "refundable": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True if the fare is refundable"
                   },
                   "summary": {
                     "type": "array",
                     "items": {
                       "type": "object",
+                      "description": "A single fare policy remark",
                       "properties": {
                         "level": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Severity of the remark: info, warning, or danger",
+                          "example": "warning"
                         },
                         "message": {
-                          "type": "string"
+                          "type": "string",
+                          "description": "Policy message text (e.g. Non-refundable, Changes allowed with fee)",
+                          "example": "Changes allowed with fee"
                         }
+                      }
+                    },
+                    "description": "Human-readable policy messages with severity levels"
+                  },
+                  "changeFee": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Change fee details; null when the provider does not publish a fee",
+                    "properties": {
+                      "pricing": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Fee pricing; null when only a percentage is available",
+                        "properties": {
+                          "display": {
+                            "type": "object",
+                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "properties": {
+                              "amount": {
+                                "type": "number",
+                                "description": "Monetary amount"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "ISO 4217 currency code"
+                              }
+                            }
+                          },
+                          "converted": {
+                            "type": "boolean",
+                            "description": "True when FX conversion was applied"
+                          }
+                        }
+                      },
+                      "percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Fee as a percentage of the base fare (e.g. 100 = full penalty). May appear without pricing."
+                      },
+                      "applicability": {
+                        "type": "string",
+                        "enum": [
+                          "anytime",
+                          "noShow",
+                          "beforeDeparture",
+                          "afterDeparture"
+                        ],
+                        "description": "When the fee applies"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "Human-readable fee description (e.g. 'Change fee (before departure)')"
                       }
                     }
                   },
-                  "changeFee": {
-                    "$ref": "#/components/schemas/FlightFee",
-                    "description": "Change fee details; null when the provider does not publish a fee"
-                  },
                   "refundFee": {
-                    "$ref": "#/components/schemas/FlightFee",
-                    "description": "Refund/cancellation fee details; null when the provider does not publish a fee"
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Refund/cancellation fee details; null when the provider does not publish a fee",
+                    "properties": {
+                      "pricing": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Fee pricing; null when only a percentage is available",
+                        "properties": {
+                          "display": {
+                            "type": "object",
+                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "properties": {
+                              "amount": {
+                                "type": "number",
+                                "description": "Monetary amount"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "ISO 4217 currency code"
+                              }
+                            }
+                          },
+                          "converted": {
+                            "type": "boolean",
+                            "description": "True when FX conversion was applied"
+                          }
+                        }
+                      },
+                      "percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Fee as a percentage of the base fare (e.g. 100 = full penalty). May appear without pricing."
+                      },
+                      "applicability": {
+                        "type": "string",
+                        "enum": [
+                          "anytime",
+                          "noShow",
+                          "beforeDeparture",
+                          "afterDeparture"
+                        ],
+                        "description": "When the fee applies"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "Human-readable fee description (e.g. 'Change fee (before departure)')"
+                      }
+                    }
                   },
                   "hasChangeFee": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
                   },
                   "hasRefundFee": {
-                    "type": "boolean"
+                    "type": "boolean",
+                    "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
                   }
-                }
+                },
+                "description": "Booking terms from the provider (change/refund rules and published fees)",
+                "nullable": true
               }
             },
             "description": "Journey details as confirmed by the provider at booking time"
@@ -1656,21 +1892,7 @@
                 "properties": {
                   "orderId": {
                     "type": "string",
-                    "description": "Provider order or PNR reference ID"
-                  },
-                  "provider": {
-                    "type": "object",
-                    "properties": {
-                      "code": {
-                        "type": "string",
-                        "description": "Provider code (e.g. SABRE, TRAVELPORT)"
-                      },
-                      "pnr": {
-                        "type": "string",
-                        "description": "Provider PNR (Passenger Name Record) locator code"
-                      }
-                    },
-                    "description": "Provider-level booking reference (code + PNR)"
+                    "description": "Booking order / PNR reference ID"
                   },
                   "airlineBookings": {
                     "type": "array",
@@ -1835,17 +2057,9 @@
               "ticketedAt": {
                 "type": "string",
                 "description": "UTC timestamp when the ticket was issued"
-              },
-              "provider": {
-                "type": "string",
-                "description": "Provider that issued the ticket"
-              },
-              "source": {
-                "type": "string",
-                "description": "Source system that generated the ticket"
               }
             },
-            "description": "Ticket issuance details from the provider"
+            "description": "Ticket issuance details when available (confirmation id and ticketed timestamp only; no GDS/provider identity)"
           },
           "timings": {
             "type": "object",
@@ -1902,19 +2116,6 @@
                 "type": "string",
                 "description": "Stripe transaction id when `method` is `TRANSACTION_ID`"
               }
-            }
-          },
-          "customTags": {
-            "type": "object",
-            "description": "Optional bag of up to 5 user-defined key/value labels persisted with the booking. Keys must match `^[A-Z0-9_-]+$` (uppercase letters, digits, `-`, `_`). Values are arbitrary strings up to 255 characters. These labels are returned on booking responses and can be used to filter `GET /flights/bookings` via the `customTags=KEY:VALUE,KEY2:VALUE2` query parameter.",
-            "maxProperties": 5,
-            "additionalProperties": {
-              "type": "string",
-              "maxLength": 255
-            },
-            "example": {
-              "SOURCE": "GOOGLE",
-              "TIER": "GOLD"
             }
           }
         }
@@ -2005,17 +2206,22 @@
             "type": "string",
             "enum": [
               "TRANSACTION_ID",
-              "CREDIT"
+              "CREDIT",
+              "THIRD_PARTY"
             ],
-            "description": "Payment method for `POST /flights/bookings`. Set to `TRANSACTION_ID` after Stripe SDK confirmation, or `CREDIT` to bill an enabled credit line (eligibility enforced server-side)."
+            "description": "`TRANSACTION_ID` after Stripe SDK confirmation. `CREDIT` when paying on a credit line (eligibility enforced server-side). `THIRD_PARTY` when the whitelabel/CMI gateway charged the customer and returned a signed JWT (`token`)."
           },
           "transactionId": {
             "type": "string",
-            "description": "Stripe payment intent id. Required when `method` is `TRANSACTION_ID`; omit when `method` is `CREDIT`.",
-            "example": "tr_ABCzxy91C-a9W123"
+            "description": "Stripe payment intent transaction id when using `TRANSACTION_ID`. Omit when using `CREDIT` or `THIRD_PARTY`.",
+            "example": "tr_cts_t0LaZePPxdCM_Kyskafml"
+          },
+          "token": {
+            "type": "string",
+            "description": "RSA-signed JWT from the whitelabel payment gateway when `method` is `THIRD_PARTY`. Required for CMI/WL checkout. The token must reference the same prebook and include the gateway transaction id."
           }
         },
-        "description": "Payment for `POST /flights/bookings`. **Stripe:** `method`: `TRANSACTION_ID` and `transactionId` (e.g. `tr_ABCzxy91C-a9W123`). **Credit line:** `method`: `CREDIT` (omit `transactionId`)."
+        "description": "Payment for `POST /flights/bookings`: Stripe (`TRANSACTION_ID` + `transactionId`), credit line (`CREDIT`), or whitelabel/CMI (`THIRD_PARTY` + `token`)."
       },
       "FlightBookingCreateRequest": {
         "title": "Create a flight booking",
@@ -2033,17 +2239,57 @@
           "payment": {
             "$ref": "#/components/schemas/FlightBookingCreatePayment"
           },
-          "customTags": {
+          "metadata": {
             "type": "object",
-            "description": "Optional bag of up to 5 user-defined key/value labels persisted with the booking. Keys must match `^[A-Z0-9_-]+$` (uppercase letters, digits, `-`, `_`). Values are arbitrary strings up to 255 characters. These labels are returned on booking responses and can be used to filter `GET /flights/bookings` via the `customTags=KEY:VALUE,KEY2:VALUE2` query parameter.",
-            "maxProperties": 5,
-            "additionalProperties": {
-              "type": "string",
-              "maxLength": 255
+            "description": "Optional. Encapsulates essential booking metadata, including IP, location, language, device details, and marketing parameters.",
+            "properties": {
+              "ip": {
+                "type": "string",
+                "description": "IPv4/IPv6 address of the requester (or derived)."
+              },
+              "country": {
+                "type": "string",
+                "description": "The country inferred from the requester's IP, aiding in regional compliance."
+              },
+              "language": {
+                "type": "string",
+                "description": "The preferred language from the user's browser settings."
+              },
+              "platform": {
+                "type": "string",
+                "description": "The operating system or device platform from which the request originates."
+              },
+              "device_id": {
+                "type": "string",
+                "description": "A unique identifier for the user's device, useful for tracking and security."
+              },
+              "user_agent": {
+                "type": "string",
+                "description": "The browser/OS user agent string for verifying request authenticity."
+              },
+              "utm_medium": {
+                "type": "string",
+                "description": "The marketing medium (e.g., email, ad) through which the service was accessed."
+              },
+              "utm_source": {
+                "type": "string",
+                "description": "The source of the traffic, such as a search engine or social network."
+              },
+              "utm_campaign": {
+                "type": "string",
+                "description": "An identifier for the specific marketing campaign that led to the request."
+              }
             },
             "example": {
-              "SOURCE": "GOOGLE",
-              "TIER": "GOLD"
+              "ip": "203.112.45.67",
+              "country": "FR",
+              "language": "fr-FR",
+              "platform": "Windows",
+              "device_id": "device-abc-789",
+              "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+              "utm_medium": "organic",
+              "utm_source": "bing",
+              "utm_campaign": "spring_2026"
             }
           }
         },
@@ -2106,6 +2352,626 @@
           }
         },
         "description": "Layover details between two consecutive flight segments"
+      },
+      "FlightPrebookBooking": {
+        "type": "object",
+        "description": "Flight checkout booking snapshot returned on prebook create/get/attach-services. Omits booking-only and internal fields (status, paymentStatus, distributor*, providerEnvironment, ticketLimitTime, cancellation).",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "description": "Omitted on prebook responses (set after POST /flights/bookings)"
+          },
+          "bookingRef": {
+            "type": "string",
+            "description": "FlightHub booking reference (FH-YYM-XXXXXXXX)"
+          },
+          "status": {
+            "type": "string",
+            "description": "Omitted on prebook responses. Booking lifecycle status is only returned after POST /flights/bookings."
+          },
+          "timestamp": {
+            "type": "string",
+            "description": "Booking creation time (UTC)"
+          },
+          "offerId": {
+            "type": "string",
+            "description": "Offer ID from verify stage"
+          },
+          "journey": {
+            "type": "object",
+            "properties": {
+              "journeyKey": {
+                "type": "string",
+                "description": "Unique journey identifier"
+              },
+              "segments": {
+                "type": "array",
+                "items": {
+                  "$ref": "#/components/schemas/FlightSegment"
+                },
+                "description": "Flight segments in this booking"
+              },
+              "price": {
+                "$ref": "#/components/schemas/FlightPrice",
+                "description": "Journey price at time of booking"
+              },
+              "pricing": {
+                "$ref": "#/components/schemas/FlightOfferPricing",
+                "description": "Journey pricing (provider FlattenedJourney.pricing)"
+              },
+              "baggage": {
+                "type": "object",
+                "description": "Fare baggage allowance on the booked journey (included and paid options; aligns with provider FlattenedJourney.baggage)",
+                "properties": {
+                  "hasCarryOnBag": {
+                    "type": "boolean",
+                    "description": "Whether carry-on bag is included"
+                  },
+                  "hasCheckedBag": {
+                    "type": "boolean",
+                    "description": "Whether checked bag is included"
+                  },
+                  "included": {
+                    "type": "array",
+                    "description": "Baggage included in the fare",
+                    "items": {
+                      "type": "object",
+                      "description": "A single included or paid baggage option on the journey",
+                      "properties": {
+                        "bagType": {
+                          "type": "string",
+                          "enum": [
+                            "cabin",
+                            "checked",
+                            "personal"
+                          ],
+                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "example": "cabin"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Human-readable baggage allowance description from the carrier",
+                          "example": "1 cabin bag up to 8 kg"
+                        },
+                        "passengerType": {
+                          "type": "string",
+                          "enum": [
+                            "ADT",
+                            "CHD",
+                            "INF",
+                            "ALL"
+                          ],
+                          "description": "Passenger type this allowance applies to: ADT (adult), CHD (child), INF (infant), or ALL",
+                          "example": "ADT"
+                        },
+                        "pieces": {
+                          "type": "integer",
+                          "description": "Number of bag pieces for this option",
+                          "example": 1
+                        },
+                        "pricing": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FlightItemPricing"
+                            }
+                          ],
+                          "description": "Pricing for this baggage item. Included allowances usually have amount 0; paid options carry the surcharge in display.amount / display.currency."
+                        },
+                        "size": {
+                          "type": "string",
+                          "description": "Bag size / dimensions when published by the carrier (e.g. 55x40x20)",
+                          "example": "55x40x20"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "description": "Weight unit for the allowance (e.g. kg)",
+                          "example": "kg"
+                        },
+                        "weightKg": {
+                          "type": "number",
+                          "description": "Maximum weight per bag in kilograms",
+                          "example": 8
+                        }
+                      }
+                    }
+                  },
+                  "paid": {
+                    "type": "array",
+                    "description": "Available paid baggage options",
+                    "items": {
+                      "type": "object",
+                      "description": "A single included or paid baggage option on the journey",
+                      "properties": {
+                        "bagType": {
+                          "type": "string",
+                          "enum": [
+                            "cabin",
+                            "checked",
+                            "personal"
+                          ],
+                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "example": "cabin"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Human-readable baggage allowance description from the carrier",
+                          "example": "1 cabin bag up to 8 kg"
+                        },
+                        "passengerType": {
+                          "type": "string",
+                          "enum": [
+                            "ADT",
+                            "CHD",
+                            "INF",
+                            "ALL"
+                          ],
+                          "description": "Passenger type this allowance applies to: ADT (adult), CHD (child), INF (infant), or ALL",
+                          "example": "ADT"
+                        },
+                        "pieces": {
+                          "type": "integer",
+                          "description": "Number of bag pieces for this option",
+                          "example": 1
+                        },
+                        "pricing": {
+                          "allOf": [
+                            {
+                              "$ref": "#/components/schemas/FlightItemPricing"
+                            }
+                          ],
+                          "description": "Pricing for this baggage item. Included allowances usually have amount 0; paid options carry the surcharge in display.amount / display.currency."
+                        },
+                        "size": {
+                          "type": "string",
+                          "description": "Bag size / dimensions when published by the carrier (e.g. 55x40x20)",
+                          "example": "55x40x20"
+                        },
+                        "unit": {
+                          "type": "string",
+                          "description": "Weight unit for the allowance (e.g. kg)",
+                          "example": "kg"
+                        },
+                        "weightKg": {
+                          "type": "number",
+                          "description": "Maximum weight per bag in kilograms",
+                          "example": 8
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "terms": {
+                "type": "object",
+                "properties": {
+                  "changeable": {
+                    "type": "boolean",
+                    "description": "True if the fare allows changes (rebooking)"
+                  },
+                  "refundable": {
+                    "type": "boolean",
+                    "description": "True if the fare is refundable"
+                  },
+                  "summary": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "description": "A single fare policy remark",
+                      "properties": {
+                        "level": {
+                          "type": "string",
+                          "description": "Severity of the remark: info, warning, or danger",
+                          "example": "warning"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Policy message text (e.g. Non-refundable, Changes allowed with fee)",
+                          "example": "Changes allowed with fee"
+                        }
+                      }
+                    },
+                    "description": "Human-readable policy messages with severity levels"
+                  },
+                  "changeFee": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Change fee details; null when the provider does not publish a fee",
+                    "properties": {
+                      "pricing": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Fee pricing; null when only a percentage is available",
+                        "properties": {
+                          "display": {
+                            "type": "object",
+                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "properties": {
+                              "amount": {
+                                "type": "number",
+                                "description": "Monetary amount"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "ISO 4217 currency code"
+                              }
+                            }
+                          },
+                          "converted": {
+                            "type": "boolean",
+                            "description": "True when FX conversion was applied"
+                          }
+                        }
+                      },
+                      "percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Fee as a percentage of the base fare (e.g. 100 = full penalty). May appear without pricing."
+                      },
+                      "applicability": {
+                        "type": "string",
+                        "enum": [
+                          "anytime",
+                          "noShow",
+                          "beforeDeparture",
+                          "afterDeparture"
+                        ],
+                        "description": "When the fee applies"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "Human-readable fee description (e.g. 'Change fee (before departure)')"
+                      }
+                    }
+                  },
+                  "refundFee": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Refund/cancellation fee details; null when the provider does not publish a fee",
+                    "properties": {
+                      "pricing": {
+                        "type": "object",
+                        "nullable": true,
+                        "description": "Fee pricing; null when only a percentage is available",
+                        "properties": {
+                          "display": {
+                            "type": "object",
+                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "properties": {
+                              "amount": {
+                                "type": "number",
+                                "description": "Monetary amount"
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "ISO 4217 currency code"
+                              }
+                            }
+                          },
+                          "converted": {
+                            "type": "boolean",
+                            "description": "True when FX conversion was applied"
+                          }
+                        }
+                      },
+                      "percent": {
+                        "type": "number",
+                        "nullable": true,
+                        "description": "Fee as a percentage of the base fare (e.g. 100 = full penalty). May appear without pricing."
+                      },
+                      "applicability": {
+                        "type": "string",
+                        "enum": [
+                          "anytime",
+                          "noShow",
+                          "beforeDeparture",
+                          "afterDeparture"
+                        ],
+                        "description": "When the fee applies"
+                      },
+                      "label": {
+                        "type": "string",
+                        "description": "Human-readable fee description (e.g. 'Change fee (before departure)')"
+                      }
+                    }
+                  },
+                  "hasChangeFee": {
+                    "type": "boolean",
+                    "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
+                  },
+                  "hasRefundFee": {
+                    "type": "boolean",
+                    "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
+                  }
+                },
+                "description": "Booking terms from the provider (change/refund rules and published fees)",
+                "nullable": true
+              }
+            },
+            "description": "Journey details as confirmed by the provider at booking time"
+          },
+          "passengers": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "Passenger type code (ADT, CHD, INF)"
+                },
+                "title": {
+                  "type": "string",
+                  "description": "Passenger title (Mr, Mrs, Ms, etc.)"
+                },
+                "firstName": {
+                  "type": "string",
+                  "description": "Passenger first name as on travel document"
+                },
+                "lastName": {
+                  "type": "string",
+                  "description": "Passenger last name as on travel document"
+                },
+                "middleName": {
+                  "type": "string",
+                  "description": "Passenger middle name"
+                },
+                "dateOfBirth": {
+                  "type": "string",
+                  "description": "Date of birth (YYYY-MM-DD)"
+                },
+                "birthday": {
+                  "type": "string",
+                  "format": "date",
+                  "description": "Date of birth (YYYY-MM-DD)"
+                },
+                "gender": {
+                  "type": "string",
+                  "description": "Passenger gender: M or F"
+                },
+                "nationality": {
+                  "type": "string",
+                  "description": "Passenger nationality as ISO country code"
+                },
+                "passengerType": {
+                  "type": "integer",
+                  "description": "0=Adult, 1=Child, 2=Infant"
+                },
+                "documentType": {
+                  "type": "string",
+                  "description": "Type of travel document (e.g. passport, id_card)"
+                },
+                "documentNumber": {
+                  "type": "string",
+                  "description": "Travel document number"
+                },
+                "documentIssueCountry": {
+                  "type": "string",
+                  "description": "ISO country code of the document issuing country"
+                },
+                "documentExpiry": {
+                  "type": "string",
+                  "description": "Travel document expiry date (YYYY-MM-DD)"
+                }
+              }
+            },
+            "description": "Passenger details as submitted and confirmed by the provider"
+          },
+          "contact": {
+            "type": "object",
+            "properties": {
+              "firstName": {
+                "type": "string",
+                "description": "Contact first name"
+              },
+              "lastName": {
+                "type": "string",
+                "description": "Contact last name"
+              },
+              "middleName": {
+                "type": "string",
+                "description": "Contact middle name"
+              },
+              "email": {
+                "type": "string",
+                "description": "Contact email address for booking confirmation"
+              },
+              "phoneCountryCode": {
+                "type": "string",
+                "description": "Phone country code without + (e.g. 1 for US, 33 for France)"
+              },
+              "phoneNumber": {
+                "type": "string",
+                "description": "Phone number without country code"
+              }
+            },
+            "description": "Primary contact person for the booking"
+          },
+          "order": {
+            "type": "object",
+            "properties": {
+              "reference": {
+                "type": "object",
+                "properties": {
+                  "orderId": {
+                    "type": "string",
+                    "description": "Booking order / PNR reference ID"
+                  },
+                  "airlineBookings": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "airlineCode": {
+                          "type": "string",
+                          "description": "Airline IATA code"
+                        },
+                        "airlineName": {
+                          "type": "string",
+                          "description": "Airline name"
+                        },
+                        "airlinePnr": {
+                          "type": "string",
+                          "description": "Airline-specific PNR/locator code"
+                        },
+                        "pnr": {
+                          "type": "string",
+                          "description": "PNR locator code for this airline"
+                        }
+                      }
+                    },
+                    "description": "Per-airline booking references and PNR codes"
+                  }
+                },
+                "description": "Provider and airline reference identifiers"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code for this order"
+              },
+              "status": {
+                "type": "string",
+                "description": "Order status from the provider (e.g. ticketed, created)"
+              },
+              "price": {
+                "type": "object",
+                "properties": {
+                  "currency": {
+                    "type": "string",
+                    "description": "ISO 4217 currency code"
+                  },
+                  "total": {
+                    "type": "number",
+                    "description": "Total order price"
+                  }
+                },
+                "description": "Order price as confirmed by the provider"
+              },
+              "ticketLimitTime": {
+                "type": "string",
+                "description": "Deadline for ticket issuance (UTC)"
+              },
+              "timestamp": {
+                "type": "string",
+                "description": "UTC timestamp when the order was created"
+              }
+            },
+            "description": "Order and provider confirmation details"
+          },
+          "airlineLocators": {
+            "type": "array",
+            "description": "Airline-specific PNR/locator codes",
+            "items": {
+              "type": "object",
+              "properties": {
+                "airlineCode": {
+                  "type": "string",
+                  "description": "Airline IATA code"
+                },
+                "airlinePnr": {
+                  "type": "string",
+                  "description": "Airline-specific PNR/locator code"
+                }
+              }
+            }
+          },
+          "pricing": {
+            "type": "object",
+            "properties": {
+              "subtotal": {
+                "type": "number",
+                "description": "Subtotal before ancillary services"
+              },
+              "servicesAmount": {
+                "type": "number",
+                "description": "Total cost of attached ancillary services (seats, baggage, etc.)"
+              },
+              "seatsAmount": {
+                "type": "number",
+                "description": "Total cost of seat selections"
+              },
+              "baggageAmount": {
+                "type": "number",
+                "description": "Total cost of additional baggage"
+              },
+              "totalAmount": {
+                "type": "number",
+                "description": "Grand total charged to the customer"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code"
+              }
+            },
+            "description": "Billing breakdown for this booking including base fare and any ancillary services"
+          },
+          "payment": {
+            "type": "object",
+            "properties": {
+              "amount": {
+                "type": "number",
+                "description": "Amount captured for payment"
+              },
+              "currency": {
+                "type": "string",
+                "description": "ISO 4217 currency code of the payment"
+              }
+            },
+            "description": "Payment amounts captured for this booking"
+          },
+          "remarks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Remark name or category"
+                },
+                "value": {
+                  "type": "string",
+                  "description": "Remark content"
+                }
+              }
+            },
+            "description": "Reservation remarks or comments from the provider"
+          },
+          "selectedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedService"
+            },
+            "description": "Ancillary services attached to this booking (seats, baggage, etc.)"
+          },
+          "bookedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightBookedService"
+            },
+            "description": "Detailed view of the ancillary services confirmed by the provider for this booking, including pricing and per-passenger / per-segment metadata. Present once /services has been called."
+          },
+          "settings": {
+            "type": "object",
+            "description": "Booking settings"
+          },
+          "paymentInput": {
+            "type": "object",
+            "description": "Echo of payment submitted when creating the booking; may include additional provider-specific fields",
+            "additionalProperties": true,
+            "properties": {
+              "method": {
+                "type": "string",
+                "enum": [
+                  "TRANSACTION_ID",
+                  "CREDIT"
+                ],
+                "description": "How the booking was paid: Stripe (`TRANSACTION_ID`) or credit line (`CREDIT`)"
+              },
+              "transactionId": {
+                "type": "string",
+                "description": "Stripe transaction id when `method` is `TRANSACTION_ID`"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -3051,6 +3917,10 @@
                                 },
                                 "converted": false
                               },
+                              "provider": {
+                                "code": "SABRE",
+                                "logo": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
+                              },
                               "fare": {
                                 "family": "Economy",
                                 "mixedCabin": false,
@@ -3169,7 +4039,7 @@
                   "type": "string",
                   "description": "When the request includes `Accept: text/event-stream`. Server-Sent Events (SSE): each message has optional `event:` (kebab-case, e.g. `rates-chunk`, `rates-complete`, `result`, `error`, `message`) and one or more `data:` lines, terminated by a blank line. Each `data` payload is JSON with the same `data[].journeys` shape as the `application/json` 200 response (no top-level `success` or `apiMeta`)."
                 },
-                "example": "event: rates-chunk\ndata: {\"data\":[{\"journeys\":[{\"journeyKey\":\"a3bbe883fe3a4f6b\",\"isCheapest\":true,\"timestamp\":\"2026-03-19T12:52:59.494Z\",\"totalDuration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"legDurations\":[{\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"dayChange\":1,\"overnightFlight\":false}],\"parameters\":{\"adults\":1,\"children\":0,\"infants\":0},\"segments\":[{\"segmentKey\":\"d0a8a7dd\",\"originCode\":\"JFK\",\"originName\":\"John F. Kennedy International Airport\",\"destinationCode\":\"CDG\",\"destinationName\":\"Charles de Gaulle Airport\",\"departureTime\":\"2026-07-01T16:10:00\",\"arrivalTime\":\"2026-07-02T05:55:00\",\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"flight\":{\"marketingNumber\":\"2017\",\"operatingNumber\":\"2017\"},\"carrier\":{\"marketingCode\":\"DE\",\"marketingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"marketingName\":\"Condor Flugdienst\",\"operatingCode\":\"DE\",\"operatingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"operatingName\":\"Condor Flugdienst\"}}],\"offers\":[{\"offerId\":\"h6NwaWTZJDAxOWQwNjFlLWRlMjYtNzI1NC1hZDNmLTA0ZDkwZmMxMDNhZaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAxonJkqjIwMjYtMDgtMDI=\",\"expiration\":\"2026-03-19T12:52:59.494Z\",\"pricing\":{\"display\":{\"total\":753.87,\"currency\":\"USD\",\"base\":403.63,\"fees\":0,\"taxes\":350.24,\"perPassenger\":{\"adult\":{\"base\":403.63,\"currency\":\"USD\",\"fees\":0,\"taxes\":350.24,\"total\":753.87},\"child\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0},\"infant\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0}}},\"converted\":false},\"fare\":{\"family\":\"Economy\",\"mixedCabin\":false,\"seatsRemaining\":7},\"baggage\":{\"hasCarryOnBag\":true,\"hasCheckedBag\":false,\"included\":[{\"bagType\":\"cabin\",\"description\":\"1 carry-on bag up to 8 kg\",\"passengerType\":\"ADT\",\"pieces\":1,\"pricing\":{\"display\":{\"amount\":0,\"currency\":\"USD\"},\"converted\":false},\"unit\":\"kg\",\"weightKg\":8}]},\"terms\":{\"changeable\":false,\"refundable\":false,\"summary\":[{\"level\":\"danger\",\"message\":\"Non-refundable fare\"}]},\"segmentFares\":[{\"segmentKey\":\"d0a8a7dd\",\"bookingCode\":\"W\",\"cabin\":\"Economy\",\"fareBasisCode\":\"WRAQ1\",\"fareFamily\":\"Economy\",\"seatsRemaining\":7}],\"segmentAmenities\":[{\"segmentKey\":\"d0a8a7dd\",\"aircraftType\":\"339\",\"amenities\":[{\"available\":true,\"category\":\"wifi\",\"chargeable\":true,\"name\":\"Wi-Fi\",\"details\":\"Available for purchase\"},{\"available\":true,\"category\":\"entertainment\",\"chargeable\":false,\"name\":\"In-seat entertainment\",\"details\":null}]}]}]}]}]}\n\nevent: rates-complete\ndata: {}\n"
+                "example": "event: rates-chunk\ndata: {\"data\":[{\"journeys\":[{\"journeyKey\":\"a3bbe883fe3a4f6b\",\"isCheapest\":true,\"timestamp\":\"2026-03-19T12:52:59.494Z\",\"totalDuration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"legDurations\":[{\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"dayChange\":1,\"overnightFlight\":false}],\"parameters\":{\"adults\":1,\"children\":0,\"infants\":0},\"segments\":[{\"segmentKey\":\"d0a8a7dd\",\"originCode\":\"JFK\",\"originName\":\"John F. Kennedy International Airport\",\"destinationCode\":\"CDG\",\"destinationName\":\"Charles de Gaulle Airport\",\"departureTime\":\"2026-07-01T16:10:00\",\"arrivalTime\":\"2026-07-02T05:55:00\",\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"flight\":{\"marketingNumber\":\"2017\",\"operatingNumber\":\"2017\"},\"carrier\":{\"marketingCode\":\"DE\",\"marketingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"marketingName\":\"Condor Flugdienst\",\"operatingCode\":\"DE\",\"operatingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"operatingName\":\"Condor Flugdienst\"}}],\"offers\":[{\"offerId\":\"h6NwaWTZJDAxOWQwNjFlLWRlMjYtNzI1NC1hZDNmLTA0ZDkwZmMxMDNhZaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAxonJkqjIwMjYtMDgtMDI=\",\"expiration\":\"2026-03-19T12:52:59.494Z\",\"pricing\":{\"display\":{\"total\":753.87,\"currency\":\"USD\",\"base\":403.63,\"fees\":0,\"taxes\":350.24,\"perPassenger\":{\"adult\":{\"base\":403.63,\"currency\":\"USD\",\"fees\":0,\"taxes\":350.24,\"total\":753.87},\"child\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0},\"infant\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0}}},\"converted\":false},\"provider\":{\"code\":\"SABRE\",\"logo\":\"https://sandbox.nuitee.flights/static/providers/sabre.svg\"},\"fare\":{\"family\":\"Economy\",\"mixedCabin\":false,\"seatsRemaining\":7},\"baggage\":{\"hasCarryOnBag\":true,\"hasCheckedBag\":false,\"included\":[{\"bagType\":\"cabin\",\"description\":\"1 carry-on bag up to 8 kg\",\"passengerType\":\"ADT\",\"pieces\":1,\"pricing\":{\"display\":{\"amount\":0,\"currency\":\"USD\"},\"converted\":false},\"unit\":\"kg\",\"weightKg\":8}]},\"terms\":{\"changeable\":false,\"refundable\":false,\"summary\":[{\"level\":\"danger\",\"message\":\"Non-refundable fare\"}]},\"segmentFares\":[{\"segmentKey\":\"d0a8a7dd\",\"bookingCode\":\"W\",\"cabin\":\"Economy\",\"fareBasisCode\":\"WRAQ1\",\"fareFamily\":\"Economy\",\"seatsRemaining\":7}],\"segmentAmenities\":[{\"segmentKey\":\"d0a8a7dd\",\"aircraftType\":\"339\",\"amenities\":[{\"available\":true,\"category\":\"wifi\",\"chargeable\":true,\"name\":\"Wi-Fi\",\"details\":\"Available for purchase\"},{\"available\":true,\"category\":\"entertainment\",\"chargeable\":false,\"name\":\"In-seat entertainment\",\"details\":null}]}]}]}]}]}\n\nevent: rates-complete\ndata: {}\n"
               }
             }
           },
@@ -4020,7 +4890,7 @@
                     "value": {
                       "error": {
                         "code": 42015,
-                        "description": "Verify validation failed: the session has expired",
+                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
                         "message": "verify validation error: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -4075,7 +4945,7 @@
                     "value": {
                       "error": {
                         "code": 42004,
-                        "description": "The offer has expired. Please search for new flights",
+                        "description": "The offer has expired or is invalid; search for new flights — do not retry this offerId",
                         "message": "offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -4086,7 +4956,7 @@
                     "value": {
                       "error": {
                         "code": 42017,
-                        "description": "The offer has expired",
+                        "description": "The offer has expired; search for new flights — do not retry this offerId",
                         "message": "expired: offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -4108,7 +4978,7 @@
                     "value": {
                       "error": {
                         "code": 42019,
-                        "description": "Expired: the session has expired",
+                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
                         "message": "expired: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -4219,13 +5089,785 @@
         }
       }
     },
+    "/flights/prebooks/{prebookId}": {
+      "get": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "1.3 Get prebook details (optional)",
+        "operationId": "getFlightPrebook",
+        "description": "## Overview\n\nRetrieve an existing flight checkout session (prebook) by ID, including any ancillary services already attached and a live catalog of remaining attachable services.\n\n## When to Use\n\n- **Resume checkout** — Reload prebook state after the user navigates away\n- **Confirm attached ancillaries** — Show selected seats/bags before final book\n- **Reuse payment intent** — Returns the stored Stripe `transactionId` / `secretKey` as-is (GET does not create or refresh a PaymentIntent)\n- **Credit balance** — Optionally include a live credit-line snapshot with `includeCreditBalance=true`\n\n## What You Get\n\n- Same core `FlightPrebookData` shape as `POST /flights/prebooks` / attach-services (journey, pricing, payment intent fields, `servicesAttachable`)\n- `booking.selectedServices` / `booking.bookedServices` when services were attached\n- Live `servicesAttachable` from the provider (not persisted)\n- Existing payment fields conserved from create/attach\n- Optional `creditLine` when `includeCreditBalance=true` (live remaining credit when the account can cover the prebook price)\n\n## Quick Start\n\nProvide the `prebookId` returned from `POST /flights/prebooks` in the URL path. Optionally pass `includeCreditBalance=true` to include credit-line availability.",
+        "parameters": [
+          {
+            "name": "prebookId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique prebook identifier",
+            "example": "019d0674-834d-7db7-9c8b-93fe8e46e7b8"
+          },
+          {
+            "name": "includeCreditBalance",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "When true, include credit line availability in the response when the account can cover the prebook price.",
+            "example": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Prebook retrieved successfully; includes attached services when present and live servicesAttachable catalog",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "prebookId": {
+                            "type": "string",
+                            "description": "Unique prebook identifier"
+                          },
+                          "booking": {
+                            "$ref": "#/components/schemas/FlightPrebookBooking",
+                            "description": "Checkout booking snapshot for this prebook (no cancellation fields; `bookingId`/`status` omitted)"
+                          },
+                          "servicesAttachable": {
+                            "type": "object",
+                            "properties": {
+                              "expiresAt": {
+                                "type": "string",
+                                "description": "Expiry time for attaching services (ISO 8601)"
+                              },
+                              "groups": {
+                                "type": "array",
+                                "description": "Remaining available ancillary services after attachment",
+                                "items": {
+                                  "type": "object",
+                                  "properties": {
+                                    "available": {
+                                      "type": "boolean",
+                                      "description": "Whether any services in this group are currently available"
+                                    },
+                                    "category": {
+                                      "type": "string",
+                                      "description": "Service category (e.g. seat, baggage)"
+                                    },
+                                    "label": {
+                                      "type": "string",
+                                      "description": "Human-readable group label"
+                                    },
+                                    "services": {
+                                      "type": "array",
+                                      "items": {
+                                        "type": "object",
+                                        "properties": {
+                                          "serviceId": {
+                                            "type": "string",
+                                            "description": "Unique service identifier — use this in selectedServices when attaching"
+                                          },
+                                          "name": {
+                                            "type": "string",
+                                            "description": "Human-readable service name (e.g. Seat 7A)"
+                                          },
+                                          "category": {
+                                            "type": "string",
+                                            "description": "Service category (e.g. seat, baggage)"
+                                          },
+                                          "passengerType": {
+                                            "type": "string",
+                                            "description": "Applicable passenger type (ALL, ADT, CHD, INF)"
+                                          },
+                                          "segmentKey": {
+                                            "type": "string",
+                                            "description": "The segment this service applies to"
+                                          },
+                                          "pricing": {
+                                            "$ref": "#/components/schemas/FlightItemPricing",
+                                            "description": "Price of this service (amount 0 means included)"
+                                          },
+                                          "metadata": {
+                                            "type": "object",
+                                            "description": "Category-specific metadata. Contains exactly one of `seat` (when category is `seat`) or `baggage` (when category is `baggage`).",
+                                            "properties": {
+                                              "seat": {
+                                                "type": "object",
+                                                "description": "Seat details — present only when the service category is `seat`",
+                                                "properties": {
+                                                  "available": {
+                                                    "type": "boolean",
+                                                    "description": "Whether this seat is currently available for selection"
+                                                  },
+                                                  "position": {
+                                                    "type": "string",
+                                                    "description": "Physical position in the row (e.g. window, middle, aisle)"
+                                                  },
+                                                  "seatColumn": {
+                                                    "type": "string",
+                                                    "description": "Column letter (e.g. A, B, C)"
+                                                  },
+                                                  "seatNumber": {
+                                                    "type": "string",
+                                                    "description": "Full seat label (e.g. 1A)"
+                                                  },
+                                                  "seatRow": {
+                                                    "type": "integer",
+                                                    "description": "Row number"
+                                                  },
+                                                  "seatType": {
+                                                    "type": "string",
+                                                    "description": "Seat class/type (e.g. standard, extra_legroom, exit_row)"
+                                                  }
+                                                }
+                                              },
+                                              "baggage": {
+                                                "type": "object",
+                                                "description": "Baggage details — present only when the service category is `baggage`",
+                                                "properties": {
+                                                  "bagType": {
+                                                    "type": "string",
+                                                    "description": "Type of bag (e.g. checked, cabin)"
+                                                  },
+                                                  "pieces": {
+                                                    "type": "integer",
+                                                    "description": "Number of bag pieces included"
+                                                  },
+                                                  "weightKg": {
+                                                    "type": "number",
+                                                    "description": "Weight allowance in kilograms"
+                                                  }
+                                                }
+                                              }
+                                            }
+                                          }
+                                        }
+                                      },
+                                      "description": "Available services in this group"
+                                    }
+                                  }
+                                }
+                              }
+                            },
+                            "description": "Remaining ancillary services available to attach"
+                          },
+                          "price": {
+                            "type": "number",
+                            "description": "Updated total price including attached services"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "ISO 4217 currency code for the updated price"
+                          },
+                          "transactionId": {
+                            "type": "string",
+                            "description": "New Stripe transaction ID reflecting the updated price — use this (not the prebook transactionId) when calling /bookings"
+                          },
+                          "secretKey": {
+                            "type": "string",
+                            "description": "New Stripe payment intent secret key for SDK confirmation"
+                          },
+                          "voucherCode": {
+                            "type": "string",
+                            "description": "Represents the unique code used to redeem a voucher during the transaction."
+                          },
+                          "voucherTotalAmount": {
+                            "type": "number",
+                            "description": "Specifies the total monetary value or discount amount provided by the voucher, in `currency`."
+                          },
+                          "sellingPriceToUser": {
+                            "type": "number",
+                            "description": "Amount the customer pays after the voucher discount (`price` minus `voucherTotalAmount`)."
+                          },
+                          "creditLine": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Live credit-line snapshot when `includeCreditBalance=true` and the enabled credit line can cover the prebook price. Omitted otherwise.",
+                            "properties": {
+                              "remainingCredit": {
+                                "type": "number",
+                                "description": "Remaining credit available on the credit line (USD)",
+                                "example": 1250.5
+                              },
+                              "currency": {
+                                "type": "string",
+                                "description": "Currency of remainingCredit",
+                                "example": "USD"
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "description": "Updated prebook result after attaching services"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "prebookId": "019d0674-834d-7db7-9c8b-93fe8e46e7b8",
+                      "booking": {
+                        "timestamp": "2026-03-19T14:16:40Z",
+                        "journey": {
+                          "journeyKey": "30073d47d441f174",
+                          "segments": [
+                            {
+                              "segmentKey": "b4cd7e77",
+                              "originCode": "JFK",
+                              "originName": "John F. Kennedy International Airport",
+                              "destinationCode": "FRA",
+                              "destinationName": "Frankfurt Main Airport",
+                              "departureTime": "2026-07-02T16:10:00",
+                              "arrivalTime": "2026-07-03T05:55:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT7H45M",
+                                "minutes": 465
+                              },
+                              "flight": {
+                                "marketingNumber": "2017",
+                                "operatingNumber": "2017"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "35125125",
+                              "originCode": "FRA",
+                              "originName": "Frankfurt Main Airport",
+                              "destinationCode": "CDG",
+                              "destinationName": "Charles de Gaulle International Airport",
+                              "departureTime": "2026-07-03T08:30:00",
+                              "arrivalTime": "2026-07-03T09:50:00",
+                              "direction": "OUTBOUND",
+                              "duration": {
+                                "iso8601": "PT1H20M",
+                                "minutes": 80
+                              },
+                              "flight": {
+                                "marketingNumber": "4265",
+                                "operatingNumber": "4265"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "f15d5c4e",
+                              "originCode": "CDG",
+                              "originName": "Charles de Gaulle International Airport",
+                              "destinationCode": "FRA",
+                              "destinationName": "Frankfurt Main Airport",
+                              "departureTime": "2026-08-02T08:25:00",
+                              "arrivalTime": "2026-08-02T09:55:00",
+                              "direction": "INBOUND",
+                              "duration": {
+                                "iso8601": "PT1H30M",
+                                "minutes": 90
+                              },
+                              "flight": {
+                                "marketingNumber": "4292",
+                                "operatingNumber": "4292"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            },
+                            {
+                              "segmentKey": "7eccefc8",
+                              "originCode": "FRA",
+                              "originName": "Frankfurt Main Airport",
+                              "destinationCode": "JFK",
+                              "destinationName": "John F. Kennedy International Airport",
+                              "departureTime": "2026-08-02T11:25:00",
+                              "arrivalTime": "2026-08-02T14:10:00",
+                              "direction": "INBOUND",
+                              "duration": {
+                                "iso8601": "PT8H45M",
+                                "minutes": 525
+                              },
+                              "flight": {
+                                "marketingNumber": "2016",
+                                "operatingNumber": "2016"
+                              },
+                              "carrier": {
+                                "marketingCode": "DE",
+                                "marketingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "marketingName": "Condor Flugdienst",
+                                "operatingCode": "DE",
+                                "operatingLogo": "https://sandbox.nuitee.flights/static/images/airlines/DE.png",
+                                "operatingName": "Condor Flugdienst"
+                              }
+                            }
+                          ],
+                          "pricing": {
+                            "display": {
+                              "total": 740.27,
+                              "currency": "USD",
+                              "base": 421.87,
+                              "fees": 0,
+                              "taxes": 318.4,
+                              "perPassenger": {
+                                "adult": {
+                                  "base": 421.87,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 318.4,
+                                  "total": 740.27
+                                },
+                                "child": {
+                                  "base": 0,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 0,
+                                  "total": 0
+                                },
+                                "infant": {
+                                  "base": 0,
+                                  "currency": "USD",
+                                  "fees": 0,
+                                  "taxes": 0,
+                                  "total": 0
+                                }
+                              }
+                            },
+                            "converted": true
+                          },
+                          "terms": {
+                            "changeable": true,
+                            "refundable": false,
+                            "summary": [
+                              {
+                                "level": "warning",
+                                "message": "Change fee applies"
+                              },
+                              {
+                                "level": "danger",
+                                "message": "Non-refundable"
+                              }
+                            ],
+                            "changeFee": {
+                              "pricing": {
+                                "display": {
+                                  "amount": 75.0,
+                                  "currency": "USD"
+                                },
+                                "converted": false
+                              },
+                              "percent": null,
+                              "applicability": "beforeDeparture",
+                              "label": "Change fee (before departure)"
+                            },
+                            "refundFee": null
+                          }
+                        },
+                        "passengers": [
+                          {
+                            "firstName": "JOHN",
+                            "lastName": "Doe",
+                            "middleName": "Joshua",
+                            "birthday": "1996-04-28",
+                            "gender": "M",
+                            "nationality": "TN",
+                            "documentType": "passport",
+                            "documentNumber": "123456789",
+                            "documentIssueCountry": "US",
+                            "documentExpiry": "2030-04-28"
+                          }
+                        ],
+                        "order": {
+                          "reference": {
+                            "orderId": "OQTYXX",
+                            "airlineBookings": [
+                              {
+                                "airlineCode": "DE",
+                                "airlineName": "Condor Flugdienst",
+                                "airlinePnr": "DCDE"
+                              }
+                            ]
+                          }
+                        },
+                        "contact": {
+                          "firstName": "JOHN",
+                          "email": "j.doe@example.com"
+                        },
+                        "selectedServices": [
+                          {
+                            "passengerIndex": 0,
+                            "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAfB6PXCj1w6Fjo1VTRA==",
+                            "quantity": 1
+                          }
+                        ]
+                      },
+                      "price": 1149.28,
+                      "currency": "USD",
+                      "transactionId": "tr_cts_t0LaZePPxdCM_Kyskafml",
+                      "secretKey": "pi_3TChUfA1239Y0tQbfO9i_secret_fwHM73123K468UX3g",
+                      "voucherCode": "createvoucher83",
+                      "voucherTotalAmount": 20,
+                      "sellingPriceToUser": 1129.28,
+                      "servicesAttachable": {
+                        "expiresAt": "2026-03-19T14:31:42.493Z",
+                        "groups": [
+                          {
+                            "available": true,
+                            "category": "seat",
+                            "label": "Seat Selection",
+                            "services": [
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hYWY1LTczMjktODhiNy03OTdlNTc5YWJmZjWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Seat 7A",
+                                "category": "seat",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 21.83,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true
+                                },
+                                "metadata": {
+                                  "seat": {
+                                    "available": true,
+                                    "position": "window",
+                                    "seatColumn": "A",
+                                    "seatNumber": "7A",
+                                    "seatRow": 7,
+                                    "seatType": "extra_legroom"
+                                  }
+                                }
+                              },
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hYWY1LTczMjktODhiNy03OTdmZmYzMTczMGWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Seat 7B",
+                                "category": "seat",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 21.83,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true
+                                },
+                                "metadata": {
+                                  "seat": {
+                                    "available": true,
+                                    "position": "middle",
+                                    "seatColumn": "B",
+                                    "seatNumber": "7B",
+                                    "seatRow": 7,
+                                    "seatType": "standard"
+                                  }
+                                }
+                              }
+                            ]
+                          },
+                          {
+                            "available": true,
+                            "category": "baggage",
+                            "label": "Extra Baggage",
+                            "services": [
+                              {
+                                "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1iYWcxLTczMjktODhiNy04OTdlNTc5YWJmZjWhcMtANdR64UeuFKFjo1VTRA==",
+                                "name": "Standard Check In Baggage 10kg",
+                                "category": "baggage",
+                                "passengerType": "ALL",
+                                "segmentKey": "35125125",
+                                "pricing": {
+                                  "display": {
+                                    "amount": 13.62,
+                                    "currency": "USD"
+                                  },
+                                  "converted": true
+                                },
+                                "metadata": {
+                                  "baggage": {
+                                    "bagType": "checked",
+                                    "pieces": 1,
+                                    "weightKg": 10
+                                  }
+                                }
+                              }
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid prebookId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Standard error response envelope",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Error details returned by the API",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric LiteAPI error code for this failure",
+                          "example": 43020
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Short machine-oriented error message",
+                          "example": "validation error: invalid prebook ID format"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Human-readable explanation of what went wrong",
+                          "example": "Prebook ID is required and must be a valid id"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "JSON path to the offending request field (e.g. pathParam.prebookId). Present on validation and client-input errors; omitted on auth and server-side errors.",
+                          "example": "pathParam.prebookId"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "invalidPrebookId": {
+                    "summary": "Invalid prebook ID format",
+                    "value": {
+                      "error": {
+                        "code": 43020,
+                        "message": "validation error: invalid prebook ID format",
+                        "description": "Prebook ID is required and must be a valid id",
+                        "key": "pathParam.prebookId"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Standard error response envelope",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Error details returned by the API",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric LiteAPI error code for this failure",
+                          "example": 47001
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Short machine-oriented error message",
+                          "example": "unauthorized"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Human-readable explanation of what went wrong",
+                          "example": "Authentication failed"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "unauthorized": {
+                    "summary": "Unauthorized",
+                    "value": {
+                      "error": {
+                        "code": 47001,
+                        "description": "Authentication failed",
+                        "message": "unauthorized"
+                      }
+                    }
+                  },
+                  "credentialFailed": {
+                    "summary": "Credential resolution failed",
+                    "value": {
+                      "error": {
+                        "code": 47006,
+                        "description": "Authentication failed: credential resolution failed",
+                        "message": "unauthorized: credential resolution failed"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Prebook not found or not owned by the authenticated user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Standard error response envelope",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Error details returned by the API",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric LiteAPI error code for this failure",
+                          "example": 43021
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Short machine-oriented error message",
+                          "example": "prebook not found"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Human-readable explanation of what went wrong",
+                          "example": "the prebook was not found"
+                        },
+                        "key": {
+                          "type": "string",
+                          "description": "JSON path to the offending request field (e.g. pathParam.prebookId). Present on validation and client-input errors; omitted on auth and server-side errors.",
+                          "example": "pathParam.prebookId"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "prebookNotFound": {
+                    "summary": "Prebook not found",
+                    "value": {
+                      "error": {
+                        "code": 43021,
+                        "message": "prebook not found",
+                        "description": "the prebook was not found",
+                        "key": "pathParam.prebookId"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error while loading the prebook",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "description": "Standard error response envelope",
+                  "required": [
+                    "error"
+                  ],
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Error details returned by the API",
+                      "required": [
+                        "code",
+                        "message"
+                      ],
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric LiteAPI error code for this failure",
+                          "example": 53020
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Short machine-oriented error message",
+                          "example": "unable to process get prebook request"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Human-readable explanation of what went wrong",
+                          "example": "Failed to get prebook"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "unableToProcess": {
+                    "summary": "Unable to process get prebook",
+                    "value": {
+                      "error": {
+                        "code": 53020,
+                        "message": "unable to process get prebook request",
+                        "description": "Failed to get prebook"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/flights/prebooks/{prebookId}/services": {
       "post": {
         "tags": [
           "Flight Bookings"
         ],
         "summary": "1.2 Attach services to prebook (Optional)",
-        "description": "## Overview\n\nAdd ancillary services such as seat selection or extra baggage to an existing prebook before confirming the final booking.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Price update** - Required when services change the total booking cost\n- **Voucher discount** - Optional `voucherCode` when attaching services changes the total and you need the discount reflected on the new payment intent\n\n## What You Get\n\n- **Updated prebook** with the selected services attached\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price (after any voucher discount)\n- **Same response format** as `POST /flights/prebooks` for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Updated payment**: Creates a new Stripe payment intent when the prebook used Stripe (`usePaymentSdk: true`). When the prebook used credit line only (`usePaymentSdk: false`), no new intent is returned\n- **Voucher recalculation**: When a voucher applies, the discount is recomputed against the updated total (journey + ancillaries); invalid or expired vouchers return `400` (same as prebook)\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and `selectedServices` in the request body. Optionally pass `voucherCode` to apply a discount. Use the **new** `transactionId` from this response (not the original prebook `transactionId`) when confirming payment with Stripe and when calling `POST /flights/bookings`.",
+        "description": "## Overview\n\nAdd ancillary services such as seat selection or extra baggage to an existing prebook before confirming the final booking.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Price update** - Required when services change the total booking cost\n- **Voucher discount** - Optional `voucherCode` when attaching services changes the total and you need the discount reflected on the new payment intent\n\n## What You Get\n\n- **Updated prebook** with the selected services attached\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price (after any voucher discount)\n- **Same response format** as `POST /flights/prebooks` for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Updated payment**: Creates a new Stripe payment intent when the prebook used Stripe (`usePaymentSdk: true`). For whitelabel/CMI prebooks (`used_custom_payment_keys`), no new intent is returned — re-charge via WL and submit a fresh JWT at `POST /flights/bookings`\n- **Voucher recalculation**: When a voucher applies, the discount is recomputed against the updated total (journey + ancillaries); invalid or expired vouchers return `400` (same as prebook)\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and `selectedServices` in the request body. Optionally pass `voucherCode` to apply a discount. Use the **new** `transactionId` from this response (not the original prebook `transactionId`) when confirming payment with Stripe and when calling `POST /flights/bookings`.",
         "parameters": [
           {
             "name": "prebookId",
@@ -4293,7 +5935,7 @@
                             "description": "Unique prebook identifier"
                           },
                           "booking": {
-                            "$ref": "#/components/schemas/FlightBooking",
+                            "$ref": "#/components/schemas/FlightPrebookBooking",
                             "description": "Updated booking record after attaching services"
                           },
                           "servicesAttachable": {
@@ -4664,7 +6306,7 @@
                       "price": 1149.28,
                       "currency": "USD",
                       "transactionId": "tr_cts_t0LaZePPxdCM_Kyskafml",
-                      "secretKey": "pi_3TChUfA4FXPoRk9Y0tQbfO9i_secret_fwHM73I5dHKOmcWJ3K468UX3g",
+                      "secretKey": "pi_3TChUfA123tQbfO9i_secret_fwHM73I13X3g",
                       "voucherCode": "createvoucher83",
                       "voucherTotalAmount": 20,
                       "sellingPriceToUser": 1129.28,
@@ -4808,7 +6450,7 @@
                     "value": {
                       "error": {
                         "code": 44013,
-                        "description": "Validation failed: the session has expired",
+                        "description": "The search session has expired; search for new flights and create a new prebook — services cannot be attached to this prebook",
                         "message": "validation error: session expired",
                         "key": "bodyRequest"
                       }
@@ -5232,6 +6874,969 @@
         }
       }
     },
+    "/flights/bookings/{bookingId}/cancellations": {
+      "get": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "Get cancellation quote",
+        "description": "## Overview\n\nReturns refund eligibility, estimated refund amounts, and penalty details for a booking **without actually cancelling it**. Use this before calling `POST /flights/bookings/{bookingId}/cancellations` to understand the financial impact of cancellation.\n\n## When to Use\n\n- **Pre-cancellation review** — Show the customer the potential maximum refund (not guaranteed) before they confirm cancellation\n- **Refund estimation** — Display potential maximum refund and penalty amounts in the booking management UI (refund is not granted until cancel completes)\n- **Eligibility check** — Determine whether the booking is within the void window (`isVoidable`) or eligible for a partial refund (`isRefundable`)\n\n## What You Get\n\n- **`confidence`** — How reliable the quote is (`confirmed`, `estimated`, `heuristic`, `unknown`)\n- **`isRefundable` / `isVoidable`** — Quick eligibility flags\n- **`refund` / `penalty`** — Aggregate amounts with margin applied. `refund` is the potential maximum the airline may refund — not a granted/guaranteed amount\n- **`penalties[]`** — Itemised penalty breakdown when available\n- **`tickets[]`** — Per-ticket detail when available\n- **`destination`** — Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** — Airline travel vouchers / credit-shells when `destination` is `voucher`; omitted when absent. Distinct from LiteAPI discount `voucherCode` on prebook\n\n## Concurrent cancellation\n\nIf a cancellation was already submitted and is still awaiting provider confirmation, this endpoint returns **HTTP 409** with code `49007` (`CONCURRENT_OPERATION`). A new quote is not available until that cancellation completes or fails.\n\n## Refund amount caveat\n\nThe `refund` amount on a cancellation quote is the **potential maximum** the airline may refund if cancellation proceeds under the quoted conditions. It is an estimate for decision-making only and is **not granted** — the final refund (if any) is determined when cancellation completes and may be lower or zero. The refund may arrive asynchronously once the airline determines the final amount.\n\n## Key Features\n\n- **Non-destructive** — Does not cancel the booking; safe to call before user confirmation\n- **Margin-applied pricing** — All amounts (including voucher `pricing.display`) reflect the same margin applied at booking time\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. Every call hits the upstream provider — do not place this on a hot polling loop.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique booking identifier",
+            "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "confidence": {
+                            "type": "string",
+                            "enum": [
+                              "confirmed",
+                              "estimated",
+                              "heuristic",
+                              "unknown"
+                            ],
+                            "description": "Quote reliability indicator"
+                          },
+                          "timestamp": {
+                            "type": "string",
+                            "description": "UTC timestamp when the quote was generated"
+                          },
+                          "isRefundable": {
+                            "type": "boolean",
+                            "nullable": true,
+                            "description": "True if any refund is available"
+                          },
+                          "isVoidable": {
+                            "type": "boolean",
+                            "nullable": true,
+                            "description": "True if within the void window (cancel without penalty)"
+                          },
+                          "refund": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Potential maximum refund amount the airline may return if cancellation proceeds under this quote. Display amount includes margin. This value is not granted or guaranteed — the final refund (if any) is confirmed only after cancellation completes and may be lower or zero.",
+                            "properties": {
+                              "display": {
+                                "type": "object",
+                                "properties": {
+                                  "amount": {
+                                    "type": "number",
+                                    "description": "Potential maximum refund amount in the display currency. Not granted — subject to airline confirmation at cancel time."
+                                  },
+                                  "currency": {
+                                    "type": "string",
+                                    "description": "ISO 4217 currency code for the display refund amount"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "penalty": {
+                            "type": "object",
+                            "nullable": true,
+                            "description": "Total estimated penalty amount",
+                            "properties": {
+                              "display": {
+                                "type": "object",
+                                "properties": {
+                                  "amount": {
+                                    "type": "number",
+                                    "description": "Total estimated penalty amount in the display currency"
+                                  },
+                                  "currency": {
+                                    "type": "string",
+                                    "description": "ISO 4217 currency code for the display penalty amount"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "penalties": {
+                            "type": "array",
+                            "nullable": true,
+                            "description": "Itemised penalty breakdown",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "type": {
+                                  "type": "string",
+                                  "description": "Penalty category (e.g. transaction_fee, cancellation_fee)"
+                                },
+                                "description": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Human-readable penalty description when provided"
+                                },
+                                "pricing": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "Penalty amount with margin applied on display",
+                                  "properties": {
+                                    "display": {
+                                      "type": "object",
+                                      "properties": {
+                                        "amount": {
+                                          "type": "number",
+                                          "description": "Penalty amount in the display currency"
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "description": "ISO 4217 currency code for this penalty amount"
+                                        }
+                                      }
+                                    }
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "tickets": {
+                            "type": "array",
+                            "nullable": true,
+                            "description": "Per-ticket breakdown when available",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "ticketNumber": {
+                                  "type": "string",
+                                  "description": "Airline ticket number"
+                                },
+                                "isRefundable": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "True if this ticket is eligible for a refund"
+                                },
+                                "isVoidable": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "True if this ticket is within the void window"
+                                },
+                                "status": {
+                                  "type": "string",
+                                  "description": "Ticket status from the cancellation quote"
+                                },
+                                "refund": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "Per-ticket potential maximum refund from the airline for this quote. Not granted or guaranteed."
+                                },
+                                "penalty": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "Estimated penalty for this ticket"
+                                },
+                                "penalties": {
+                                  "type": "array",
+                                  "nullable": true,
+                                  "description": "Itemised penalty breakdown for this ticket",
+                                  "items": {
+                                    "type": "object"
+                                  }
+                                }
+                              }
+                            }
+                          },
+                          "destination": {
+                            "type": "string",
+                            "nullable": true,
+                            "enum": [
+                              "original_payment",
+                              "agency_deposit",
+                              "voucher",
+                              "bsp_settlement",
+                              "manual",
+                              "unknown"
+                            ],
+                            "description": "Likely refund destination"
+                          },
+                          "expiresAt": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "UTC timestamp when this quote expires"
+                          },
+                          "pnr": {
+                            "type": "string",
+                            "nullable": true,
+                            "description": "PNR / record locator"
+                          },
+                          "vouchers": {
+                            "type": "array",
+                            "nullable": true,
+                            "description": "Airline travel vouchers when destination is voucher. Omitted when the provider does not return any.",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "voucherId": {
+                                  "type": "string",
+                                  "description": "Provider voucher identifier"
+                                },
+                                "code": {
+                                  "type": "string",
+                                  "description": "Airline credit / voucher code"
+                                },
+                                "airline": {
+                                  "type": "string",
+                                  "description": "Issuing airline IATA code"
+                                },
+                                "pricing": {
+                                  "type": "object",
+                                  "nullable": true,
+                                  "description": "Voucher face value with margin applied on display",
+                                  "properties": {
+                                    "display": {
+                                      "type": "object",
+                                      "description": "Customer-facing voucher value in the display currency",
+                                      "properties": {
+                                        "amount": {
+                                          "type": "number",
+                                          "description": "Voucher face value in the display currency (margin applied)"
+                                        },
+                                        "currency": {
+                                          "type": "string",
+                                          "description": "ISO 4217 currency code for the voucher display amount"
+                                        }
+                                      }
+                                    }
+                                  }
+                                },
+                                "validFrom": {
+                                  "type": "string",
+                                  "description": "Voucher validity start date (YYYY-MM-DD)"
+                                },
+                                "expiresAt": {
+                                  "type": "string",
+                                  "description": "Voucher expiry date (YYYY-MM-DD)"
+                                },
+                                "passengerNames": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Passenger names the voucher applies to"
+                                },
+                                "notes": {
+                                  "type": "string",
+                                  "description": "Provider notes / restrictions"
+                                }
+                              }
+                            }
+                          }
+                        }
+                      },
+                      "description": "Cancellation quote array (always one item)"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "confidence": "confirmed",
+                      "timestamp": "2026-07-01T17:48:54.987Z",
+                      "isRefundable": false,
+                      "penalties": [
+                        {
+                          "type": "transaction_fee",
+                          "description": "Transaction/service fee",
+                          "pricing": {
+                            "display": {
+                              "amount": 4.4,
+                              "currency": "USD"
+                            }
+                          }
+                        }
+                      ],
+                      "destination": "voucher",
+                      "pnr": "IPM1XX",
+                      "vouchers": [
+                        {
+                          "voucherId": "v_abc123",
+                          "code": "AIRLINE-CREDIT-XYZ",
+                          "airline": "VY",
+                          "pricing": {
+                            "display": {
+                              "amount": 18.5,
+                              "currency": "USD"
+                            }
+                          },
+                          "validFrom": "2026-07-02",
+                          "expiresAt": "2027-07-02",
+                          "passengerNames": [
+                            "JOHN DOE"
+                          ],
+                          "notes": "Non-transferable airline credit"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — invalid booking ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validationInvalidId": {
+                    "summary": "Validation error: invalid ID format",
+                    "value": {
+                      "error": {
+                        "code": 49004,
+                        "description": "Validation failed: the ID format is invalid",
+                        "message": "validation error: invalid ID format"
+                      }
+                    }
+                  },
+                  "missingFieldInvalidId": {
+                    "summary": "Missing field: invalid ID format",
+                    "value": {
+                      "error": {
+                        "code": 49005,
+                        "description": "A required field is missing: invalid ID format",
+                        "message": "missing required field: invalid ID format"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unauthorized": {
+                    "summary": "Unauthorized",
+                    "value": {
+                      "error": {
+                        "code": 49001,
+                        "description": "Authentication failed",
+                        "message": "unauthorized"
+                      }
+                    }
+                  },
+                  "credentialFailed": {
+                    "summary": "Credential resolution failed",
+                    "value": {
+                      "error": {
+                        "code": 49002,
+                        "description": "Authentication failed: credential resolution failed",
+                        "message": "unauthorized: credential resolution failed"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "bookingNotFound": {
+                    "summary": "Booking not found",
+                    "value": {
+                      "error": {
+                        "code": 49003,
+                        "description": "The booking was not found",
+                        "message": "booking not found"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Booking cannot be quoted for cancellation in its current state (including when a cancellation is already in progress)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "invalidStatus": {
+                    "summary": "Invalid status for cancellation quote",
+                    "value": {
+                      "error": {
+                        "code": 49006,
+                        "description": "Booking cannot be quoted for cancellation in its current state",
+                        "message": "conflict: booking cannot be quoted for cancellation in its current state"
+                      }
+                    }
+                  },
+                  "concurrentOperation": {
+                    "summary": "Cancellation already in progress",
+                    "value": {
+                      "error": {
+                        "code": 49007,
+                        "description": "A cancellation is already in progress (awaiting confirmation)",
+                        "key": "bodyRequest",
+                        "message": "conflict: a cancellation is already in progress"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Provider error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "gdsRejection": {
+                    "summary": "GDS rejection",
+                    "value": {
+                      "error": {
+                        "code": 59001,
+                        "description": "Provider error: rejected by GDS",
+                        "message": "provider error: GDS rejection"
+                      }
+                    }
+                  },
+                  "connectionFailed": {
+                    "summary": "Provider connection failed",
+                    "value": {
+                      "error": {
+                        "code": 59002,
+                        "description": "Provider error: connection to provider failed",
+                        "message": "provider error: connection failed"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unableToProcess": {
+                    "summary": "Unable to process",
+                    "value": {
+                      "error": {
+                        "code": 59099,
+                        "description": "Failed to retrieve cancellation quote",
+                        "message": "unable to process cancellation quote request"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "Cancel a booking",
+        "description": "## Overview\n\n**Cancels a flight booking.** Submits cancellation for an existing booking and returns the cancellation outcome. Call `GET /flights/bookings/{bookingId}/cancellations` first to preview the financial impact without committing.\n\nIf cancellation is accepted but not yet confirmed, this endpoint returns **HTTP 202** with `status: CONFIRMED` (the booking is unchanged until the airline finalizes). Retries while cancellation is still pending are idempotent. While cancellation is awaiting confirmation, a subsequent `GET /flights/bookings/{bookingId}` includes `cancelIntentAt` (timestamp of the cancel request). When cancellation completes, the response is **HTTP 200** with a final status of `CANCELLED` or `CANCELLED_WITH_CHARGES`. All asynchronous cancellation updates are delivered as webhook events — subscribe to flight booking webhooks to receive final confirmation and status changes.\n\n## When to Use\n\n- **Confirmed cancellation** — Cancel the booking with the airline after the cancel quote has been reviewed and agreed\n\n## What You Get\n\n- **`bookingId`** — The LiteAPI booking identifier\n- **`status`** — Current booking status: `CONFIRMED` while cancellation is awaiting airline confirmation (HTTP 202), or final `CANCELLED` / `CANCELLED_WITH_CHARGES` (HTTP 200)\n- **`cancellation_fee`** — Total cancellation penalty; often `0` on idempotent pending retries\n- **`refund_amount`** — Amount to be returned (if any)\n- **`currency`** — Currency of the fee and refund amounts\n- **`destination`** — Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** — Airline travel vouchers when issued in lieu of cash; omitted when absent\n\n## Key Features\n\n- **Hotel-parity response** — Flat `data` object with `bookingId`, `status`, `cancellation_fee`, `refund_amount`, `currency`, plus optional `destination` / `vouchers`\n- **Pending cancel intent** — HTTP 202 when the airline accepts the cancel but has not confirmed it yet; booking stays `CONFIRMED` until cancellation is finalized, and `GET /flights/bookings/{bookingId}` returns `cancelIntentAt`\n- **Fee-based final status** — When cancellation completes (HTTP 200), the final `status` depends on `cancellation_fee`: if the fee is `0`, the booking is fully cancelled (`CANCELLED`); if the fee is greater than `0`, the booking is cancelled with charges retained (`CANCELLED_WITH_CHARGES`)\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. No request body is required.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "The unique booking identifier",
+            "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancellation confirmed with a final status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "description": "Cancellation result",
+                      "required": [
+                        "bookingId",
+                        "status",
+                        "cancellation_fee",
+                        "refund_amount",
+                        "currency"
+                      ],
+                      "properties": {
+                        "bookingId": {
+                          "type": "string",
+                          "description": "The LiteAPI booking identifier"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "CANCELLED",
+                            "CANCELLED_WITH_CHARGES"
+                          ],
+                          "description": "Final cancellation status"
+                        },
+                        "cancellation_fee": {
+                          "type": "number",
+                          "description": "Total cancellation penalty with margin applied"
+                        },
+                        "refund_amount": {
+                          "type": "number",
+                          "description": "Amount refunded or to be refunded with margin applied"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "Currency of cancellation_fee and refund_amount"
+                        },
+                        "destination": {
+                          "type": "string",
+                          "nullable": true,
+                          "enum": [
+                            "original_payment",
+                            "agency_deposit",
+                            "voucher",
+                            "bsp_settlement",
+                            "manual",
+                            "unknown"
+                          ],
+                          "description": "Where refunded money goes (original_payment, agency_deposit, voucher, etc.)"
+                        },
+                        "vouchers": {
+                          "type": "array",
+                          "nullable": true,
+                          "description": "Airline travel vouchers when destination is voucher. Omitted when absent.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "voucherId": {
+                                "type": "string",
+                                "description": "Provider voucher identifier"
+                              },
+                              "code": {
+                                "type": "string",
+                                "description": "Airline credit / voucher code"
+                              },
+                              "airline": {
+                                "type": "string",
+                                "description": "Issuing airline IATA code"
+                              },
+                              "pricing": {
+                                "type": "object",
+                                "nullable": true,
+                                "description": "Voucher face value with margin applied on display",
+                                "properties": {
+                                  "display": {
+                                    "type": "object",
+                                    "description": "Customer-facing voucher value in the display currency",
+                                    "properties": {
+                                      "amount": {
+                                        "type": "number",
+                                        "description": "Voucher face value in the display currency (margin applied)"
+                                      },
+                                      "currency": {
+                                        "type": "string",
+                                        "description": "ISO 4217 currency code for the voucher display amount"
+                                      }
+                                    }
+                                  }
+                                }
+                              },
+                              "validFrom": {
+                                "type": "string",
+                                "description": "Voucher validity start date (YYYY-MM-DD)"
+                              },
+                              "expiresAt": {
+                                "type": "string",
+                                "description": "Voucher expiry date (YYYY-MM-DD)"
+                              },
+                              "passengerNames": {
+                                "type": "array",
+                                "items": {
+                                  "type": "string"
+                                },
+                                "description": "Passenger names the voucher applies to"
+                              },
+                              "notes": {
+                                "type": "string",
+                                "description": "Provider notes / restrictions"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "cancelled": {
+                    "summary": "Fully cancelled without charges",
+                    "value": {
+                      "data": {
+                        "bookingId": "1297abe4-57c5-4605-b8e7-5caad983c4a7",
+                        "status": "CANCELLED",
+                        "cancellation_fee": 0,
+                        "refund_amount": 233.64,
+                        "currency": "USD"
+                      }
+                    }
+                  },
+                  "cancelledWithCharges": {
+                    "summary": "Cancelled with cancellation fee",
+                    "value": {
+                      "data": {
+                        "bookingId": "1297abe4-57c5-4605-b8e7-5caad983c4a7",
+                        "status": "CANCELLED_WITH_CHARGES",
+                        "cancellation_fee": 4.4,
+                        "refund_amount": 0,
+                        "currency": "USD"
+                      }
+                    }
+                  },
+                  "cancelledWithVoucher": {
+                    "summary": "Cancelled with airline travel vouchers",
+                    "value": {
+                      "data": {
+                        "bookingId": "019f1ec3-bc83-7674-9478-8570a35ed218",
+                        "status": "CANCELLED_WITH_CHARGES",
+                        "cancellation_fee": 4.4,
+                        "refund_amount": 0,
+                        "currency": "USD",
+                        "destination": "voucher",
+                        "vouchers": [
+                          {
+                            "voucherId": "v_abc123",
+                            "code": "AIRLINE-CREDIT-XYZ",
+                            "airline": "VY",
+                            "pricing": {
+                              "display": {
+                                "amount": 18.5,
+                                "currency": "USD"
+                              }
+                            },
+                            "validFrom": "2026-07-02",
+                            "expiresAt": "2027-07-02",
+                            "passengerNames": [
+                              "JOHN DOE"
+                            ],
+                            "notes": "Non-transferable airline credit"
+                          }
+                        ]
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Cancel requested; awaiting airline confirmation. Booking remains CONFIRMED until cancellation is finalized. Idempotent while cancellation is still pending.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "description": "Pending cancellation result",
+                      "required": [
+                        "bookingId",
+                        "status",
+                        "cancellation_fee",
+                        "refund_amount",
+                        "currency"
+                      ],
+                      "properties": {
+                        "bookingId": {
+                          "type": "string",
+                          "description": "The LiteAPI booking identifier"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "CONFIRMED"
+                          ],
+                          "description": "Current booking status. Remains CONFIRMED while the airline has accepted the cancel request but has not confirmed cancellation yet"
+                        },
+                        "cancellation_fee": {
+                          "type": "number",
+                          "description": "Estimated cancellation penalty with margin applied when present on the first pending response; 0 on idempotent retries"
+                        },
+                        "refund_amount": {
+                          "type": "number",
+                          "description": "Estimated refund with margin applied when present on the first pending response; 0 on idempotent retries"
+                        },
+                        "currency": {
+                          "type": "string",
+                          "description": "Currency of cancellation_fee and refund_amount"
+                        },
+                        "destination": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Where refunded money goes (original_payment, agency_deposit, voucher, etc.)"
+                        },
+                        "vouchers": {
+                          "type": "array",
+                          "nullable": true,
+                          "description": "Airline travel vouchers when present on the pending cancel response",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "awaitingConfirmation": {
+                    "summary": "Cancel accepted, awaiting confirmation",
+                    "value": {
+                      "data": {
+                        "bookingId": "019f89e1-a72a-78b9-a04e-bafc4c12cd5a",
+                        "status": "CONFIRMED",
+                        "cancellation_fee": 4.4,
+                        "refund_amount": 0,
+                        "currency": "USD"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — invalid booking ID format",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "validationInvalidId": {
+                    "summary": "Validation error: invalid booking ID",
+                    "value": {
+                      "error": {
+                        "code": 46007,
+                        "description": "Validation failed: the booking ID format is invalid",
+                        "message": "validation error: invalid booking ID format"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unauthorized": {
+                    "summary": "Unauthorized",
+                    "value": {
+                      "error": {
+                        "code": 46001,
+                        "description": "Authentication failed",
+                        "message": "unauthorized"
+                      }
+                    }
+                  },
+                  "credentialFailed": {
+                    "summary": "Credential resolution failed",
+                    "value": {
+                      "error": {
+                        "code": 46008,
+                        "description": "Authentication failed: credential resolution failed",
+                        "message": "unauthorized: credential resolution failed"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "bookingNotFound": {
+                    "summary": "Booking not found",
+                    "value": {
+                      "error": {
+                        "code": 46002,
+                        "description": "The booking was not found",
+                        "message": "booking not found"
+                      }
+                    }
+                  },
+                  "pnrNotFound": {
+                    "summary": "PNR not found at provider",
+                    "value": {
+                      "error": {
+                        "code": 46003,
+                        "description": "The PNR was not found at the provider",
+                        "message": "booking not found: PNR not found"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Booking cannot be cancelled in its current state",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "alreadyCancelled": {
+                    "summary": "Booking already cancelled",
+                    "value": {
+                      "error": {
+                        "code": 46004,
+                        "description": "Booking is already cancelled",
+                        "message": "conflict: booking already cancelled"
+                      }
+                    }
+                  },
+                  "concurrentOperation": {
+                    "summary": "Concurrent cancellation in progress",
+                    "value": {
+                      "error": {
+                        "code": 46005,
+                        "description": "A concurrent cancellation operation is in progress",
+                        "message": "conflict: concurrent cancellation operation"
+                      }
+                    }
+                  },
+                  "invalidStatus": {
+                    "summary": "Invalid booking status for cancellation",
+                    "value": {
+                      "error": {
+                        "code": 46006,
+                        "description": "Booking cannot be cancelled in its current state",
+                        "message": "conflict: invalid booking status for cancellation"
+                      }
+                    }
+                  },
+                  "notFinal": {
+                    "summary": "Provider cancel not yet final",
+                    "value": {
+                      "error": {
+                        "code": 46006,
+                        "description": "cancellation is not yet final; provider did not return cancelled status",
+                        "message": "conflict: invalid status transition"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Provider error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "gdsRejection": {
+                    "summary": "GDS rejection",
+                    "value": {
+                      "error": {
+                        "code": 56001,
+                        "description": "Provider error: rejected by GDS",
+                        "message": "provider error: GDS rejection"
+                      }
+                    }
+                  },
+                  "connectionFailed": {
+                    "summary": "Provider connection failed",
+                    "value": {
+                      "error": {
+                        "code": 56002,
+                        "description": "Provider error: connection to provider failed",
+                        "message": "provider error: connection failed"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unableToProcess": {
+                    "summary": "Unable to process",
+                    "value": {
+                      "error": {
+                        "code": 56099,
+                        "description": "Failed to cancel booking",
+                        "message": "unable to process cancellation request"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/data/flights/airlines": {
       "get": {
         "tags": [
@@ -5602,7 +8207,7 @@
           "Flight Bookings"
         ],
         "summary": "List bookings",
-        "description": "## Overview\n\nList confirmed flight bookings owned by the authenticated user. Supports an optional PNR + last-name lookup for retrieving a single booking, and optional `customTags` filtering.\n\n## When to Use\n\n- **\"My bookings\" page** - Display the authenticated user's confirmed flight bookings\n- **PNR lookup** - Retrieve a single booking by `airlinePnr` and a passenger's `lastName`\n- **Tag filtering** - Narrow results with `customTags=KEY:VALUE` labels set at book time\n- **Booking management** - Build dashboards or list views of past and upcoming reservations\n\n## What You Get\n\n- **Confirmed bookings only** - Returns records persisted from the booking flow;\n- **Full booking objects** with status, journey, passengers, order reference, pricing, and optional `customTags`\n- **Sandbox isolation** - Sandbox and live bookings are scoped by the API key used\n\n## Key Features\n\n- **Owner-scoped**: Only returns bookings belonging to the authenticated user\n- **PNR + last-name lookup**: When both `airlinePnr` and `lastName` are supplied, returns a single matching booking; both are required together\n- **Custom tags filter**: Optional `customTags` query AND-filters on labels attached at `POST /flights/bookings`\n- **Stable response shape**: `data` is always an array containing exactly one element with a `bookings` array\n\n## Quick Start\n\nCall with no query parameters to list all bookings for the authenticated user. To look up a specific booking, pass both `airlinePnr` and `lastName`. Filter with `customTags=SOURCE:GOOGLE`.",
+        "description": "## Overview\n\nList confirmed flight bookings owned by the authenticated user. Supports an optional PNR + last-name lookup for retrieving a single booking.\n\n## When to Use\n\n- **\"My bookings\" page** - Display the authenticated user's confirmed flight bookings\n- **PNR lookup** - Retrieve a single booking by `airlinePnr` and a passenger's `lastName`\n- **Booking management** - Build dashboards or list views of past and upcoming reservations\n\n## What You Get\n\n- **Confirmed bookings only** - Returns records persisted from the booking flow;\n- **Full booking objects** with status, journey, passengers, order reference, and pricing\n- **Sandbox isolation** - Sandbox and live bookings are scoped by the API key used\n\n## Key Features\n\n- **Owner-scoped**: Only returns bookings belonging to the authenticated user\n- **PNR + last-name lookup**: When both `airlinePnr` and `lastName` are supplied, returns a single matching booking; both are required together\n- **Stable response shape**: `data` is always an array containing exactly one element with a `bookings` array\n\n## Quick Start\n\nCall with no query parameters to list all bookings for the authenticated user. To look up a specific booking, pass both `airlinePnr` and `lastName`.",
         "parameters": [
           {
             "name": "airlinePnr",
@@ -5623,16 +8228,6 @@
             },
             "description": "Passenger last name for single-booking lookup. Required together with `airlinePnr`.",
             "example": "SMITH"
-          },
-          {
-            "name": "customTags",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Filter by customTags. Comma-separated `KEY:VALUE` pairs (e.g. `SOURCE:GOOGLE,TIER:GOLD`); all pairs are joined with AND. Keys must match `^[A-Z0-9_-]+$`, up to 5 keys, value up to 255 characters. Value matching is case-insensitive.",
-            "example": "SOURCE:GOOGLE,TIER:GOLD"
           }
         ],
         "responses": {
@@ -5856,7 +8451,7 @@
           "Flight Bookings"
         ],
         "summary": "2. Complete a booking",
-        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`) or bill an enabled **credit line** (`CREDIT`)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking if one already exists for the given `prebookId`\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebooks`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.",
+        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`) or bill an enabled **credit line** (`CREDIT`)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking (HTTP 200 + `data[0].message`) if one already exists for the given `prebookId` in any status except `FAILED`. `FAILED` rows are retried in place. Concurrent duplicate requests while a book is in progress return HTTP 409 (`45035`).\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebooks`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5873,6 +8468,17 @@
                     "payment": {
                       "method": "TRANSACTION_ID",
                       "transactionId": "tr_cts_t0LaZePPxdCM_Kyskafml"
+                    },
+                    "metadata": {
+                      "ip": "203.112.45.67",
+                      "country": "FR",
+                      "language": "fr-FR",
+                      "platform": "Windows",
+                      "device_id": "device-abc-789",
+                      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                      "utm_medium": "organic",
+                      "utm_source": "bing",
+                      "utm_campaign": "spring_2026"
                     }
                   }
                 },
@@ -5889,9 +8495,50 @@
               }
             }
           },
-          "description": "Request body with `prebookId`, `payment`, and optional `customTags`. For Stripe, set `payment.method` to `TRANSACTION_ID` and pass the Stripe payment intent id in `payment.transactionId` (e.g. `tr_ABCzxy91C-a9W123`). For credit line, set `payment.method` to `CREDIT` and omit `transactionId` (server-side eligibility applies)."
+          "description": "Prebook ID and payment: `TRANSACTION_ID` + `transactionId` (Stripe) or `CREDIT` (credit line), subject to server-side eligibility"
         },
         "responses": {
+          "200": {
+            "description": "Idempotent replay — an existing non-FAILED booking for this `prebookId` is returned",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "booking": {
+                            "$ref": "#/components/schemas/FlightBooking",
+                            "description": "Existing booking record for this prebookId"
+                          },
+                          "message": {
+                            "type": "string",
+                            "description": "Idempotency notice",
+                            "example": "a booking already exists for this prebookId; returning the existing booking"
+                          }
+                        }
+                      },
+                      "description": "Booking result array (always one item)"
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "booking": {
+                        "bookingId": "1297abe4-57c5-4605-b8e7-5caad983c4a7",
+                        "status": "CONFIRMED"
+                      },
+                      "message": "a booking already exists for this prebookId; returning the existing booking"
+                    }
+                  ]
+                }
+              }
+            }
+          },
           "201": {
             "description": "Booking created successfully",
             "content": {
@@ -5956,7 +8603,7 @@
                     "value": {
                       "error": {
                         "code": 45063,
-                        "description": "Invalid parameters: the session has expired",
+                        "description": "The search session has expired; search for new flights and create a new prebook — this prebook can no longer be booked",
                         "message": "invalid parameters: session expired",
                         "key": "bodyRequest.prebookId"
                       }
@@ -6050,7 +8697,7 @@
                     "value": {
                       "error": {
                         "code": 45029,
-                        "description": "The offer has expired",
+                        "description": "The offer has expired; search for new flights and create a new prebook — do not retry this prebook",
                         "message": "offer expired",
                         "key": "bodyRequest.prebookId"
                       }
@@ -6083,7 +8730,7 @@
             }
           },
           "409": {
-            "description": "Conflict — duplicate, ticketed, or invalid state",
+            "description": "Conflict — provider-detected duplicate, concurrent book in progress, ticketed, or invalid state",
             "content": {
               "application/json": {
                 "schema": {
@@ -6091,12 +8738,23 @@
                 },
                 "examples": {
                   "duplicateBooking": {
-                    "summary": "Duplicate booking",
+                    "summary": "Provider-detected duplicate booking",
                     "value": {
                       "error": {
                         "code": 45036,
                         "description": "A duplicate booking was detected",
                         "message": "conflict: duplicate booking",
+                        "key": "bodyRequest.prebookId"
+                      }
+                    }
+                  },
+                  "concurrentOperation": {
+                    "summary": "Concurrent book in progress",
+                    "value": {
+                      "error": {
+                        "code": 45035,
+                        "description": "A concurrent operation is already in progress",
+                        "message": "conflict: concurrent operation",
                         "key": "bodyRequest.prebookId"
                       }
                     }
@@ -6108,17 +8766,6 @@
                         "code": 45087,
                         "description": "The booking has already been ticketed",
                         "message": "conflict: already ticketed",
-                        "key": "bodyRequest.prebookId"
-                      }
-                    }
-                  },
-                  "concurrentOperation": {
-                    "summary": "Concurrent operation",
-                    "value": {
-                      "error": {
-                        "code": 45035,
-                        "description": "A concurrent operation is already in progress",
-                        "message": "conflict: concurrent operation",
                         "key": "bodyRequest.prebookId"
                       }
                     }
@@ -6265,7 +8912,7 @@
           "Flight Bookings"
         ],
         "summary": "1. Create a checkout session (PREBOOK)",
-        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services — all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true — for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer → payment setup (Stripe payment intent or credit line) → books with provider → fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** and an **enabled credit line** (no Stripe intent; call `/flights/bookings` with `payment.method: CREDIT`)\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, phone), `passengers` (with birthday, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` when paying on credit line (requires payment bypass); otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
+        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services — all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true — for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer → payment setup (Stripe payment intent or credit line) → books with provider → fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** (sandbox or whitelabel) and either an **enabled credit line** or a **whitelabel/CMI** checkout (no Stripe intent; complete payment via WL and call `/flights/bookings` with `payment.method: THIRD_PARTY` and `payment.token`)\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, phone), `passengers` (with birthday, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` when paying on credit line or via whitelabel/CMI (requires payment bypass); otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -6285,7 +8932,7 @@
                   },
                   "usePaymentSdk": {
                     "type": "boolean",
-                    "description": "If true, a Stripe payment intent is created (`transactionId`, `secretKey`). If false, payment bypass must apply and the account must have an enabled credit line (no Stripe intent); otherwise the request is rejected.",
+                    "description": "If true, a Stripe payment intent is created (`transactionId`, `secretKey`). If false, payment bypass must apply and the account must use credit line or whitelabel/CMI checkout (no Stripe intent); otherwise the request is rejected.",
                     "default": true,
                     "example": true
                   },
@@ -6504,7 +9151,7 @@
                             "description": "Unique prebook identifier — use this in /bookings to complete the booking"
                           },
                           "booking": {
-                            "$ref": "#/components/schemas/FlightBooking",
+                            "$ref": "#/components/schemas/FlightPrebookBooking",
                             "description": "Booking record created with the provider, including journey, passengers, and order reference"
                           },
                           "servicesAttachable": {
@@ -7017,7 +9664,7 @@
                     "value": {
                       "error": {
                         "code": 43015,
-                        "description": "Prebook validation failed: the session has expired",
+                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
                         "message": "prebook validation error: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -7072,7 +9719,7 @@
                     "value": {
                       "error": {
                         "code": 43004,
-                        "description": "The offer has expired. Please search for new flights",
+                        "description": "The offer has expired or is invalid; search for new flights — do not retry this offerId",
                         "message": "offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -7083,7 +9730,7 @@
                     "value": {
                       "error": {
                         "code": 43017,
-                        "description": "The offer has expired",
+                        "description": "The offer has expired; search for new flights — do not retry this offerId",
                         "message": "expired: offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -7094,7 +9741,7 @@
                     "value": {
                       "error": {
                         "code": 43019,
-                        "description": "Expired: the session has expired",
+                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
                         "message": "expired: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -7140,12 +9787,22 @@
                       }
                     }
                   },
+                  "providerErrorOfferSoldOut": {
+                    "summary": "Provider error: offer sold out",
+                    "value": {
+                      "error": {
+                        "code": 53010,
+                        "description": "This offer is sold out; select another offer from your results, or search for new flights",
+                        "message": "provider error: offer sold out"
+                      }
+                    }
+                  },
                   "providerAuthFailedOfferExpired": {
                     "summary": "Provider auth failed: offer expired",
                     "value": {
                       "error": {
                         "code": 53016,
-                        "description": "Provider auth failed: the offer has expired",
+                        "description": "The offer has expired; search for new flights — do not retry this offerId",
                         "message": "provider auth failed: offer expired",
                         "key": "bodyRequest"
                       }
