@@ -1471,7 +1471,7 @@
       "post": {
         "tags": ["Make bookings"],
         "summary": "2. Complete a booking",
-        "description": "## Overview\n\n**Step 2 of 2** in the booking flow. Complete the booking by providing guest information and payment details. This confirms the reservation and creates the final booking.\n\n## When to Use\n\n- **After prebook** - Call this after creating a prebook session\n- **Payment processing** - Submit payment information to confirm booking\n- **Booking confirmation** - Finalize the reservation\n\n## What You Get\n\n- **Booking ID** - Unique identifier for the confirmed booking\n- **Hotel confirmation code** - Reference code from the hotel\n- **Complete booking details** - Dates, pricing, room information\n- **Cancellation policies** - Terms for cancelling the booking\n- **Guest information** - Confirmed guest details\n\n## Payment Methods\n\n- **ACC_CREDIT_CARD** - Direct credit card payment. In sandbox mode, this can be used to simulate a booking without getting charged.\n- **TRANSACTION** - Use when using Payment SDK (provide `transactionId`)\n- **WALLET** - Wallet payment method\n- **CREDIT** - Use account credit balance\n\n## Testing\n\nWhen testing sandbox bookings, simply use the `ACC_CREDIT_CARD` payment method. This allows you to simulate a booking without getting charged.\n\n## Required Information\n\n- **Prebook ID** - From the prebook step\n- **Guest details** - First name, last name, and email\n- **Payment information** - Payment method and details\n\n## Quick Start\n\nProvide the `prebookId`, guest information (firstName, lastName, email), and payment details. Returns confirmed booking with booking ID and confirmation code.",
+        "description": "## Overview\n\n**Step 2 of 2** in the booking flow. Complete the booking by providing guest information and payment details. This confirms the reservation and creates the final booking.\n\n## When to Use\n\n- **After prebook** - Call this after creating a prebook session\n- **Payment processing** - Submit payment information to confirm booking\n- **Booking confirmation** - Finalize the reservation\n\n## What You Get\n\n- **Booking ID** - Unique identifier for the confirmed booking\n- **Hotel confirmation code** - Reference code from the hotel\n- **Complete booking details** - Dates, pricing, room information\n- **Cancellation policies** - Terms for cancelling the booking\n- **Guest information** - Confirmed guest details\n\n## Payment Methods\n\n- **ACC_CREDIT_CARD** - Direct credit card payment. In sandbox mode, this can be used to simulate a booking without getting charged.\n- **TRANSACTION** - Use when using Payment SDK (provide `transactionId`)\n- **WALLET** - Wallet payment method\n- **CREDIT** - Use account credit balance\n- **CREDIT_CARD** - Credit card payment via secure endpoint. Accepts any credit or debit card, including virtual credit cards. Send card details via `https://pci-book.liteapi.travel` using the `billingInfo` object. Contact the team to enable this on your API key.\n\n## Testing\n\nWhen testing sandbox bookings, simply use the `ACC_CREDIT_CARD` payment method. This allows you to simulate a booking without getting charged.\n\n## Required Information\n\n- **Prebook ID** - From the prebook step\n- **Guest details** - First name, last name, and email\n- **Payment information** - Payment method and details\n\n## Quick Start\n\nProvide the `prebookId`, guest information (firstName, lastName, email), and payment details. Returns confirmed booking with booking ID and confirmation code.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -1662,6 +1662,45 @@
                             "description": "The unique identifier for the transaction from the prebook step and only used with the payment SDK and the TRANSACTION method"
                           }
                         }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "description": "Credit card payment via secure endpoint. Accepts any credit or debit card (including virtual credit cards). Send card details via the secure payment endpoint (https://pci-book.liteapi.travel) using the billingInfo object. Contact the team to enable this feature on your API key.",
+                        "required": ["method", "billingInfo"],
+                        "properties": {
+                          "method": {
+                            "enum": ["CREDIT_CARD"],
+                            "description": "Credit card payment via secure endpoint. Accepts any credit or debit card, including virtual credit cards. Contact the team to enable this on your API key."
+                          },
+                          "billingInfo": {
+                            "type": "object",
+                            "description": "Card details for the payment.",
+                            "required": ["creditCardNumber", "creditCardIdentifier", "creditCardExpirationMonth", "creditCardExpirationYear"],
+                            "properties": {
+                              "creditCardNumber": {
+                                "type": "string",
+                                "description": "The card number."
+                              },
+                              "creditCardIdentifier": {
+                                "type": "string",
+                                "description": "The card security code (CVC/CVV)."
+                              },
+                              "creditCardExpirationMonth": {
+                                "type": "string",
+                                "description": "Card expiration month (MM)."
+                              },
+                              "creditCardExpirationYear": {
+                                "type": "string",
+                                "description": "Card expiration year (YYYY)."
+                              },
+                              "holderName": {
+                                "type": "string",
+                                "description": "Cardholder name. Defaults to the booking holder's name if omitted."
+                              }
+                            }
+                          }
+                        }
                       }
                     ],
                     "description": "Specifies the payment method for completing the booking"
@@ -1782,6 +1821,35 @@
                     "payment": {
                       "method": "TRANSACTION_ID",
                       "transactionId": "tr_ct_ELlwT7nqeZCKsxZq1Vr"
+                    }
+                  }
+                },
+                "Book request (Credit Card via secure endpoint)": {
+                  "value": {
+                    "prebookId": "len80MPr_",
+                    "holder": {
+                      "firstName": "Steve",
+                      "lastName": "Doe",
+                      "email": "s.doe@liteapi.travel",
+                      "phone": "0200923695"
+                    },
+                    "guests": [
+                      {
+                        "occupancyNumber": 1,
+                        "firstName": "Steve",
+                        "lastName": "Doe",
+                        "email": "s.doe@liteapi.travel"
+                      }
+                    ],
+                    "payment": {
+                      "method": "CREDIT_CARD",
+                      "billingInfo": {
+                        "creditCardNumber": "4242424242424242",
+                        "creditCardIdentifier": "123",
+                        "creditCardExpirationMonth": "12",
+                        "creditCardExpirationYear": "2030",
+                        "holderName": "Steve Doe"
+                      }
                     }
                   }
                 }
@@ -6189,9 +6257,9 @@
             "example": "succeeded"
           },
           {
-            "name": "Sandbox",
+            "name": "sandbox",
             "in": "query",
-            "description": "Indicates if the request was made in a sandbox (test) environment",
+            "description": "Indicates if the request was made in a sandbox (test) environment. When omitted, no sandbox filter is applied and both production and sandbox bookings are returned.",
             "required": false,
             "schema": {
               "type": "string",
