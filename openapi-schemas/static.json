@@ -15,7 +15,7 @@
         ],
         "operationId": "getHotelTaxSchema",
         "summary": "Get the normalized tax schema of a hotel",
-        "description": "## Overview\n\nReturns the tax schema of a hotel as normalized static data, independent of the supply provider the rules were learned from. Each entry describes one tax or fee: whether it is already included in the room rate, whether it is a percentage of the rate or a fixed amount, and how fixed amounts scale (per adult and/or per night).\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Excluded taxes are typically collected at the hotel\n- **Tax auditing** - Compare supplier-declared taxes against the reference schema\n\n## Notes\n\n- Fixed amounts are expressed in USD\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- The schema is learned by an offline pipeline; hotels without learned data return 404",
+        "description": "## Overview\n\nReturns the tax schema of a hotel as normalized static data, independent of the supply provider the rules were learned from. Each entry describes one tax or fee: whether it is already included in the room rate, whether it is a percentage of the rate or a fixed amount, and how fixed amounts scale (per adult and/or per night).\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Excluded taxes are typically collected at the hotel\n- **Tax auditing** - Compare supplier-declared taxes against the reference schema\n\n## Notes\n\n- Fixed amounts are expressed in USD\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- The schema is learned by an offline pipeline; hotels without learned data return 404\n- When the direct (hotel-declared) source is enabled, taxes declared by the hotel in Nuitee Cloud take precedence over learned rules and each entry carries `source`, `chargeType`, `appliedPer`, `appliedOn`, `payAtProperty` and validity dates",
         "security": [
           {
             "apikeyAuth": []
@@ -90,7 +90,7 @@
                   },
                               "included": {
                                 "type": "boolean",
-                                "description": "Whether the tax is already included in the room rate (true) or collected separately, e.g. at the property (false).",
+                                "description": "For hotel-declared (direct) rules: true when the charge is collected at booking time (online), false when it is collected at the property; every listed tax applies on top of the price. For learned (booking/expedia) rules this reflects whether the supplier displayed the tax inside the headline price.",
                                 "example": false
                               },
                               "type": {
@@ -114,7 +114,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "description": "Currency of fixedAmount. Only present when type is 'fixed'.",
+                                "description": "Currency of fixedAmount. 'USD' for learned rules and for hotel-declared rules once converted from the hotel's currency; the hotel's own currency when no exchange rate was available; omitted only when the hotel's currency is unknown.",
                                 "example": "USD"
                               },
                               "perAdult": {
@@ -126,6 +126,46 @@
                                 "type": "boolean",
                                 "description": "Whether a fixed amount applies per night.",
                                 "example": true
+                              },
+                              "category": {
+                                "type": "string",
+                                "enum": ["Value Added Tax (VAT)", "Goods and services tax (GST)", "City tax", "City hotel fee", "County tax", "State tax", "Federal tax", "Country tax", "National government tax", "Sales tax", "Occupancy tax", "Lodging tax", "Room tax", "Bed tax", "Total tax", "Tourism tax", "Convention tax", "Convention / Tourism fee", "Destination marketing fee", "Tourism marketing fee", "Assessment/license tax", "Energy tax", "Service charge", "Resort fee", "Destination amenity fee", "Maintenance fee", "Local amenity usage/maintenance fee", "Local Government fee", "Local fee", "Local ordinance surcharge", "Surcharge", "Total surcharges", "Sustainability fee", "Charity support fee", "Hotel development Fee", "State cost recovery fee", "Extra person charge", "Extra child charge", "Crib fee", "Rollaway fee", "Miscellaneous", "Miscellaneous fee"],
+                                "description": "Category of the tax or fee, one of the OpenTravel Fee Tax Type names. 'Total tax' is used when the hotel reports one combined rate without a breakdown. Assigned from a reviewed name table; absent when the name is not in the table. Only present when the direct source is enabled for the calling account.",
+                                "example": "Resort fee"
+                              },
+                              "chargeType": {
+                                "type": "string",
+                                "enum": ["tax", "fee", "charge"],
+                                "description": "tax (government-imposed), fee (property-imposed) or charge (extra person). Derived from the category when the name is in the category table, otherwise from the hotel's own declaration.",
+                                "example": "fee"
+                              },
+                              "appliedPer": {
+                                "type": "string",
+                                "description": "Unit the charge applies to as declared by the hotel, e.g. 'per_room_per_night', 'per_person_per_night', 'per_room_per_stay'. Direct source only.",
+                                "example": "per_person_per_night"
+                              },
+                              "appliedOn": {
+                                "type": "string",
+                                "enum": ["net", "net_vat"],
+                                "description": "Base a percentage applies to: 'net' (room rate) or 'net_vat' (room rate plus VAT, i.e. compounded). Direct source only.",
+                                "example": "net"
+                              },
+                              "payAtProperty": {
+                                "type": "boolean",
+                                "description": "true when the charge is collected at the property, false when it is collected at booking time. Direct source only.",
+                                "example": false
+                              },
+                              "validFrom": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "First stay date the rule applies to, when it does not apply year-round. Direct source only.",
+                                "example": "2014-01-01"
+                              },
+                              "validTo": {
+                                "type": "string",
+                                "format": "date",
+                                "description": "Last stay date the rule applies to, when it does not apply year-round. Direct source only.",
+                                "example": "2050-12-31"
                               }
                             }
                           }
@@ -1926,7 +1966,7 @@
           "Hotels"
         ],
         "summary": "Generate hotel highlights (Beta)",
-        "description": "## Overview\n\n**Beta Feature** - Generate short, AI-written \"Smart Highlight\" cards for a hotel. Each highlight is a title plus a one or two sentence description, generated directly in the requested language.\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** per API key for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Hotel detail pages** - Show a few compelling reasons to consider a property\n- **Partner-specific tone** - Adjust voice and emphasis per surface via `tone`, `style` and per-highlight `context`\n\n## What You Get\n\n- Exactly `count` highlights, always, in the requested order\n- `type` echoed back from the request so you can map each card to your own UI\n- `generated` indicating whether the copy is AI-generated or template fallback\n\n## Behaviour\n\nHotel facts (name, city, country, description) are resolved server-side from `hotelId`; the caller never supplies them. Generated copy is grounded in those facts.\n\nIf AI generation fails, the endpoint still returns `200` with the requested number of neutral template highlights and `generated: false`. It never returns an empty array for a valid hotel.\n\nResults are cached, so repeated calls with an identical request body return identical copy.\n\n**Note:** This is a beta feature and may be subject to changes.",
+        "description": "## Overview\n\n**Beta Feature** - Generate short, AI-written \"Smart Highlight\" cards for a hotel. Each highlight is a title plus a one or two sentence description, generated directly in the requested language.\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** per API key for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Hotel detail pages** - Show a few compelling reasons to consider a property\n- **Partner-specific tone** - Adjust voice and emphasis per surface via `tone`, `style` and per-highlight `context`\n\n## What You Get\n\n- Exactly `count` highlights, always, in the requested order\n- `type` echoed back from the request so you can map each card to your own UI\n- `generated` indicating whether the copy is AI-generated or template fallback\n\n## Behaviour\n\nHotel facts are resolved server-side from `hotelId`; the caller never supplies them. The model sees the name, city, country, and description, plus a sample of facilities, rooms, and policies, guest sentiment when one is stored, and classification (star rating, hotel type, chain). Generated copy is grounded in those facts.\n\nIf AI generation fails, the endpoint still returns `200` with the requested number of neutral template highlights and `generated: false`. It never returns an empty array for a valid hotel.\n\nResults are cached, so repeated calls with an identical request body return identical copy.\n\n**Note:** This is a beta feature and may be subject to changes.",
         "x-beta": true,
         "security": [
           {
@@ -2506,6 +2546,22 @@
                         "hotelImportantInformation": {
                           "type": "string",
                           "description": "Critical information and important details about the hotel."
+                        },
+                        "securityDeposit": {
+                          "type": "object",
+                          "description": "The refundable deposit the property collects from the guest, taken from the property's own disclosure in hotelImportantInformation. Amount and currency are as the property states them, in the property's currency. Absent when the text does not disclose a deposit in the known form or is not in English.",
+                          "properties": {
+                            "amount": { "type": "number", "description": "Deposit amount in the currency given." },
+                            "currency": { "type": "string", "description": "ISO 4217 code, e.g. USD." },
+                            "collectedAt": { "type": "string", "enum": ["arrival", "before_arrival"], "description": "When the property collects the deposit." },
+                            "collectedDaysBeforeArrival": { "type": "integer", "description": "Only when collectedAt is before_arrival: how many days before." },
+                            "collectedBy": { "type": "string", "description": "How it is collected: cash, credit_card, bank_transfer or paypal. Absent when not stated." },
+                            "refundedAt": { "type": "string", "enum": ["check_out", "after_check_out"], "description": "When the deposit is returned. Absent when not stated." },
+                            "refundedWithinDays": { "type": "integer", "description": "Only when refundedAt is after_check_out: the stated window in days." },
+                            "refundedBy": { "type": "string", "description": "How it is returned: cash, credit_card, bank_transfer or paypal. Absent when not stated." },
+                            "subjectToInspection": { "type": "boolean", "description": "Whether the refund is subject to an inspection of the property." },
+                            "description": { "type": "string", "description": "The property's disclosure as written, including the refund terms." }
+                          }
                         },
                         "checkinCheckoutTimes": {
                           "type": "object",
@@ -4965,8 +5021,13 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["averageScore", "country", "type", "name", "date"],
+                        "required": ["reviewId", "averageScore", "country", "type", "name", "date"],
                         "properties": {
+                          "reviewId": {
+                            "type": "integer",
+                            "description": "Unique ID of the review",
+                            "example": 5293714949
+                          },
                           "averageScore": {
                             "type": "number",
                             "description": "Average score of the review",
@@ -5030,6 +5091,7 @@
                     "value": {
                       "data": [
                         {
+                          "reviewId": 1234567890,
                           "averageScore": 8,
                           "country": "ps",
                           "type": "solo traveller",
@@ -5042,6 +5104,7 @@
                           "source": "Nuitee"
                         },
                         {
+                          "reviewId": 1234567891,
                           "averageScore": 8,
                           "country": "ma",
                           "type": "solo traveller",

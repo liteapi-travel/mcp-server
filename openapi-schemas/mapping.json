@@ -1,0 +1,2241 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "title": "API: Mapping",
+    "version": "3.0.0",
+    "description": "Hotel and room mapping APIs. Align partner hotel inventories with Nuitee / liteAPI catalogue IDs, and map or group supplier room names against a reference catalog."
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
+  "security": [
+    {
+      "apikeyAuth": []
+    }
+  ],
+  "components": {
+    "securitySchemes": {
+      "apikeyAuth": {
+        "name": "X-API-Key",
+        "type": "apiKey",
+        "in": "header"
+      }
+    },
+    "schemas": {
+      "Error": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "description": "Human-readable error message",
+            "example": "partner is required"
+          }
+        }
+      },
+      "Partner": {
+        "type": "object",
+        "required": [
+          "partner",
+          "mappings"
+        ],
+        "properties": {
+          "partner": {
+            "type": "string",
+            "description": "Partner name. Pass this exact string as the `partner` form field when mapping IDs (matching is case-insensitive upstream).",
+            "example": "Expedia"
+          },
+          "mappings": {
+            "type": "integer",
+            "description": "Number of known ID mappings for this partner \u2014 a proxy for inventory coverage size.",
+            "example": 1620514
+          }
+        }
+      },
+      "PartnersResponse": {
+        "type": "object",
+        "required": [
+          "partners"
+        ],
+        "properties": {
+          "partners": {
+            "type": "array",
+            "description": "Partners sorted by mapping count (descending)",
+            "items": {
+              "$ref": "#/components/schemas/Partner"
+            }
+          }
+        }
+      },
+      "MappingSummary": {
+        "type": "object",
+        "description": "Outcome counts returned in the `X-Mapping-Summary` response header after a partner ID mapping run.",
+        "properties": {
+          "rows": {
+            "type": "integer",
+            "description": "Total input rows processed",
+            "example": 996601
+          },
+          "matched": {
+            "type": "integer",
+            "description": "Rows successfully mapped to Nuitee inventory",
+            "example": 876116
+          },
+          "review": {
+            "type": "integer",
+            "description": "Rows that need manual review (ambiguous candidates)",
+            "example": 199
+          },
+          "not_found": {
+            "type": "integer",
+            "description": "Partner IDs with no match in Nuitee inventory",
+            "example": 120286
+          },
+          "invalid": {
+            "type": "integer",
+            "description": "Rows that could not be parsed or validated",
+            "example": 0
+          }
+        }
+      },
+      "JobStatus": {
+        "type": "object",
+        "required": [
+          "job_id",
+          "status"
+        ],
+        "properties": {
+          "job_id": {
+            "type": "string",
+            "format": "uuid",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "queued",
+              "running",
+              "done",
+              "error"
+            ],
+            "example": "queued"
+          },
+          "total": {
+            "type": "integer",
+            "example": 1500
+          },
+          "done": {
+            "type": "integer",
+            "example": 0
+          },
+          "matched": {
+            "type": "integer",
+            "example": 0
+          },
+          "review": {
+            "type": "integer",
+            "example": 0
+          },
+          "no_match": {
+            "type": "integer",
+            "example": 0
+          },
+          "geo_match_name_mismatch": {
+            "type": "integer",
+            "example": 0
+          },
+          "name_match_geo_mismatch": {
+            "type": "integer",
+            "example": 0
+          },
+          "error": {
+            "type": "string",
+            "example": ""
+          },
+          "output_gcs": {
+            "type": "string",
+            "example": ""
+          },
+          "input_gcs": {
+            "type": "string",
+            "example": "gs://liteapi-mapping/hotelmatch/550e8400-e29b-41d4-a716-446655440000/input.csv"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "updated_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "total_chunks": {
+            "type": "integer",
+            "example": 6
+          },
+          "chunks_done": {
+            "type": "integer",
+            "example": 0
+          }
+        }
+      },
+      "HotelMatchBatchSubmitJSON": {
+        "type": "object",
+        "required": [
+          "input_gcs"
+        ],
+        "properties": {
+          "input_gcs": {
+            "type": "string",
+            "description": "GCS URI of the input CSV",
+            "example": "gs://my-bucket/onboarding/hotels.csv"
+          },
+          "output_gcs": {
+            "type": "string",
+            "description": "Optional GCS URI for the result CSV",
+            "example": "gs://my-bucket/onboarding/hotels-result.csv"
+          }
+        }
+      },
+      "GCSResultConflict": {
+        "type": "object",
+        "required": [
+          "error",
+          "output_gcs"
+        ],
+        "properties": {
+          "error": {
+            "type": "string",
+            "example": "result was written to GCS"
+          },
+          "output_gcs": {
+            "type": "string",
+            "example": "gs://my-bucket/onboarding/hotels-result.csv"
+          }
+        }
+      },
+      "ReferenceRoom": {
+        "type": "object",
+        "required": [
+          "id",
+          "name"
+        ],
+        "properties": {
+          "id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "Reference room identifier",
+            "example": "ref-1"
+          },
+          "name": {
+            "type": "string",
+            "description": "Reference room title",
+            "example": "King Room"
+          }
+        }
+      },
+      "SupplierRoom": {
+        "type": "object",
+        "required": [
+          "i",
+          "name"
+        ],
+        "properties": {
+          "i": {
+            "type": "integer",
+            "description": "Supplier row index (stable within the request)",
+            "example": 0
+          },
+          "name": {
+            "type": "string",
+            "description": "Supplier room title",
+            "example": "Deluxe King"
+          }
+        }
+      },
+      "MatchCandidate": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "oneOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              }
+            ],
+            "description": "Reference room id"
+          },
+          "name": {
+            "type": "string",
+            "description": "Reference room name"
+          },
+          "scoreCalibrated": {
+            "type": "number",
+            "description": "Confidence score between 0 and 1",
+            "example": 0.87
+          },
+          "predictedLabel": {
+            "type": "integer",
+            "description": "1 if the candidate is a positive match at the decision threshold, otherwise 0",
+            "example": 1
+          }
+        }
+      },
+      "RoomMatchResult": {
+        "type": "object",
+        "properties": {
+          "i": {
+            "type": "integer",
+            "description": "Supplier index from the request"
+          },
+          "name": {
+            "type": "string",
+            "description": "Supplier room name"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "mapped",
+              "not_mapped"
+            ],
+            "description": "Whether a match was selected"
+          },
+          "selected": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MatchCandidate"
+              }
+            ],
+            "description": "Best match when status is mapped; null otherwise"
+          },
+          "candidates": {
+            "type": "array",
+            "description": "Ranked candidate matches",
+            "items": {
+              "$ref": "#/components/schemas/MatchCandidate"
+            }
+          }
+        }
+      },
+      "MappingDecision": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Mapped reference room name, or not_mapped when rejected",
+            "example": "King Room"
+          },
+          "id": {
+            "type": "integer",
+            "description": "Mapped reference room id, or 0 when not mapped",
+            "example": 1
+          },
+          "confidence": {
+            "type": "number",
+            "description": "Confidence score between 0 and 1",
+            "example": 0.9
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "Present when not mapped",
+            "enum": [
+              "roh",
+              "no_confident_match",
+              "ambiguous_candidates",
+              "bed_type_mismatch",
+              "view_amenity_mismatch",
+              "conflicting_existing",
+              "not_in_catalog",
+              "low_score",
+              "other"
+            ],
+            "example": "roh"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Short human explanation when not mapped",
+            "example": "Run-of-house rate; no specific room type"
+          }
+        }
+      },
+      "AsyncJobResult": {
+        "type": "object",
+        "properties": {
+          "supplierName": {
+            "type": "string",
+            "description": "Original supplier room name",
+            "example": "Deluxe Room Sea View"
+          },
+          "previous": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/MappingDecision"
+              }
+            ],
+            "description": "Prior cache mapping for this room, if any"
+          },
+          "final": {
+            "$ref": "#/components/schemas/MappingDecision"
+          },
+          "reasonCode": {
+            "type": "string",
+            "description": "Present when final is not_mapped"
+          },
+          "reason": {
+            "type": "string",
+            "description": "Short human explanation when not mapped"
+          },
+          "source": {
+            "type": "string",
+            "enum": [
+              "audit",
+              "omitted",
+              "audit_adjustment"
+            ],
+            "description": "How the final decision was produced"
+          },
+          "modelAction": {
+            "type": "string",
+            "enum": [
+              "confirm",
+              "remap",
+              "reject",
+              "keep_existing"
+            ],
+            "description": "Action taken for this room"
+          },
+          "modelOutput": {
+            "nullable": true,
+            "type": "object",
+            "description": "Candidate scores retained for transparency; null for exact-match and run-of-house rooms",
+            "properties": {
+              "selected": {
+                "type": "string",
+                "example": "King Room"
+              },
+              "score": {
+                "type": "number",
+                "example": 0.87
+              },
+              "candidates": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "id": {
+                      "type": "integer"
+                    },
+                    "score": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Hotel Match",
+      "description": "Map partner hotel IDs to Nuitee / liteAPI catalogue IDs. List supported partners, then upload a CSV of partner IDs."
+    },
+    {
+      "name": "Room Match",
+      "description": "Map supplier room names to a reference catalog. Includes the synchronous matcher plus async jobs and the saved mapping cache."
+    },
+    {
+      "name": "Room Group",
+      "description": "Cluster equivalent supplier rooms, with or without a reference catalog."
+    }
+  ],
+  "paths": {
+    "/hotels/match/partners": {
+      "get": {
+        "tags": [
+          "Hotel Match"
+        ],
+        "summary": "List partners available for hotel ID mapping",
+        "operationId": "get_hotels-match-partners",
+        "description": "## Overview\n\nReturns every partner that can be used for hotel ID mapping, along with each partner's inventory coverage size (`mappings`). Use this list to discover which partner inventories can be aligned with Nuitee / liteAPI hotel IDs.\n\nHotel mapping connects a partner's hotel identifiers to Nuitee catalogue IDs so you can shop, book, and enrich content against a single inventory.\n\n## When to Use\n\n- **Before mapping IDs** - Confirm the partner name to pass into `POST /hotels/match/partners/with-id`\n- **Coverage checks** - Compare `mappings` counts to estimate how much of a partner's inventory is already linked\n- **Partner selectors** - Populate UI or automation dropdowns with supported partners\n- **Onboarding** - Discover which OTAs / suppliers are available for ID-to-ID mapping\n\n## What You Get\n\n- **Partner names** - Exact strings to send as the `partner` form field on the map endpoint\n- **Inventory size** - `mappings` count per partner (known ID links in the mapping catalogue)\n- **Sorted list** - Partners ordered by mapping count, descending\n\n## Key Features\n\n- **No request body**: Simple authenticated GET\n- **Case-insensitive partner names upstream**: Prefer the exact `partner` string from this response\n- **Accounts without suppliers**: Allowed to call hotel mapping endpoints (standard auth still applies)\n\n## Quick Start\n\n1. Authenticate with your LiteAPI `X-API-Key`\n2. Call `GET /hotels/match/partners`\n3. Pick a `partner` value from the response\n4. Upload that partner's hotel ID CSV to `POST /hotels/match/partners/with-id`\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Partner list with inventory mapping counts",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PartnersResponse"
+                },
+                "example": {
+                  "partners": [
+                    {
+                      "partner": "Booking.com",
+                      "mappings": 2245644
+                    },
+                    {
+                      "partner": "Expedia",
+                      "mappings": 1620514
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid API key"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream mapping service unreachable"
+          },
+          "504": {
+            "description": "Upstream mapping service timed out"
+          }
+        }
+      }
+    },
+    "/hotels/match/partners/with-id": {
+      "post": {
+        "tags": [
+          "Hotel Match"
+        ],
+        "summary": "Map partner hotel IDs to Nuitee inventory",
+        "operationId": "post_hotels-match-partners-with-id",
+        "description": "## Overview\n\nMaps a specific partner's hotel inventory to Nuitee / liteAPI catalogue IDs. Upload a CSV of partner hotel IDs and receive a result CSV that links each row to Nuitee property identifiers.\n\nThis is the synchronous **partner ID \u2192 Nuitee ID** mapping path. Processing runs in one request: CSV in, mapped CSV out (plus an `X-Mapping-Summary` header with outcome counts).\n\n## When to Use\n\n- **Partner inventory alignment** - Convert Booking.com, Expedia, or other partner hotel IDs into Nuitee `core_property_id` / `lite_property_id`\n- **Bulk ID resolution** - Map large partner ID lists in a single call\n- **Coverage analysis** - Use `matched`, `review`, `not_found`, and `invalid` counts from `X-Mapping-Summary`\n- **Content & rates pipelines** - Resolve partner IDs before search, booking, or enrichment against Nuitee inventory\n\n## What You Get\n\n- **Result CSV** - Per-row mapping outcomes with columns such as `input_id`, `status`, `resolution`, `core_property_id`, `lite_property_id`, `candidate_core_ids`\n- **Summary header** - `X-Mapping-Summary` JSON with `rows`, `matched`, `review`, `not_found`, `invalid`\n- **Download filename** - `Content-Disposition` attachment name from the server (for example `id-mapping-Expedia.csv`)\n\n## Key Features\n\n- **Partner-scoped**: Mapping runs against one partner inventory at a time (`partner` form field)\n- **Flexible CSV input**: Single ID column (with or without header), or multi-column files with a recognized ID header\n- **Optional geo columns**: Latitude/longitude improve resolution when partner IDs are ambiguous\n- **Streamed response**: Result CSV is streamed; there is no `{\"data\": ...}` JSON wrapper\n\n## Quick Start\n\n1. Call `GET /hotels/match/partners` and copy the partner name\n2. Prepare a CSV of that partner's hotel IDs\n3. `POST` `multipart/form-data` with:\n   - `partner` \u2014 partner name from step 1\n   - `file` \u2014 the CSV\n4. Save the response body as CSV and read `X-Mapping-Summary` for counts\n\n**Accepted ID column names** (case-insensitive): `id`, `hotel_id`, `hotelid`, `hotel_code`, `provider_id`, `provider_hotel_id`, `provider_property_id`, `partner_id`, `partner_hotel_id`, `property_id`, `code`.\n\n**Example curl:**\n\n```bash\ncurl --request POST \\\n  --url \"https://api.liteapi.travel/v3.0/hotels/match/partners/with-id\" \\\n  --header \"X-API-Key: YOUR_API_KEY\" \\\n  --form \"partner=Booking.com\" \\\n  --form \"file=@/path/to/partner-ids.csv;type=text/csv\"\n```\n\nAuthenticate with your LiteAPI `X-API-Key`.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).\n\n**Platform note:** Cloud Run and the global load balancer cap request/response bodies at 32 MiB. Larger uploads may not fully pass through this API hop.",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "partner",
+                  "file"
+                ],
+                "properties": {
+                  "partner": {
+                    "type": "string",
+                    "description": "Partner name from GET /hotels/match/partners. Selects which partner inventory to map against Nuitee.",
+                    "example": "Expedia"
+                  },
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "CSV of partner hotel IDs to map to Nuitee inventory"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Result CSV mapping partner IDs to Nuitee inventory",
+            "headers": {
+              "Content-Disposition": {
+                "description": "Attachment filename for the result CSV",
+                "schema": {
+                  "type": "string",
+                  "example": "attachment; filename=\"id-mapping-Expedia.csv\""
+                }
+              },
+              "X-Mapping-Summary": {
+                "description": "JSON summary of mapping outcomes",
+                "schema": {
+                  "$ref": "#/components/schemas/MappingSummary"
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "example": "input_id,status,resolution,core_property_id,lite_property_id,candidate_core_ids\n12345,matched,unique,1001,lp2661c,\n99999,not_found,unknown_id,,,\n"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request \u2014 missing partner, unknown partner, or unreadable CSV",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "missingPartner": {
+                    "value": {
+                      "error": "partner is required"
+                    }
+                  },
+                  "unknownPartner": {
+                    "value": {
+                      "error": "unknown partner \"X\"; \u2026"
+                    }
+                  },
+                  "noIdColumn": {
+                    "value": {
+                      "error": "could not find an id column; \u2026"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized \u2014 missing or invalid API key",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "invalid or missing bearer token"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "CSV exceeds 256MiB"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "Upstream mapping service unreachable"
+          },
+          "504": {
+            "description": "Upstream mapping service timed out"
+          }
+        }
+      }
+    },
+    "/hotels/match/async": {
+      "post": {
+        "tags": [
+          "Async Hotel Match"
+        ],
+        "summary": "Submit an async hotel-match batch job",
+        "operationId": "post_hotels-match-async",
+        "description": "## Overview\n\nUpload an onboarding CSV of hotel rows (name, country, optional address/coordinates) and start an async **content-based** hotel matching job. Returns immediately with a `job_id` to poll.\n\nUse this when partner hotel IDs are unavailable and you need to match hotels by content against Nuitee inventory.\n\n## When to Use\n\n- **Bulk onboarding** - Match many hotels by name/location when partner IDs are not available\n- **Large files** - Jobs above the inline row limit are processed via chunked workers\n- **GCS workflows** - Submit with `input_gcs` / `output_gcs` for large files outside the API body limit\n\n## What You Get\n\n- **202 Accepted** - Initial `JobStatus` with `status: queued` and `job_id`\n- **Progress polling** - Use `GET /hotels/match/async/jobs/{jobId}/status` until `status` is `done` or `error`\n- **Result CSV** - Download via `GET /hotels/match/async/jobs/{jobId}` when complete\n\n## Quick Start\n\n1. POST `multipart/form-data` with `file` (CSV), or JSON `{ \"input_gcs\": \"gs://...\" }` for large files\n2. Poll status with the returned `job_id`\n3. Download the result CSV when `status` is `done`\n\nInput CSV must include `name` and `country` columns (accepted header aliases vary upstream). Optional `output_gcs` writes the result directly to GCS instead of returning CSV through the API.\n\nAuthenticate with your LiteAPI `X-API-Key`.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).\n\n**Platform note:** Multipart uploads are capped at 32 MiB through this API hop \u2014 use GCS input mode for larger files.",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "multipart/form-data": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "file"
+                ],
+                "properties": {
+                  "file": {
+                    "type": "string",
+                    "format": "binary",
+                    "description": "Onboarding CSV (max 32 MiB through dispatcher)"
+                  },
+                  "output_gcs": {
+                    "type": "string",
+                    "description": "Optional GCS URI for the result CSV",
+                    "example": "gs://my-bucket/results/hotels.csv"
+                  }
+                }
+              }
+            },
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/HotelMatchBatchSubmitJSON"
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Job accepted",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                },
+                "example": {
+                  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "status": "queued",
+                  "total": 1500,
+                  "done": 0,
+                  "matched": 0,
+                  "review": 0,
+                  "no_match": 0,
+                  "geo_match_name_mismatch": 0,
+                  "name_match_geo_mismatch": 0,
+                  "created_at": "2026-08-26T12:00:00Z",
+                  "updated_at": "2026-08-26T12:00:00Z"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "413": {
+            "description": "Payload Too Large",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "CSV exceeds 32MiB; use input_gcs for large files"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "502": {
+            "description": "Upstream mapping service unreachable"
+          },
+          "504": {
+            "description": "Upstream mapping service timed out"
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/hotels/match/async/jobs/{jobId}/status": {
+      "get": {
+        "tags": [
+          "Async Hotel Match"
+        ],
+        "summary": "Poll async hotel-match job status",
+        "operationId": "get_hotels-match-async-jobs-jobid-status",
+        "description": "## Overview\n\nReturns the current progress and verdict counts for an async hotel-match job.\n\n## When to Use\n\n- **Poll after submit** - Call repeatedly until `status` is `done` or `error`\n\n## What You Get\n\n- **Job counters** - `total`, `done`, `matched`, `review`, `no_match`, and conflict-class counts\n- **Terminal states** - `done` means the result is ready (unless `output_gcs` was set); `error` includes an `error` message\n\n## Quick Start\n\nUse the `job_id` from the submit response.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Job ID returned by POST /hotels/match/async",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Job status",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JobStatus"
+                },
+                "example": {
+                  "job_id": "550e8400-e29b-41d4-a716-446655440000",
+                  "status": "running",
+                  "total": 1500,
+                  "done": 420,
+                  "matched": 300,
+                  "review": 80,
+                  "no_match": 40,
+                  "geo_match_name_mismatch": 15,
+                  "name_match_geo_mismatch": 8,
+                  "created_at": "2026-08-26T12:00:00Z",
+                  "updated_at": "2026-08-26T12:01:30Z"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown job",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "unknown job id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "502": {
+            "description": "Upstream mapping service unreachable"
+          },
+          "504": {
+            "description": "Upstream mapping service timed out"
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/hotels/match/async/jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "Async Hotel Match"
+        ],
+        "summary": "Download async hotel-match result CSV",
+        "operationId": "get_hotels-match-async-jobs-jobid",
+        "description": "## Overview\n\nStreams the finished result CSV for a completed async hotel-match job.\n\n## When to Use\n\n- **After job completes** - Call when status polling returns `status: done` and no `output_gcs` was requested at submit time\n\n## What You Get\n\n- **Result CSV** - One row per input hotel with verdict, matched IDs, scores, and reasons\n- **Attachment header** - `Content-Disposition: attachment; filename=\"hotel-match-{jobId}.csv\"`\n\n## Quick Start\n\nPoll until `status` is `done`, then download this endpoint. If submit included `output_gcs`, read that URI instead \u2014 this endpoint returns **409**.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Job ID returned by POST /hotels/match/async",
+            "example": "550e8400-e29b-41d4-a716-446655440000"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Result CSV",
+            "headers": {
+              "Content-Disposition": {
+                "description": "Attachment filename for the result CSV",
+                "schema": {
+                  "type": "string",
+                  "example": "attachment; filename=\"hotel-match-550e8400-e29b-41d4-a716-446655440000.csv\""
+                }
+              }
+            },
+            "content": {
+              "text/csv": {
+                "schema": {
+                  "type": "string",
+                  "example": "external_id,name,address,city,country,latitude,longitude,verdict,class,profile,confidence,primary_hotel_id,liteApi_hotel_id\nH1,Grand Hotel,,Paris,FR,,,matched,matched,high,0.95,5529413,lp545f45\n"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Unknown job or result not ready",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "examples": {
+                  "unknownJob": {
+                    "value": {
+                      "error": "unknown job id"
+                    }
+                  },
+                  "notReady": {
+                    "value": {
+                      "error": "result not available (job still running or expired)"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Result written to GCS",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/GCSResultConflict"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "429": {
+            "description": "Rate limit exceeded"
+          },
+          "502": {
+            "description": "Upstream mapping service unreachable"
+          },
+          "504": {
+            "description": "Upstream mapping service timed out"
+          }
+        },
+        "x-internal": true
+      }
+    },
+    "/rooms/match": {
+      "post": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Match supplier rooms to a reference catalog",
+        "operationId": "post_rooms-match",
+        "description": "## Overview\n\nMatch supplier room names to your reference catalog. For each supplier room, returns the best matching reference room along with ranked alternatives and confidence scores.\n\n## When to Use\n\n- **Normalize supplier inventory** - Map diverse supplier room names to your canonical catalog\n- **Rate shopping** - Identify equivalent rooms across suppliers for price comparison\n- **Content enrichment** - Link supplier rooms to your reference data for consistent display\n- **Booking flows** - Ensure supplier rooms match expected room types before confirmation\n\n## What You Get\n\n- **Match status** - `mapped` or `not_mapped` for each supplier room\n- **Best match** - Reference room with highest confidence (when above threshold)\n- **Ranked candidates** - Top K alternative matches with scores\n- **Confidence scores** - How confident the match is (0-1)\n\n## Quick Start\n\n**Required fields**: `references` (your catalog rooms), `suppliers` (rooms to map)\n\n**Optional tuning**: Set `threshold` (default 0.5) for match sensitivity, `topK` (default 3) for number of candidates",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "references",
+                  "suppliers"
+                ],
+                "x-examples": {
+                  "Example 1": {
+                    "hotelId": "lpfc771",
+                    "threshold": 0.5,
+                    "topK": 3,
+                    "references": [
+                      {
+                        "id": "ref-1",
+                        "name": "King Room"
+                      },
+                      {
+                        "id": "ref-2",
+                        "name": "Twin Room"
+                      },
+                      {
+                        "id": "ref-3",
+                        "name": "Junior Suite"
+                      }
+                    ],
+                    "suppliers": [
+                      {
+                        "i": 0,
+                        "name": "Deluxe King"
+                      },
+                      {
+                        "i": 1,
+                        "name": "Standard Twin Room"
+                      },
+                      {
+                        "i": 2,
+                        "name": "1 King Junior Suite"
+                      }
+                    ]
+                  }
+                },
+                "properties": {
+                  "hotelId": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Correlation ID echoed in the response",
+                    "example": "lpfc771"
+                  },
+                  "chunkKey": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Batch/chunk ID for large jobs",
+                    "example": "chunk-1"
+                  },
+                  "threshold": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.5,
+                    "description": "Minimum confidence score for a positive match",
+                    "example": 0.5
+                  },
+                  "topK": {
+                    "type": "integer",
+                    "minimum": 1,
+                    "default": 3,
+                    "description": "Number of ranked candidates returned per supplier",
+                    "example": 3
+                  },
+                  "references": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "Canonical reference rooms",
+                    "items": {
+                      "$ref": "#/components/schemas/ReferenceRoom"
+                    }
+                  },
+                  "suppliers": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "Supplier rooms to map",
+                    "items": {
+                      "$ref": "#/components/schemas/SupplierRoom"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "hotelId": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": "lpfc771"
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/RoomMatchResult"
+                          }
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": {
+                      "hotelId": "lpfc771",
+                      "results": [
+                        {
+                          "i": 0,
+                          "name": "Deluxe King",
+                          "status": "mapped",
+                          "selected": {
+                            "id": "ref-1",
+                            "name": "King Room",
+                            "scoreCalibrated": 0.87,
+                            "predictedLabel": 1
+                          },
+                          "candidates": [
+                            {
+                              "id": "ref-1",
+                              "name": "King Room",
+                              "scoreCalibrated": 0.87,
+                              "predictedLabel": 1
+                            },
+                            {
+                              "id": "ref-3",
+                              "name": "Junior Suite",
+                              "scoreCalibrated": 0.31,
+                              "predictedLabel": 0
+                            },
+                            {
+                              "id": "ref-2",
+                              "name": "Twin Room",
+                              "scoreCalibrated": 0.21,
+                              "predictedLabel": 0
+                            }
+                          ]
+                        },
+                        {
+                          "i": 1,
+                          "name": "Standard Twin Room",
+                          "status": "mapped",
+                          "selected": {
+                            "id": "ref-2",
+                            "name": "Twin Room",
+                            "scoreCalibrated": 0.91,
+                            "predictedLabel": 1
+                          },
+                          "candidates": [
+                            {
+                              "id": "ref-2",
+                              "name": "Twin Room",
+                              "scoreCalibrated": 0.91,
+                              "predictedLabel": 1
+                            },
+                            {
+                              "id": "ref-1",
+                              "name": "King Room",
+                              "scoreCalibrated": 0.34,
+                              "predictedLabel": 0
+                            },
+                            {
+                              "id": "ref-3",
+                              "name": "Junior Suite",
+                              "scoreCalibrated": 0.18,
+                              "predictedLabel": 0
+                            }
+                          ]
+                        },
+                        {
+                          "i": 2,
+                          "name": "1 King Junior Suite",
+                          "status": "mapped",
+                          "selected": {
+                            "id": "ref-3",
+                            "name": "Junior Suite",
+                            "scoreCalibrated": 0.88,
+                            "predictedLabel": 1
+                          },
+                          "candidates": [
+                            {
+                              "id": "ref-3",
+                              "name": "Junior Suite",
+                              "scoreCalibrated": 0.88,
+                              "predictedLabel": 1
+                            },
+                            {
+                              "id": "ref-1",
+                              "name": "King Room",
+                              "scoreCalibrated": 0.42,
+                              "predictedLabel": 0
+                            },
+                            {
+                              "id": "ref-2",
+                              "name": "Twin Room",
+                              "scoreCalibrated": 0.19,
+                              "predictedLabel": 0
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/match/async": {
+      "post": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Submit an async room mapping job",
+        "operationId": "post_rooms-match-async",
+        "description": "## Overview\n\nSubmit an async room mapping job for a hotel. The job processes in the background and produces high-quality mappings with detailed reasoning for each decision. Only one job per hotel can run at a time.\n\n**Note:** Internally referred to as a deep-map job.\n\n## When to Use\n\n- **Batch processing** - Map large sets of supplier rooms for a hotel\n- **Initial hotel setup** - Establish canonical mappings when onboarding a property\n- **Periodic refresh** - Re-map rooms when supplier catalogs change\n\n## What You Get\n\n- **Job ID** - Unique identifier to poll for results\n- **Queued status** - Immediate confirmation that processing has started\n- **Background processing** - Results ready in seconds to minutes\n\n## Quick Start\n\n**Required fields**: `hotelId`, `referenceRooms` (your catalog, max 500), `roomNames` (supplier names to map, max 100)\n\n**Poll for results**: Use `GET /rooms/match/async/jobs/:jobId` until status is `completed` or `failed`",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "hotelId",
+                  "referenceRooms",
+                  "roomNames"
+                ],
+                "x-examples": {
+                  "Example 1": {
+                    "hotelId": "lp32f8b",
+                    "referenceRooms": [
+                      {
+                        "id": 1,
+                        "name": "King Room"
+                      },
+                      {
+                        "id": 2,
+                        "name": "Twin Room"
+                      },
+                      {
+                        "id": 3,
+                        "name": "Junior Suite"
+                      }
+                    ],
+                    "roomNames": [
+                      "Deluxe King",
+                      "Standard Twin Room",
+                      "1 King Junior Suite"
+                    ]
+                  }
+                },
+                "properties": {
+                  "hotelId": {
+                    "type": "string",
+                    "description": "Non-empty hotel identifier",
+                    "example": "lp32f8b"
+                  },
+                  "referenceRooms": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 500,
+                    "description": "Allowed mapping targets (the catalog). Max 500.",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "id",
+                        "name"
+                      ],
+                      "properties": {
+                        "id": {
+                          "type": "integer",
+                          "description": "Reference room id",
+                          "example": 1
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Reference room title",
+                          "example": "King Room"
+                        }
+                      }
+                    }
+                  },
+                  "roomNames": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "Supplier room names to map. Blank entries are dropped and normalized duplicates are removed. Max 100 after deduplication.",
+                    "items": {
+                      "type": "string"
+                    },
+                    "example": [
+                      "Deluxe King",
+                      "Standard Twin Room",
+                      "1 King Junior Suite"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "202": {
+            "description": "Accepted - job queued",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": [
+                        "jobId",
+                        "status",
+                        "hotelId"
+                      ],
+                      "properties": {
+                        "jobId": {
+                          "type": "string",
+                          "example": "dm_1777386480123456789_a1b2c3d4e5f6a7b8"
+                        },
+                        "status": {
+                          "type": "string",
+                          "example": "queued"
+                        },
+                        "hotelId": {
+                          "type": "string",
+                          "example": "lp32f8b"
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": {
+                      "jobId": "dm_1777386480123456789_a1b2c3d4e5f6a7b8",
+                      "status": "queued",
+                      "hotelId": "lp32f8b"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request - malformed JSON or validation failure",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "deep-map validation error: hotelId is required"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Conflict - a deep-map job is already in flight for this hotel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "deep-map job already in flight for hotel: dm_1777386480123456789_a1b2c3d4e5f6a7b8"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/match/async/jobs/{jobId}": {
+      "get": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Get async room mapping job status",
+        "operationId": "get_rooms-match-async-jobs-jobid",
+        "description": "## Overview\n\nCheck the status of an async room mapping job and retrieve results. Returns full job details including per-room decisions when complete. Jobs expire 24 hours after completion.\n\n## When to Use\n\n- **Poll for completion** - Check job status until `completed` or `failed`\n- **Retrieve results** - Get mapping decisions with reasoning for each room\n- **Review changes** - See what changed from prior cached mappings\n- **Debug issues** - Inspect why specific rooms were mapped or rejected\n\n## What You Get\n\n- **Job status** - `queued`, `running`, `completed`, or `failed`\n- **Mapping results** - Final decision for each room with confidence\n- **Previous vs final** - Compare with prior mappings\n- **Rejection reasons** - Why unmapped rooms were rejected\n- **Actions taken** - `confirm`, `remap`, `reject`, or `keep_existing`\n\n## Quick Start\n\n**Required**: `jobId` path parameter from the POST response\n\n**Poll interval**: 5-10 seconds recommended",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "jobId",
+            "in": "path",
+            "required": true,
+            "description": "Job ID returned from POST /rooms/match/async",
+            "schema": {
+              "type": "string"
+            },
+            "example": "dm_1777386480123456789_a1b2c3d4e5f6a7b8"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "jobId": {
+                          "type": "string",
+                          "example": "dm_1777386480123456789_a1b2c3d4e5f6a7b8"
+                        },
+                        "hotelId": {
+                          "type": "string",
+                          "example": "lp32f8b"
+                        },
+                        "status": {
+                          "type": "string",
+                          "enum": [
+                            "queued",
+                            "running",
+                            "completed",
+                            "failed"
+                          ],
+                          "example": "completed"
+                        },
+                        "currentMappingCount": {
+                          "type": "integer",
+                          "description": "Number of mappings available before this job ran.",
+                          "example": 42
+                        },
+                        "referenceRooms": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "id": {
+                                "type": "integer"
+                              },
+                              "name": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "roomNames": {
+                          "type": "array",
+                          "items": {
+                            "type": "string"
+                          }
+                        },
+                        "results": {
+                          "type": "array",
+                          "items": {
+                            "$ref": "#/components/schemas/AsyncJobResult"
+                          }
+                        },
+                        "createdAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-17T15:30:00Z"
+                        },
+                        "updatedAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "example": "2026-07-17T15:30:12Z"
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": {
+                      "jobId": "dm_1777386480123456789_a1b2c3d4e5f6a7b8",
+                      "hotelId": "lp32f8b",
+                      "status": "completed",
+                      "currentMappingCount": 42,
+                      "referenceRooms": [
+                        {
+                          "id": 1,
+                          "name": "King Room"
+                        },
+                        {
+                          "id": 2,
+                          "name": "Twin Room"
+                        },
+                        {
+                          "id": 3,
+                          "name": "Junior Suite"
+                        }
+                      ],
+                      "roomNames": [
+                        "Deluxe King",
+                        "Standard Twin Room",
+                        "1 King Junior Suite"
+                      ],
+                      "results": [
+                        {
+                          "supplierName": "Deluxe King",
+                          "previous": {
+                            "name": "Deluxe Room",
+                            "id": 99,
+                            "confidence": 0.9
+                          },
+                          "final": {
+                            "name": "King Room",
+                            "id": 1,
+                            "confidence": 0.9
+                          },
+                          "source": "audit",
+                          "modelAction": "remap",
+                          "modelOutput": {
+                            "selected": "King Room",
+                            "score": 0.87,
+                            "candidates": [
+                              {
+                                "name": "King Room",
+                                "id": 1,
+                                "score": 0.87
+                              },
+                              {
+                                "name": "Junior Suite",
+                                "id": 3,
+                                "score": 0.31
+                              },
+                              {
+                                "name": "Twin Room",
+                                "id": 2,
+                                "score": 0.21
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "supplierName": "Standard Twin Room",
+                          "previous": null,
+                          "final": {
+                            "name": "Twin Room",
+                            "id": 2,
+                            "confidence": 0.95
+                          },
+                          "source": "audit",
+                          "modelAction": "confirm",
+                          "modelOutput": {
+                            "selected": "Twin Room",
+                            "score": 0.95,
+                            "candidates": [
+                              {
+                                "name": "Twin Room",
+                                "id": 2,
+                                "score": 0.95
+                              },
+                              {
+                                "name": "King Room",
+                                "id": 1,
+                                "score": 0.34
+                              }
+                            ]
+                          }
+                        },
+                        {
+                          "supplierName": "1 King Junior Suite",
+                          "previous": null,
+                          "final": {
+                            "name": "Junior Suite",
+                            "id": 3,
+                            "confidence": 0.88
+                          },
+                          "source": "audit",
+                          "modelAction": "confirm",
+                          "modelOutput": {
+                            "selected": "Junior Suite",
+                            "score": 0.88,
+                            "candidates": [
+                              {
+                                "name": "Junior Suite",
+                                "id": 3,
+                                "score": 0.88
+                              },
+                              {
+                                "name": "King Room",
+                                "id": 1,
+                                "score": 0.42
+                              }
+                            ]
+                          }
+                        }
+                      ],
+                      "createdAt": "2026-07-17T15:30:00Z",
+                      "updatedAt": "2026-07-17T15:30:12Z"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found or expired",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "job not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/match/async/matches/{hotelId}": {
+      "get": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Get saved room mappings for a hotel",
+        "operationId": "get_rooms-match-async-matches-hotelid",
+        "description": "## Overview\n\nRetrieve all saved room mappings for a hotel. Returns the current mapping cache without job details or audit trail.\n\n## When to Use\n\n- **Lookup existing mappings** - Check what mappings already exist for a hotel\n- **Runtime resolution** - Resolve supplier room names to reference rooms during booking\n- **Cache inspection** - View all mappings after async jobs complete\n- **Integration sync** - Pull current mappings into external systems\n\n## What You Get\n\n- **Hotel ID** - Confirmed hotel identifier\n- **Mappings dictionary** - Keyed by normalized supplier name\n- **Final decisions** - Reference room name, ID, and confidence\n- **Rejection reasons** - Why unmapped rooms were rejected\n\n## Quick Start\n\n**Required**: `hotelId` path parameter\n\n**Note**: Returns the full hotel cache from all previous jobs. For job-specific results with audit trail, use the Get async room mapping job status endpoint.",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelId",
+            "in": "path",
+            "required": true,
+            "description": "Hotel identifier",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lp32f8b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "hotelId": {
+                          "type": "string",
+                          "example": "lp32f8b"
+                        },
+                        "mappings": {
+                          "type": "object",
+                          "additionalProperties": {
+                            "$ref": "#/components/schemas/MappingDecision"
+                          },
+                          "description": "Keys are normalized supplier names"
+                        }
+                      }
+                    }
+                  },
+                  "example": {
+                    "data": {
+                      "hotelId": "lp32f8b",
+                      "mappings": {
+                        "deluxe king": {
+                          "name": "King Room",
+                          "id": 1,
+                          "confidence": 0.9
+                        },
+                        "standard twin room": {
+                          "name": "Twin Room",
+                          "id": 2,
+                          "confidence": 0.95
+                        },
+                        "1 king junior suite": {
+                          "name": "Junior Suite",
+                          "id": 3,
+                          "confidence": 0.88
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Hotel has no cached mappings",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "hotel mappings not found"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/group": {
+      "post": {
+        "tags": [
+          "Room Group"
+        ],
+        "summary": "Group rooms without a reference catalog",
+        "operationId": "post_rooms-group",
+        "description": "## Overview\n\nGroup similar room listings for a property without needing a reference catalog. Automatically clusters rooms based on attributes like room class, bed type, and view.\n\n## When to Use\n\n- **No reference catalog** - Cluster rooms when you don't have a canonical room list\n- **Multi-supplier aggregation** - Group equivalent rooms across different suppliers\n- **Deduplication** - Identify duplicate or near-duplicate room listings\n- **Content analysis** - Extract structured attributes from room names\n\n## What You Get\n\n- **Room groups** - Clusters with `groupCode`, `groupName`, and member rooms\n- **Unmapped rooms** - Rooms that couldn't be grouped\n- **Display names** - Suggested names for each group\n- **Parsed attributes** - Extracted room details (when `debug: true`)\n\n## Quick Start\n\n**Required fields**: `propertyId`, `propertyName`, `supplierList` with rooms\n\n**Customize grouping**: Set `parameters.outputAggregation` to control which attributes form groups (default: `roomClass`, `roomType`, `bedType`, `roomView`)",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "propertyName",
+                  "propertyId",
+                  "supplierList"
+                ],
+                "x-examples": {
+                  "Example 1": {
+                    "debug": false,
+                    "parameters": {
+                      "createGroups": true,
+                      "outputAggregation": [
+                        "roomClass",
+                        "roomType",
+                        "bedType",
+                        "roomView"
+                      ]
+                    },
+                    "propertyName": "Azure Bay Resort",
+                    "propertyId": "property-001",
+                    "supplierList": [
+                      {
+                        "supplierName": "Supplier 1",
+                        "supplierId": "supplier-1",
+                        "supplierRooms": [
+                          {
+                            "roomId": "room-1",
+                            "roomName": "Standard King Room"
+                          },
+                          {
+                            "roomId": "room-2",
+                            "roomName": "King Standard Room"
+                          },
+                          {
+                            "roomId": "room-3",
+                            "roomName": "Standard Twin Room"
+                          },
+                          {
+                            "roomId": "room-4",
+                            "roomName": "Twin Standard Room"
+                          }
+                        ]
+                      },
+                      {
+                        "supplierName": "Supplier 2",
+                        "supplierId": "supplier-2",
+                        "supplierRooms": [
+                          {
+                            "roomId": "room-1",
+                            "roomName": "1 King Standard Room"
+                          },
+                          {
+                            "roomId": "room-2",
+                            "roomName": "Standard Room 1 King"
+                          },
+                          {
+                            "roomId": "room-3",
+                            "roomName": "2 Twin Standard Room"
+                          },
+                          {
+                            "roomId": "room-4",
+                            "roomName": "Standard Room 2 Twin"
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "properties": {
+                  "debug": {
+                    "type": "boolean",
+                    "default": false,
+                    "description": "When true, returns parsed entities per room",
+                    "example": false
+                  },
+                  "propertyName": {
+                    "type": "string",
+                    "description": "Display name of the hotel",
+                    "example": "Azure Bay Resort"
+                  },
+                  "propertyId": {
+                    "type": "string",
+                    "description": "Stable property identifier in your catalog",
+                    "example": "property-001"
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "description": "Grouping behaviour controls",
+                    "properties": {
+                      "createGroups": {
+                        "type": "boolean",
+                        "default": true,
+                        "description": "Must be true to enable clustering"
+                      },
+                      "outputAggregation": {
+                        "type": "array",
+                        "description": "Attributes used to form groups. Recommended: roomClass, roomType, bedType, roomView",
+                        "items": {
+                          "type": "string"
+                        },
+                        "example": [
+                          "roomClass",
+                          "roomType",
+                          "bedType",
+                          "roomView"
+                        ]
+                      },
+                      "language": {
+                        "type": "string",
+                        "description": "Language hint"
+                      }
+                    }
+                  },
+                  "supplierList": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "One object per supplier channel",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "supplierName",
+                        "supplierId",
+                        "supplierRooms"
+                      ],
+                      "properties": {
+                        "supplierName": {
+                          "type": "string",
+                          "description": "Supplier display name",
+                          "example": "Supplier 1"
+                        },
+                        "supplierId": {
+                          "type": "string",
+                          "description": "Supplier identifier in your system",
+                          "example": "supplier-1"
+                        },
+                        "supplierRooms": {
+                          "type": "array",
+                          "minItems": 1,
+                          "description": "Rooms from that supplier for this property",
+                          "items": {
+                            "type": "object",
+                            "required": [
+                              "roomId",
+                              "roomName"
+                            ],
+                            "properties": {
+                              "roomId": {
+                                "type": "string",
+                                "description": "Supplier room or rate identifier",
+                                "example": "room-1"
+                              },
+                              "roomName": {
+                                "type": "string",
+                                "description": "Raw room title from the supplier feed",
+                                "example": "Standard King Room"
+                              },
+                              "bedType": {
+                                "type": "string",
+                                "description": "Optional bed-type hint"
+                              },
+                              "roomType": {
+                                "type": "string",
+                                "description": "Optional room-type hint"
+                              },
+                              "roomClass": {
+                                "type": "string",
+                                "description": "Optional class hint"
+                              },
+                              "roomView": {
+                                "type": "string",
+                                "description": "Optional view hint"
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "property": {
+                          "type": "string",
+                          "example": "Azure Bay Resort"
+                        },
+                        "propertyId": {
+                          "type": "string",
+                          "example": "property-001"
+                        },
+                        "aggregation": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "groupCode": {
+                                "type": "string",
+                                "example": "STD-KING"
+                              },
+                              "groupName": {
+                                "type": "string",
+                                "example": "Standard King Room"
+                              },
+                              "groupRooms": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object"
+                                }
+                              },
+                              "vernacName": {
+                                "type": "string"
+                              }
+                            }
+                          }
+                        },
+                        "unmapped": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/group/with-reference": {
+      "post": {
+        "tags": [
+          "Room Group"
+        ],
+        "summary": "Group rooms into reference buckets",
+        "operationId": "post_rooms-group-with-reference",
+        "description": "## Overview\n\nAssign supplier rooms to reference room buckets. Each supplier room is placed under its best-matching reference room (exclusive assignment - one group per supplier).\n\n## When to Use\n\n- **Catalog-based grouping** - Assign suppliers to your normalized reference rooms\n- **Bulk bucketing** - Quickly categorize many supplier rooms by reference\n- **Strict assignment** - Ensure each supplier maps to exactly one reference (or none)\n- **Quality control** - High default threshold (0.8) ensures confident assignments\n\n## What You Get\n\n- **Groups by reference** - Each reference with its assigned supplier rooms\n- **Match counts** - Number of suppliers per reference group\n- **Unmatched suppliers** - Rooms that didn't meet threshold for any reference\n\n## Quick Start\n\n**Required fields**: `references` (your catalog buckets), `suppliers` (rooms to assign)\n\n**Threshold tuning**: Default 0.8 is strict; lower for more matches, raise it for higher precision",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": [
+                  "references",
+                  "suppliers"
+                ],
+                "x-examples": {
+                  "Example 1": {
+                    "hotelId": "hotel-1",
+                    "chunkKey": "chunk-1",
+                    "threshold": 0.8,
+                    "references": [
+                      {
+                        "id": "ref-1",
+                        "name": "room, 1 king bed, balcony guest"
+                      },
+                      {
+                        "id": "ref-2",
+                        "name": "room, 1 king bed, city view"
+                      },
+                      {
+                        "id": "ref-3",
+                        "name": "room, 2 twin beds, city view"
+                      }
+                    ],
+                    "suppliers": [
+                      {
+                        "i": 0,
+                        "name": "standard king room with balcony"
+                      },
+                      {
+                        "i": 1,
+                        "name": "deluxe king room city view"
+                      },
+                      {
+                        "i": 2,
+                        "name": "city view room twin beds"
+                      },
+                      {
+                        "i": 3,
+                        "name": "suite ocean view"
+                      }
+                    ]
+                  }
+                },
+                "properties": {
+                  "hotelId": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Correlation ID echoed in the response",
+                    "example": "hotel-1"
+                  },
+                  "chunkKey": {
+                    "type": "string",
+                    "nullable": true,
+                    "description": "Batch/chunk ID for large jobs",
+                    "example": "chunk-1"
+                  },
+                  "threshold": {
+                    "type": "number",
+                    "minimum": 0,
+                    "maximum": 1,
+                    "default": 0.8,
+                    "description": "Minimum score to attach a supplier to a reference group",
+                    "example": 0.8
+                  },
+                  "references": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "Reference room buckets",
+                    "items": {
+                      "$ref": "#/components/schemas/ReferenceRoom"
+                    }
+                  },
+                  "suppliers": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "Supplier rooms to assign",
+                    "items": {
+                      "$ref": "#/components/schemas/SupplierRoom"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "properties": {
+                        "hotelId": {
+                          "type": "string",
+                          "nullable": true,
+                          "example": "hotel-1"
+                        },
+                        "supplier_assignment": {
+                          "type": "string",
+                          "example": "best_reference_exclusive"
+                        },
+                        "model_version": {
+                          "type": "string"
+                        },
+                        "groups": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "reference_id": {
+                                "oneOf": [
+                                  {
+                                    "type": "string"
+                                  },
+                                  {
+                                    "type": "integer"
+                                  }
+                                ]
+                              },
+                              "reference": {
+                                "type": "string"
+                              },
+                              "match_count": {
+                                "type": "integer"
+                              },
+                              "matches": {
+                                "type": "array",
+                                "items": {
+                                  "type": "object"
+                                }
+                              }
+                            }
+                          }
+                        },
+                        "unmatched_suppliers": {
+                          "type": "array",
+                          "items": {
+                            "type": "object"
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  "x-readme": {
+    "explorer-enabled": true,
+    "proxy-enabled": true,
+    "samples-enabled": true,
+    "apply-tag-changes": true
+  }
+}

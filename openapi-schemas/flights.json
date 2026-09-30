@@ -224,16 +224,73 @@
           "segmentKey": {
             "type": "string",
             "description": "Unique identifier for this segment, used to link with offers, fares, and amenities"
+          },
+          "stopCount": {
+            "type": "integer",
+            "description": "Number of en-route (technical) stops inside this segment. 0 means the segment is genuinely non-stop. A technical stop keeps the same flight number and aircraft (no plane change, no bag re-check) but adds ground time, so a one-segment journey can still have stops."
+          },
+          "stops": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightSegmentStop"
+            },
+            "description": "En-route (technical) stops inside this segment, in travel order. Omitted when stopCount is 0."
           }
         },
-        "description": "A single flight segment (one takeoff and landing) within a journey"
+        "description": "A single flight segment (one flight number) within a journey. May contain en-route technical stops (see stopCount / stops)."
+      },
+      "FlightSegmentStop": {
+        "type": "object",
+        "properties": {
+          "airportCode": {
+            "type": "string",
+            "description": "IATA code of the airport where the aircraft lands for the technical stop"
+          },
+          "airportName": {
+            "type": "string",
+            "description": "Full name of the stop airport"
+          },
+          "arrivalTime": {
+            "type": "string",
+            "description": "Local arrival time at the stop airport (ISO 8601)"
+          },
+          "departureTime": {
+            "type": "string",
+            "description": "Local departure time from the stop airport (ISO 8601)"
+          },
+          "duration": {
+            "type": "object",
+            "properties": {
+              "iso8601": {
+                "type": "string",
+                "description": "Ground time in ISO 8601 format (e.g. PT50M)"
+              },
+              "minutes": {
+                "type": "integer",
+                "description": "Ground time in minutes"
+              }
+            },
+            "description": "Time spent on the ground at the stop airport"
+          }
+        },
+        "description": "An en-route (technical) stop within a single segment. Unlike a connection between segments, passengers stay on the same flight number: no plane change and no bag re-check.",
+        "example": {
+          "airportCode": "GIG",
+          "airportName": "Rio Galeão – Tom Jobim International Airport",
+          "arrivalTime": "2026-10-17T18:35:00",
+          "departureTime": "2026-10-17T19:25:00",
+          "duration": {
+            "iso8601": "PT50M",
+            "minutes": 50
+          }
+        }
       },
       "FlightPrice": {
         "type": "object",
         "properties": {
           "base": {
             "type": "number",
-            "description": "Base fare amount (before taxes and fees)"
+            "description": "Base fare amount as returned by the supplier (before taxes and fees). Never includes the partner markup."
           },
           "currency": {
             "type": "string",
@@ -241,15 +298,33 @@
           },
           "fees": {
             "type": "number",
-            "description": "Service fees and surcharges"
+            "description": "Supplier service fees and surcharges plus, when the account passes them to the customer, the LiteAPI platform fees itemised in platformFees. Never includes the partner markup."
           },
           "taxes": {
             "type": "number",
-            "description": "Total taxes applied to the fare"
+            "description": "Total airline / government taxes applied to the fare, as returned by the supplier. Never includes the partner markup."
           },
           "total": {
             "type": "number",
-            "description": "Total price (base + taxes + fees)"
+            "description": "Total selling price, including the partner markup and, when present, platformFees.total. Because base and taxes are supplier values, total may exceed base + taxes + fees when a markup is configured."
+          },
+          "platformFees": {
+            "type": "object",
+            "description": "LiteAPI platform fees included in total and fees. Present only when the account passes the fees to the customer. Booking-level amounts (not distributed over perPassenger).",
+            "properties": {
+              "merchantOfRecord": {
+                "type": "number",
+                "description": "Merchant-of-record fee: percentage of the full transaction value, charged when LiteAPI collects the payment (Payment SDK / third-party). Removed at book time for credit-line and CREDIT_CARD settlements."
+              },
+              "ticketing": {
+                "type": "number",
+                "description": "Ticketing fee: percentage of the net fare with a floor and ceiling, per booking or per passenger depending on the account configuration. Applies to every payment method."
+              },
+              "total": {
+                "type": "number",
+                "description": "merchantOfRecord + ticketing"
+              }
+            }
           },
           "perPassenger": {
             "type": "object",
@@ -271,11 +346,11 @@
                   },
                   "taxes": {
                     "type": "number",
-                    "description": "Taxes for this passenger type"
+                    "description": "Taxes for this passenger type (supplier amount, excludes markup)"
                   },
                   "total": {
                     "type": "number",
-                    "description": "Total price for this passenger type"
+                    "description": "Total selling price for this passenger type, including the partner markup (may exceed base + taxes + fees)"
                   }
                 },
                 "description": "Price breakdown for each adult passenger"
@@ -297,11 +372,11 @@
                   },
                   "taxes": {
                     "type": "number",
-                    "description": "Taxes for this passenger type"
+                    "description": "Taxes for this passenger type (supplier amount, excludes markup)"
                   },
                   "total": {
                     "type": "number",
-                    "description": "Total price for this passenger type"
+                    "description": "Total selling price for this passenger type, including the partner markup (may exceed base + taxes + fees)"
                   }
                 },
                 "description": "Price breakdown for each child passenger"
@@ -323,11 +398,11 @@
                   },
                   "taxes": {
                     "type": "number",
-                    "description": "Taxes for this passenger type"
+                    "description": "Taxes for this passenger type (supplier amount, excludes markup)"
                   },
                   "total": {
                     "type": "number",
-                    "description": "Total price for this passenger type"
+                    "description": "Total selling price for this passenger type, including the partner markup (may exceed base + taxes + fees)"
                   }
                 },
                 "description": "Price breakdown for each infant passenger"
@@ -336,7 +411,7 @@
             "description": "Price breakdown per passenger type"
           }
         },
-        "description": "Full price breakdown including base fare, taxes, fees, and per-passenger amounts"
+        "description": "Full price breakdown including supplier base fare, taxes and fees, and per-passenger amounts. base, taxes and fees are always the supplier values and never include the partner markup; only total carries it, so total may exceed base + taxes + fees. The markup amount itself is not exposed."
       },
       "FlightOffer": {
         "type": "object",
@@ -363,6 +438,10 @@
               "mixedCabin": {
                 "type": "boolean",
                 "description": "True if outbound and inbound legs are in different cabin classes"
+              },
+              "mixedFareFamily": {
+                "type": "boolean",
+                "description": "True when legs are sold under different fare families/brands (e.g. Plus outbound + Basic inbound) combined into one fare. `family` reflects the first leg only; baggage and terms reflect the most restrictive leg."
               },
               "seatsRemaining": {
                 "type": "integer",
@@ -939,7 +1018,7 @@
             "properties": {
               "display": {
                 "$ref": "#/components/schemas/FlightMoneyAmount",
-                "description": "Customer-facing fee amount after FX conversion and margin"
+                "description": "Customer-facing fee amount after FX conversion. Equals the supplier penalty unless a `penalties` markup is configured in the partner's flight markup configuration (the rateSearch markup is not applied to penalties)."
               },
               "converted": {
                 "type": "boolean",
@@ -1291,6 +1370,10 @@
               "mixedCabin": {
                 "type": "boolean",
                 "description": "True if outbound and inbound legs are in different cabin classes"
+              },
+              "mixedFareFamily": {
+                "type": "boolean",
+                "description": "True when legs are sold under different fare families/brands (e.g. Plus outbound + Basic inbound) combined into one fare. `family` reflects the first leg only; baggage and terms reflect the most restrictive leg."
               },
               "seatsRemaining": {
                 "type": "integer",
@@ -1694,7 +1777,7 @@
                         "properties": {
                           "display": {
                             "type": "object",
-                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "description": "Customer-facing fee amount after FX conversion. Equals the supplier penalty unless a `penalties` markup is configured in the partner's flight markup configuration (the rateSearch markup is not applied to penalties).",
                             "properties": {
                               "amount": {
                                 "type": "number",
@@ -1745,7 +1828,7 @@
                         "properties": {
                           "display": {
                             "type": "object",
-                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "description": "Customer-facing fee amount after FX conversion. Equals the supplier penalty unless a `penalties` markup is configured in the partner's flight markup configuration (the rateSearch markup is not applied to penalties).",
                             "properties": {
                               "amount": {
                                 "type": "number",
@@ -1795,6 +1878,73 @@
                 },
                 "description": "Booking terms from the provider (change/refund rules and published fees)",
                 "nullable": true
+              },
+              "cabinClass": {
+                "type": "string",
+                "enum": [
+                  "ECONOMY",
+                  "PREMIUM_ECONOMY",
+                  "BUSINESS",
+                  "FIRST",
+                  "MIXED"
+                ],
+                "description": "Normalized cabin class for the whole journey, derived from segmentFares[].cabin (falls back to fare.family). MIXED when segments are booked in different cabins. Omitted when the cabin is unknown.",
+                "example": "ECONOMY"
+              },
+              "fare": {
+                "type": "object",
+                "properties": {
+                  "family": {
+                    "type": "string",
+                    "description": "Fare family name (e.g. Economy, Business, First)"
+                  },
+                  "mixedCabin": {
+                    "type": "boolean",
+                    "description": "True if outbound and inbound legs are in different cabin classes"
+                  },
+                  "mixedFareFamily": {
+                    "type": "boolean",
+                    "description": "True when legs are sold under different fare families/brands (e.g. Plus outbound + Basic inbound) combined into one fare. `family` reflects the first leg only; baggage and terms reflect the most restrictive leg."
+                  },
+                  "seatsRemaining": {
+                    "type": "integer",
+                    "description": "Number of seats remaining at this fare"
+                  }
+                },
+                "description": "Fare class information"
+              },
+              "segmentFares": {
+                "type": "array",
+                "description": "Per-segment fare details",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "bookingCode": {
+                      "type": "string",
+                      "description": "Booking/RBD class code (e.g. W, Y, J)"
+                    },
+                    "cabin": {
+                      "type": "string",
+                      "description": "Cabin class (e.g. Economy, Business, First)"
+                    },
+                    "fareBasisCode": {
+                      "type": "string",
+                      "description": "Fare basis code used for pricing and rules"
+                    },
+                    "fareFamily": {
+                      "type": "string",
+                      "description": "Commercial fare family name"
+                    },
+                    "seatsRemaining": {
+                      "type": "integer",
+                      "description": "Number of seats remaining at this fare"
+                    },
+                    "segmentKey": {
+                      "type": "string",
+                      "description": "Links this fare to the corresponding segment"
+                    }
+                  }
+                }
               }
             },
             "description": "Journey details as confirmed by the provider at booking time"
@@ -2004,14 +2154,26 @@
               },
               "totalAmount": {
                 "type": "number",
-                "description": "Grand total charged to the customer"
+                "description": "Grand total charged to the customer: subtotal + services, plus the LiteAPI platform fees when feesIncludedInTotal is true"
+              },
+              "merchantOfRecordFee": {
+                "type": "number",
+                "description": "LiteAPI merchant-of-record fee included in totalAmount. Only present when feesIncludedInTotal is true and LiteAPI collects the payment (Payment SDK / third-party); dropped at book time when paying with a credit line or your own card (CREDIT / CREDIT_CARD)."
+              },
+              "ticketingFee": {
+                "type": "number",
+                "description": "LiteAPI ticketing fee included in totalAmount (percentage of the net fare with a floor and ceiling). Only present when feesIncludedInTotal is true. Applies to every payment method."
+              },
+              "feesIncludedInTotal": {
+                "type": "boolean",
+                "description": "True when the LiteAPI platform fees are added on top of the price and included in totalAmount. Omitted when the account absorbs the fees (they are then deducted from the account commission and not shown)."
               },
               "currency": {
                 "type": "string",
                 "description": "ISO 4217 currency code"
               }
             },
-            "description": "Billing breakdown for this booking including base fare and any ancillary services"
+            "description": "Billing breakdown for this booking including base fare, any ancillary services and, when passed to the customer, the LiteAPI platform fees"
           },
           "payment": {
             "type": "object",
@@ -2226,13 +2388,14 @@
               "TRANSACTION_ID",
               "CREDIT",
               "THIRD_PARTY",
-              "CREDIT_CARD"
+              "CREDIT_CARD",
+              "ACC_CREDIT_CARD"
             ],
-            "description": "`TRANSACTION_ID` after Stripe SDK confirmation. `CREDIT` when paying on a credit line (eligibility enforced server-side). `THIRD_PARTY` when the whitelabel/CMI gateway charged the customer and returned a signed JWT (`token`). `CREDIT_CARD` for direct card payment via the secure endpoint (`https://pci-book.liteapi.travel`) with the `billingInfo` object; contact the team to enable this on your API key."
+            "description": "`TRANSACTION_ID` after Stripe SDK confirmation. `CREDIT` when paying on a credit line (eligibility enforced server-side). `THIRD_PARTY` when the whitelabel/CMI gateway charged the customer and returned a signed JWT (`token`). `CREDIT_CARD` for direct card payment via the secure endpoint (`https://pci-book.liteapi.travel`) with the `billingInfo` object; contact the team to enable this on your API key. `ACC_CREDIT_CARD` to charge the card stored on your account (no card details in the request); requires a payment method saved on your account. In sandbox mode, `ACC_CREDIT_CARD` simulates the booking without getting charged."
           },
           "transactionId": {
             "type": "string",
-            "description": "Stripe payment intent transaction id when using `TRANSACTION_ID`. Omit when using `CREDIT`, `THIRD_PARTY`, or `CREDIT_CARD`.",
+            "description": "Stripe payment intent transaction id when using `TRANSACTION_ID`. Omit when using `CREDIT`, `THIRD_PARTY`, `CREDIT_CARD`, or `ACC_CREDIT_CARD`.",
             "example": "tr_cts_t0LaZePPxdCM_Kyskafml"
           },
           "token": {
@@ -2272,7 +2435,7 @@
             }
           }
         },
-        "description": "Payment for `POST /flights/bookings`: Stripe (`TRANSACTION_ID` + `transactionId`), credit line (`CREDIT`), whitelabel/CMI (`THIRD_PARTY` + `token`), or direct card via the secure endpoint (`CREDIT_CARD` + `billingInfo`)."
+        "description": "Payment for `POST /flights/bookings`: Stripe (`TRANSACTION_ID` + `transactionId`), credit line (`CREDIT`), whitelabel/CMI (`THIRD_PARTY` + `token`), direct card via the secure endpoint (`CREDIT_CARD` + `billingInfo`), or the card stored on your account (`ACC_CREDIT_CARD`)."
       },
       "FlightBookingCreateRequest": {
         "title": "Create a flight booking",
@@ -2648,7 +2811,7 @@
                         "properties": {
                           "display": {
                             "type": "object",
-                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "description": "Customer-facing fee amount after FX conversion. Equals the supplier penalty unless a `penalties` markup is configured in the partner's flight markup configuration (the rateSearch markup is not applied to penalties).",
                             "properties": {
                               "amount": {
                                 "type": "number",
@@ -2699,7 +2862,7 @@
                         "properties": {
                           "display": {
                             "type": "object",
-                            "description": "Customer-facing fee amount after FX conversion and margin",
+                            "description": "Customer-facing fee amount after FX conversion. Equals the supplier penalty unless a `penalties` markup is configured in the partner's flight markup configuration (the rateSearch markup is not applied to penalties).",
                             "properties": {
                               "amount": {
                                 "type": "number",
@@ -2749,6 +2912,73 @@
                 },
                 "description": "Booking terms from the provider (change/refund rules and published fees)",
                 "nullable": true
+              },
+              "cabinClass": {
+                "type": "string",
+                "enum": [
+                  "ECONOMY",
+                  "PREMIUM_ECONOMY",
+                  "BUSINESS",
+                  "FIRST",
+                  "MIXED"
+                ],
+                "description": "Normalized cabin class for the whole journey, derived from segmentFares[].cabin (falls back to fare.family). MIXED when segments are booked in different cabins. Omitted when the cabin is unknown.",
+                "example": "ECONOMY"
+              },
+              "fare": {
+                "type": "object",
+                "properties": {
+                  "family": {
+                    "type": "string",
+                    "description": "Fare family name (e.g. Economy, Business, First)"
+                  },
+                  "mixedCabin": {
+                    "type": "boolean",
+                    "description": "True if outbound and inbound legs are in different cabin classes"
+                  },
+                  "mixedFareFamily": {
+                    "type": "boolean",
+                    "description": "True when legs are sold under different fare families/brands (e.g. Plus outbound + Basic inbound) combined into one fare. `family` reflects the first leg only; baggage and terms reflect the most restrictive leg."
+                  },
+                  "seatsRemaining": {
+                    "type": "integer",
+                    "description": "Number of seats remaining at this fare"
+                  }
+                },
+                "description": "Fare class information"
+              },
+              "segmentFares": {
+                "type": "array",
+                "description": "Per-segment fare details",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "bookingCode": {
+                      "type": "string",
+                      "description": "Booking/RBD class code (e.g. W, Y, J)"
+                    },
+                    "cabin": {
+                      "type": "string",
+                      "description": "Cabin class (e.g. Economy, Business, First)"
+                    },
+                    "fareBasisCode": {
+                      "type": "string",
+                      "description": "Fare basis code used for pricing and rules"
+                    },
+                    "fareFamily": {
+                      "type": "string",
+                      "description": "Commercial fare family name"
+                    },
+                    "seatsRemaining": {
+                      "type": "integer",
+                      "description": "Number of seats remaining at this fare"
+                    },
+                    "segmentKey": {
+                      "type": "string",
+                      "description": "Links this fare to the corresponding segment"
+                    }
+                  }
+                }
               }
             },
             "description": "Journey details as confirmed by the provider at booking time"
@@ -2958,14 +3188,26 @@
               },
               "totalAmount": {
                 "type": "number",
-                "description": "Grand total charged to the customer"
+                "description": "Grand total charged to the customer: subtotal + services, plus the LiteAPI platform fees when feesIncludedInTotal is true"
+              },
+              "merchantOfRecordFee": {
+                "type": "number",
+                "description": "LiteAPI merchant-of-record fee included in totalAmount. Only present when feesIncludedInTotal is true and LiteAPI collects the payment (Payment SDK / third-party); dropped at book time when paying with a credit line or your own card (CREDIT / CREDIT_CARD)."
+              },
+              "ticketingFee": {
+                "type": "number",
+                "description": "LiteAPI ticketing fee included in totalAmount (percentage of the net fare with a floor and ceiling). Only present when feesIncludedInTotal is true. Applies to every payment method."
+              },
+              "feesIncludedInTotal": {
+                "type": "boolean",
+                "description": "True when the LiteAPI platform fees are added on top of the price and included in totalAmount. Omitted when the account absorbs the fees (they are then deducted from the account commission and not shown)."
               },
               "currency": {
                 "type": "string",
                 "description": "ISO 4217 currency code"
               }
             },
-            "description": "Billing breakdown for this booking including base fare and any ancillary services"
+            "description": "Billing breakdown for this booking including base fare, any ancillary services and, when passed to the customer, the LiteAPI platform fees"
           },
           "payment": {
             "type": "object",
@@ -3798,7 +4040,8 @@
                             "maxStops": {
                               "type": "integer",
                               "minimum": 0,
-                              "maximum": 2
+                              "maximum": 2,
+                              "description": "Max stops for this leg. Counts connections between segments and en-route technical stops inside a segment (segments[].stopCount); 0 = genuinely non-stop."
                             }
                           }
                         }
@@ -3883,6 +4126,41 @@
                     "type": "string",
                     "description": "Optional ISO 3166-1 alpha-2 country code for point of sale",
                     "example": "US"
+                  },
+                  "margin": {
+                    "type": "object",
+                    "description": "Optional per-request markup overrides. Each property is a percentage that replaces your account-level flight markup for that category on this search only; categories you omit keep their configured markup. Set at least one property. Only honoured when flight margin editing is enabled for your account; ignored otherwise. `rateSearch` is applied to the fare prices returned by this search; `seats`, `bags` and `penalties` are attached to the returned offerIds and applied when the offer is verified, prebooked and booked.",
+                    "properties": {
+                      "rateSearch": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Fare markup percentage (journey total and per-passenger prices). Takes precedence over any airline/route overrides configured for your account.",
+                        "example": 10
+                      },
+                      "seats": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Markup percentage for seat ancillaries.",
+                        "example": 5
+                      },
+                      "bags": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Markup percentage for baggage ancillaries and journey baggage prices.",
+                        "example": 5
+                      },
+                      "penalties": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Markup percentage applied to the displayed airline change / refund fees (`terms.changeFee`, `terms.refundFee`).",
+                        "example": 0
+                      }
+                    },
+                    "example": {
+                      "rateSearch": 10,
+                      "seats": 5,
+                      "bags": 5
+                    }
                   },
                   "filters": {
                     "type": "object",
@@ -4042,7 +4320,7 @@
                         "nullable": true,
                         "minimum": -1,
                         "maximum": 2,
-                        "description": "Maximum number of stops: -1 or omit = any, 0 = nonstop, 1 = 1 or fewer, 2 = 2 or fewer",
+                        "description": "Maximum number of stops: -1 or omit = any, 0 = genuinely non-stop, 1 = 1 or fewer, 2 = 2 or fewer. Stops include both connections between segments and en-route technical stops inside a segment (segments[].stopCount), so a single flight number with a technical landing is excluded by maxStops: 0.",
                         "example": 1
                       },
                       "refundableOnly": {
@@ -4074,7 +4352,7 @@
                           "arrival",
                           "stops"
                         ],
-                        "description": "Sort by price, duration, departure, arrival, or stops",
+                        "description": "Sort by price, duration, departure, arrival, or stops. The stops criterion counts connections plus en-route technical stops (segments[].stopCount).",
                         "example": "price"
                       },
                       "sortOrder": {
@@ -4146,7 +4424,7 @@
                             "properties": {
                               "best": {
                                 "$ref": "#/components/schemas/FlightSortOptionMeta",
-                                "description": "Journey with the lowest blended score (price + duration + stops)"
+                                "description": "Journey with the lowest blended score (price + duration + stops). Stops include en-route technical stops (segments[].stopCount)."
                               },
                               "duration": {
                                 "$ref": "#/components/schemas/FlightSortOptionMeta",
@@ -4158,7 +4436,7 @@
                               },
                               "stops": {
                                 "$ref": "#/components/schemas/FlightSortOptionMeta",
-                                "description": "Journey with the fewest stops"
+                                "description": "Journey with the fewest stops (connections between segments plus en-route technical stops inside segments)"
                               }
                             }
                           }
@@ -4199,6 +4477,7 @@
                           "segments": [
                             {
                               "segmentKey": "d0a8a7dd",
+                              "stopCount": 0,
                               "originCode": "JFK",
                               "originName": "John F. Kennedy International Airport",
                               "destinationCode": "CDG",
@@ -4268,6 +4547,7 @@
                               "fare": {
                                 "family": "Economy",
                                 "mixedCabin": false,
+                                "mixedFareFamily": false,
                                 "seatsRemaining": 7
                               },
                               "baggage": {
@@ -4383,7 +4663,7 @@
                   "type": "string",
                   "description": "When the request includes `Accept: text/event-stream`. Server-Sent Events (SSE): each message has optional `event:` (kebab-case, e.g. `rates-chunk`, `rates-complete`, `result`, `error`, `message`) and one or more `data:` lines, terminated by a blank line. Each `data` payload is JSON with the same `data[].journeys` shape as the `application/json` 200 response (no top-level `success` or `apiMeta`)."
                 },
-                "example": "event: rates-chunk\ndata: {\"data\":[{\"journeys\":[{\"journeyKey\":\"a3bbe883fe3a4f6b\",\"isCheapest\":true,\"timestamp\":\"2026-03-19T12:52:59.494Z\",\"totalDuration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"legDurations\":[{\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"dayChange\":1,\"overnightFlight\":false}],\"parameters\":{\"adults\":1,\"children\":0,\"infants\":0},\"segments\":[{\"segmentKey\":\"d0a8a7dd\",\"originCode\":\"JFK\",\"originName\":\"John F. Kennedy International Airport\",\"destinationCode\":\"CDG\",\"destinationName\":\"Charles de Gaulle Airport\",\"departureTime\":\"2026-07-01T16:10:00\",\"arrivalTime\":\"2026-07-02T05:55:00\",\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"flight\":{\"marketingNumber\":\"2017\",\"operatingNumber\":\"2017\"},\"carrier\":{\"marketingCode\":\"DE\",\"marketingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"marketingName\":\"Condor Flugdienst\",\"operatingCode\":\"DE\",\"operatingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"operatingName\":\"Condor Flugdienst\"}}],\"offers\":[{\"offerId\":\"h6NwaWTZJDAxOWQwNjFlLWRlMjYtNzI1NC1hZDNmLTA0ZDkwZmMxMDNhZaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAxonJkqjIwMjYtMDgtMDI=\",\"expiration\":\"2026-03-19T12:52:59.494Z\",\"pricing\":{\"display\":{\"total\":753.87,\"currency\":\"USD\",\"base\":403.63,\"fees\":0,\"taxes\":350.24,\"perPassenger\":{\"adult\":{\"base\":403.63,\"currency\":\"USD\",\"fees\":0,\"taxes\":350.24,\"total\":753.87},\"child\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0},\"infant\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0}}},\"converted\":false},\"provider\":{\"code\":\"SABRE\",\"logo\":\"https://sandbox.nuitee.flights/static/providers/sabre.svg\"},\"fare\":{\"family\":\"Economy\",\"mixedCabin\":false,\"seatsRemaining\":7},\"baggage\":{\"hasCarryOnBag\":true,\"hasCheckedBag\":false,\"included\":[{\"bagType\":\"cabin\",\"description\":\"1 carry-on bag up to 8 kg\",\"passengerType\":\"ADT\",\"pieces\":1,\"pricing\":{\"display\":{\"amount\":0,\"currency\":\"USD\"},\"converted\":false},\"unit\":\"kg\",\"weightKg\":8}]},\"terms\":{\"changeable\":false,\"refundable\":false,\"summary\":[{\"level\":\"danger\",\"message\":\"Non-refundable fare\"}]},\"segmentFares\":[{\"segmentKey\":\"d0a8a7dd\",\"bookingCode\":\"W\",\"cabin\":\"Economy\",\"fareBasisCode\":\"WRAQ1\",\"fareFamily\":\"Economy\",\"seatsRemaining\":7}],\"segmentAmenities\":[{\"segmentKey\":\"d0a8a7dd\",\"aircraftType\":\"339\",\"amenities\":[{\"available\":true,\"category\":\"wifi\",\"chargeable\":true,\"name\":\"Wi-Fi\",\"details\":\"Available for purchase\"},{\"available\":true,\"category\":\"entertainment\",\"chargeable\":false,\"name\":\"In-seat entertainment\",\"details\":null}]}]}]}]}]}\n\nevent: rates-complete\ndata: {}\n"
+                "example": "event: rates-chunk\ndata: {\"data\":[{\"journeys\":[{\"journeyKey\":\"a3bbe883fe3a4f6b\",\"isCheapest\":true,\"timestamp\":\"2026-03-19T12:52:59.494Z\",\"totalDuration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"legDurations\":[{\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"dayChange\":1,\"overnightFlight\":false}],\"parameters\":{\"adults\":1,\"children\":0,\"infants\":0},\"segments\":[{\"segmentKey\":\"d0a8a7dd\",\"originCode\":\"JFK\",\"originName\":\"John F. Kennedy International Airport\",\"destinationCode\":\"CDG\",\"destinationName\":\"Charles de Gaulle Airport\",\"departureTime\":\"2026-07-01T16:10:00\",\"arrivalTime\":\"2026-07-02T05:55:00\",\"direction\":\"OUTBOUND\",\"duration\":{\"iso8601\":\"PT7H45M\",\"minutes\":465},\"flight\":{\"marketingNumber\":\"2017\",\"operatingNumber\":\"2017\"},\"carrier\":{\"marketingCode\":\"DE\",\"marketingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"marketingName\":\"Condor Flugdienst\",\"operatingCode\":\"DE\",\"operatingLogo\":\"https://sandbox.nuitee.flights/static/images/airlines/DE.png\",\"operatingName\":\"Condor Flugdienst\"}}],\"offers\":[{\"offerId\":\"h6NwaWTZJDAxOWQwNjFlLWRlMjYtNzI1NC1hZDNmLTA0ZDkwZmMxMDNhZaJ0cMtAh471wo9cKaJtdctAJAAAAAAAAKNjdXKjVVNEo3VpZM0CeaJkZKoyMDI2LTA3LTAxonJkqjIwMjYtMDgtMDI=\",\"expiration\":\"2026-03-19T12:52:59.494Z\",\"pricing\":{\"display\":{\"total\":753.87,\"currency\":\"USD\",\"base\":403.63,\"fees\":0,\"taxes\":350.24,\"perPassenger\":{\"adult\":{\"base\":403.63,\"currency\":\"USD\",\"fees\":0,\"taxes\":350.24,\"total\":753.87},\"child\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0},\"infant\":{\"base\":0,\"currency\":\"USD\",\"fees\":0,\"taxes\":0,\"total\":0}}},\"converted\":false},\"provider\":{\"code\":\"SABRE\",\"logo\":\"https://sandbox.nuitee.flights/static/providers/sabre.svg\"},\"fare\":{\"family\":\"Economy\",\"mixedCabin\":false,\"mixedFareFamily\":false,\"seatsRemaining\":7},\"baggage\":{\"hasCarryOnBag\":true,\"hasCheckedBag\":false,\"included\":[{\"bagType\":\"cabin\",\"description\":\"1 carry-on bag up to 8 kg\",\"passengerType\":\"ADT\",\"pieces\":1,\"pricing\":{\"display\":{\"amount\":0,\"currency\":\"USD\"},\"converted\":false},\"unit\":\"kg\",\"weightKg\":8}]},\"terms\":{\"changeable\":false,\"refundable\":false,\"summary\":[{\"level\":\"danger\",\"message\":\"Non-refundable fare\"}]},\"segmentFares\":[{\"segmentKey\":\"d0a8a7dd\",\"bookingCode\":\"W\",\"cabin\":\"Economy\",\"fareBasisCode\":\"WRAQ1\",\"fareFamily\":\"Economy\",\"seatsRemaining\":7}],\"segmentAmenities\":[{\"segmentKey\":\"d0a8a7dd\",\"aircraftType\":\"339\",\"amenities\":[{\"available\":true,\"category\":\"wifi\",\"chargeable\":true,\"name\":\"Wi-Fi\",\"details\":\"Available for purchase\"},{\"available\":true,\"category\":\"entertainment\",\"chargeable\":false,\"name\":\"In-seat entertainment\",\"details\":null}]}]}]}]}]}\n\nevent: rates-complete\ndata: {}\n"
               }
             }
           },
@@ -4642,6 +4922,21 @@
                     "type": "string",
                     "description": "ISO country code for point of sale",
                     "example": "us"
+                  },
+                  "margin": {
+                    "type": "object",
+                    "description": "Optional per-request markup override. Only `rateSearch` affects the matrix (cell prices are fares); other categories are accepted for parity with `/flights/rates` but have no effect here. Only honoured when flight margin editing is enabled for your account; ignored otherwise.",
+                    "properties": {
+                      "rateSearch": {
+                        "type": "number",
+                        "minimum": 0,
+                        "description": "Fare markup percentage applied to matrix cell prices instead of your account-level flight markup.",
+                        "example": 10
+                      }
+                    },
+                    "example": {
+                      "rateSearch": 10
+                    }
                   },
                   "flexDays": {
                     "type": "integer",
@@ -5014,6 +5309,7 @@
                         "fare": {
                           "family": "Economy",
                           "mixedCabin": false,
+                          "mixedFareFamily": false,
                           "seatsRemaining": 9
                         },
                         "passengers": {
@@ -5024,6 +5320,7 @@
                         "segments": [
                           {
                             "segmentKey": "096fada4",
+                            "stopCount": 0,
                             "originCode": "JFK",
                             "originName": "John F. Kennedy International Airport",
                             "destinationCode": "FRA",
@@ -5050,6 +5347,7 @@
                           },
                           {
                             "segmentKey": "8528a309",
+                            "stopCount": 0,
                             "originCode": "FRA",
                             "originName": "Frankfurt Main Airport",
                             "destinationCode": "CDG",
@@ -5076,6 +5374,7 @@
                           },
                           {
                             "segmentKey": "f15d5c4e",
+                            "stopCount": 0,
                             "originCode": "CDG",
                             "originName": "Charles de Gaulle International Airport",
                             "destinationCode": "FRA",
@@ -5102,6 +5401,7 @@
                           },
                           {
                             "segmentKey": "af5b7649",
+                            "stopCount": 0,
                             "originCode": "FRA",
                             "originName": "Frankfurt Main Airport",
                             "destinationCode": "JFK",
@@ -5665,6 +5965,7 @@
                           "segments": [
                             {
                               "segmentKey": "b4cd7e77",
+                              "stopCount": 0,
                               "originCode": "JFK",
                               "originName": "John F. Kennedy International Airport",
                               "destinationCode": "FRA",
@@ -5691,6 +5992,7 @@
                             },
                             {
                               "segmentKey": "35125125",
+                              "stopCount": 0,
                               "originCode": "FRA",
                               "originName": "Frankfurt Main Airport",
                               "destinationCode": "CDG",
@@ -5717,6 +6019,7 @@
                             },
                             {
                               "segmentKey": "f15d5c4e",
+                              "stopCount": 0,
                               "originCode": "CDG",
                               "originName": "Charles de Gaulle International Airport",
                               "destinationCode": "FRA",
@@ -5743,6 +6046,7 @@
                             },
                             {
                               "segmentKey": "7eccefc8",
+                              "stopCount": 0,
                               "originCode": "FRA",
                               "originName": "Frankfurt Main Airport",
                               "destinationCode": "JFK",
@@ -5827,7 +6131,48 @@
                               "label": "Change fee (before departure)"
                             },
                             "refundFee": null
-                          }
+                          },
+                          "cabinClass": "ECONOMY",
+                          "fare": {
+                            "family": "Economy",
+                            "mixedCabin": false,
+                            "mixedFareFamily": false,
+                            "seatsRemaining": 7
+                          },
+                          "segmentFares": [
+                            {
+                              "segmentKey": "b4cd7e77",
+                              "bookingCode": "W",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "35125125",
+                              "bookingCode": "K",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "f15d5c4e",
+                              "bookingCode": "U",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "7eccefc8",
+                              "bookingCode": "Y",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            }
+                          ]
                         },
                         "passengers": [
                           {
@@ -6445,6 +6790,7 @@
                           "segments": [
                             {
                               "segmentKey": "b4cd7e77",
+                              "stopCount": 0,
                               "originCode": "JFK",
                               "originName": "John F. Kennedy International Airport",
                               "destinationCode": "FRA",
@@ -6471,6 +6817,7 @@
                             },
                             {
                               "segmentKey": "35125125",
+                              "stopCount": 0,
                               "originCode": "FRA",
                               "originName": "Frankfurt Main Airport",
                               "destinationCode": "CDG",
@@ -6497,6 +6844,7 @@
                             },
                             {
                               "segmentKey": "f15d5c4e",
+                              "stopCount": 0,
                               "originCode": "CDG",
                               "originName": "Charles de Gaulle International Airport",
                               "destinationCode": "FRA",
@@ -6523,6 +6871,7 @@
                             },
                             {
                               "segmentKey": "7eccefc8",
+                              "stopCount": 0,
                               "originCode": "FRA",
                               "originName": "Frankfurt Main Airport",
                               "destinationCode": "JFK",
@@ -6607,7 +6956,48 @@
                               "label": "Change fee (before departure)"
                             },
                             "refundFee": null
-                          }
+                          },
+                          "cabinClass": "ECONOMY",
+                          "fare": {
+                            "family": "Economy",
+                            "mixedCabin": false,
+                            "mixedFareFamily": false,
+                            "seatsRemaining": 7
+                          },
+                          "segmentFares": [
+                            {
+                              "segmentKey": "b4cd7e77",
+                              "bookingCode": "W",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "35125125",
+                              "bookingCode": "K",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "f15d5c4e",
+                              "bookingCode": "U",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "7eccefc8",
+                              "bookingCode": "Y",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            }
+                          ]
                         },
                         "passengers": [
                           {
@@ -7045,6 +7435,7 @@
                                 "operatingNumber": "723"
                               },
                               "segmentKey": "c52f4148",
+                              "stopCount": 0,
                               "originCode": "JFK",
                               "destinationCode": "LAX"
                             }
@@ -7082,7 +7473,24 @@
                               "label": "Change fee (before departure)"
                             },
                             "refundFee": null
-                          }
+                          },
+                          "cabinClass": "ECONOMY",
+                          "fare": {
+                            "family": "Economy",
+                            "mixedCabin": false,
+                            "mixedFareFamily": false,
+                            "seatsRemaining": 7
+                          },
+                          "segmentFares": [
+                            {
+                              "segmentKey": "c52f4148",
+                              "bookingCode": "W",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            }
+                          ]
                         },
                         "passengers": [
                           {
@@ -9433,6 +9841,7 @@
                                   "operatingNumber": "723"
                                 },
                                 "segmentKey": "c52f4148",
+                                "stopCount": 0,
                                 "originCode": "JFK",
                                 "destinationCode": "LAX"
                               }
@@ -9470,7 +9879,24 @@
                                 "label": "Change fee (before departure)"
                               },
                               "refundFee": null
-                            }
+                            },
+                            "cabinClass": "ECONOMY",
+                            "fare": {
+                              "family": "Economy",
+                              "mixedCabin": false,
+                              "mixedFareFamily": false,
+                              "seatsRemaining": 7
+                            },
+                            "segmentFares": [
+                              {
+                                "segmentKey": "c52f4148",
+                                "bookingCode": "W",
+                                "cabin": "Economy",
+                                "fareBasisCode": "WRAQ1",
+                                "fareFamily": "Economy",
+                                "seatsRemaining": 7
+                              }
+                            ]
                           },
                           "passengers": [
                             {
@@ -9596,7 +10022,7 @@
           "Flight Bookings"
         ],
         "summary": "2. Complete a booking",
-        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`), bill an enabled **credit line** (`CREDIT`), or pay with a **credit card** (`CREDIT_CARD` via the secure endpoint)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking (HTTP 200 + `data[0].message`) if one already exists for the given `prebookId`. Transient book failures are retried in place without exposing a terminal failure status. Concurrent duplicate requests while a book is in progress return HTTP 409 (`45035`).\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks; `CREDIT_CARD` charges the provided card immediately — send card details in `billingInfo` via `https://pci-book.liteapi.travel` (contact the team to enable this on your API key)\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebooks`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.",
+        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`), bill an enabled **credit line** (`CREDIT`), pay with a **credit card** (`CREDIT_CARD` via the secure endpoint), or charge the **card stored on your account** (`ACC_CREDIT_CARD`)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking (HTTP 200 + `data[0].message`) if one already exists for the given `prebookId`. Transient book failures are retried in place without exposing a terminal failure status. Concurrent duplicate requests while a book is in progress return HTTP 409 (`45035`).\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks; `CREDIT_CARD` charges the provided card immediately — send card details in `billingInfo` via `https://pci-book.liteapi.travel` (contact the team to enable this on your API key); `ACC_CREDIT_CARD` charges the card saved on your account immediately, with no card details in the request (in sandbox it simulates the booking without a charge)\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebooks`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -9657,11 +10083,21 @@
                       }
                     }
                   }
+                },
+                "accountCreditCard": {
+                  "summary": "Card stored on your account",
+                  "description": "`payment.method` is `ACC_CREDIT_CARD`. The card saved on your liteAPI account is charged for the full amount; no card details are sent in the request. In sandbox mode the booking is simulated without a charge.",
+                  "value": {
+                    "prebookId": "019d0674-834d-7db7-9c8b-93fe8e46e7b8",
+                    "payment": {
+                      "method": "ACC_CREDIT_CARD"
+                    }
+                  }
                 }
               }
             }
           },
-          "description": "Prebook ID and payment: `TRANSACTION_ID` + `transactionId` (Stripe), `CREDIT` (credit line), or `CREDIT_CARD` + `billingInfo` (direct card via the secure endpoint), subject to server-side eligibility"
+          "description": "Prebook ID and payment: `TRANSACTION_ID` + `transactionId` (Stripe), `CREDIT` (credit line), `CREDIT_CARD` + `billingInfo` (direct card via the secure endpoint), or `ACC_CREDIT_CARD` (card stored on your account), subject to server-side eligibility"
         },
         "responses": {
           "200": {
@@ -10146,6 +10582,59 @@
                     "description": "Optional purpose of the trip.",
                     "example": "BUSINESS"
                   },
+                  "metadata": {
+                    "type": "object",
+                    "description": "Optional. Traveler metadata (IP, device, language, marketing parameters), same shape as `POST /flights/bookings` `metadata`. It is stored with the prebook and attached to the Stripe payment intent so the traveler's IP / device (rather than your backend's) is visible for fraud review. When omitted, the request IP and User-Agent are used.",
+                    "properties": {
+                      "ip": {
+                        "type": "string",
+                        "description": "IPv4/IPv6 address of the traveler (or derived)."
+                      },
+                      "country": {
+                        "type": "string",
+                        "description": "The country inferred from the traveler's IP, aiding in regional compliance."
+                      },
+                      "language": {
+                        "type": "string",
+                        "description": "The preferred language from the user's browser settings."
+                      },
+                      "platform": {
+                        "type": "string",
+                        "description": "The operating system or device platform from which the request originates."
+                      },
+                      "device_id": {
+                        "type": "string",
+                        "description": "A unique identifier for the user's device, useful for tracking and security."
+                      },
+                      "user_agent": {
+                        "type": "string",
+                        "description": "The browser/OS user agent string for verifying request authenticity."
+                      },
+                      "utm_medium": {
+                        "type": "string",
+                        "description": "The marketing medium (e.g., email, ad) through which the service was accessed."
+                      },
+                      "utm_source": {
+                        "type": "string",
+                        "description": "The source of the traffic, such as a search engine or social network."
+                      },
+                      "utm_campaign": {
+                        "type": "string",
+                        "description": "An identifier for the specific marketing campaign that led to the request."
+                      }
+                    },
+                    "example": {
+                      "ip": "203.112.45.67",
+                      "country": "FR",
+                      "language": "fr-FR",
+                      "platform": "Windows",
+                      "device_id": "device-abc-789",
+                      "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)",
+                      "utm_medium": "organic",
+                      "utm_source": "bing",
+                      "utm_campaign": "spring_2026"
+                    }
+                  },
                   "contact": {
                     "type": "object",
                     "description": "Primary contact person for the booking (receives confirmation emails)",
@@ -10284,6 +10773,12 @@
                 "travelPurpose": "BUSINESS",
                 "payment": {
                   "descriptorSuffix": "FLIGHT"
+                },
+                "metadata": {
+                  "ip": "203.112.45.67",
+                  "platform": "Windows",
+                  "device_id": "device-abc-789",
+                  "user_agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
                 },
                 "contact": {
                   "email": "j.doe@example.com",
@@ -10496,7 +10991,7 @@
                             "items": {
                               "type": "string"
                             },
-                            "description": "Available payment methods for completing this prebook at `/flights/bookings`. Possible values: `TRANSACTION_ID` (use the returned Stripe `transactionId`), `CREDIT` (charge the account credit line), `CREDIT_CARD` (direct card payment via the secure endpoint `https://pci-book.liteapi.travel` with `billingInfo`; enabled per API key), `ACC_CREDIT_CARD` (account-stored card via Adyen or Stripe), `WALLET` (Stripe wallet/saved payment method)."
+                            "description": "Available payment methods for completing this prebook at `/flights/bookings`. Possible values: `TRANSACTION_ID` (use the returned Stripe `transactionId`), `CREDIT` (charge the account credit line), `CREDIT_CARD` (direct card payment via the secure endpoint `https://pci-book.liteapi.travel` with `billingInfo`; enabled per API key), `ACC_CREDIT_CARD` (charge the card stored on your account; listed when a payment method is saved on the account)."
                           }
                         }
                       },
@@ -10515,6 +11010,7 @@
                           "segments": [
                             {
                               "segmentKey": "b4cd7e77",
+                              "stopCount": 0,
                               "originCode": "JFK",
                               "originName": "John F. Kennedy International Airport",
                               "destinationCode": "FRA",
@@ -10541,6 +11037,7 @@
                             },
                             {
                               "segmentKey": "35125125",
+                              "stopCount": 0,
                               "originCode": "FRA",
                               "originName": "Frankfurt Main Airport",
                               "destinationCode": "CDG",
@@ -10567,6 +11064,7 @@
                             },
                             {
                               "segmentKey": "f15d5c4e",
+                              "stopCount": 0,
                               "originCode": "CDG",
                               "originName": "Charles de Gaulle International Airport",
                               "destinationCode": "FRA",
@@ -10593,6 +11091,7 @@
                             },
                             {
                               "segmentKey": "7eccefc8",
+                              "stopCount": 0,
                               "originCode": "FRA",
                               "originName": "Frankfurt Main Airport",
                               "destinationCode": "JFK",
@@ -10677,7 +11176,48 @@
                               "label": "Change fee (before departure)"
                             },
                             "refundFee": null
-                          }
+                          },
+                          "cabinClass": "ECONOMY",
+                          "fare": {
+                            "family": "Economy",
+                            "mixedCabin": false,
+                            "mixedFareFamily": false,
+                            "seatsRemaining": 7
+                          },
+                          "segmentFares": [
+                            {
+                              "segmentKey": "b4cd7e77",
+                              "bookingCode": "W",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "35125125",
+                              "bookingCode": "K",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "f15d5c4e",
+                              "bookingCode": "U",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            },
+                            {
+                              "segmentKey": "7eccefc8",
+                              "bookingCode": "Y",
+                              "cabin": "Economy",
+                              "fareBasisCode": "WRAQ1",
+                              "fareFamily": "Economy",
+                              "seatsRemaining": 7
+                            }
+                          ]
                         },
                         "passengers": [
                           {
@@ -10807,7 +11347,7 @@
                       "paymentTypes": [
                         "TRANSACTION_ID",
                         "CREDIT",
-                        "WALLET"
+                        "ACC_CREDIT_CARD"
                       ]
                     }
                   ]

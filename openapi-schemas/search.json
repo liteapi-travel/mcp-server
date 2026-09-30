@@ -122,7 +122,7 @@
                   },
                   "maxRatesPerHotel": {
                     "type": "integer",
-                    "description": "The number of room rates to return per hotel, sorted by price (cheapest first). Set to 1 to just get the cheapest rate for each hotel, this is helpful for listing pages.",
+                    "description": "The number of room rates to return per hotel, sorted by price (cheapest first). Set to 1 to just get the cheapest rate for each hotel, this is helpful for listing pages. Try increasing this if you are missing rate types, and be aware that the cap is applied before room mapping.",
                     "example": 1
                   },
                   "boardType": {
@@ -764,6 +764,19 @@
                                 "loyaltyMembershipIdRequired": {
                                   "type": "boolean",
                                   "description": "Indicates whether a valid loyalty membership ID must be supplied (via `loyaltyProgramDetails` on the rates request) to book this rate."
+                                },
+                                "paymentTypes": {
+                                  "type": "array",
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Payment methods available for this offer. Carries the supplier payment types of the offer's rates, plus `CREDIT_CARD_SCHEDULED` when the offer can be booked now and the guest card charged 24 hours before check-in instead of up front. `CREDIT_CARD_SCHEDULED` appears on any refundable or non-refundable offer (including partially refundable ones) with a check-in within 20 months, and only when the feature is enabled on your API key; pass it as `payment.method` on book with card details sent via the secure payment endpoint (https://pci-book.liteapi.travel). Advisory only \u2014 prebook re-checks eligibility and is authoritative.",
+                                  "example": ["NUITEE_PAY", "CREDIT_CARD_SCHEDULED"]
+                                },
+                                "paymentSchedule": {
+                                  "type": "string",
+                                  "enum": ["now", "later"],
+                                  "description": "`later` when every rate in the offer is refundable or non-refundable (including partially refundable), the check-in is within 20 months, and the account is enabled for scheduled credit card payments; otherwise `now`."
                                 }
                               }
                             }

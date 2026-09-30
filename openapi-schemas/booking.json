@@ -1075,6 +1075,12 @@
                           },
                           "description": "An array of payment types supported for this booking request."
                         },
+                        "paymentScheduledAt": {
+                          "type": "string",
+                          "format": "date-time",
+                          "nullable": true,
+                          "description": "When the card would be charged if you book with `CREDIT_CARD_SCHEDULED` (24 hours before check-in). Returned whenever that method is offered, so you can show the guest the charge date before they book. Null or omitted for every other payment method."
+                        },
                         "mappedRoomId": {
                           "type": "integer",
                           "nullable": true,
@@ -1638,6 +1644,7 @@
                       {
                         "type": "object",
                         "additionalProperties": false,
+                        "title": "ACC_CREDIT_CARD / WALLET / CREDIT",
                         "description": "Payment methods that don't require a transaction ID. These methods use pre-configured payment settings: ACC_CREDIT_CARD uses stored card details (in sandbox mode, this can be used to simulate a booking without getting charged), WALLET uses available wallet balance, and CREDIT allows payment on credit line.",
                         "required": ["method"],
                         "properties": {
@@ -1650,6 +1657,7 @@
                       {
                         "type": "object",
                         "additionalProperties": false,
+                        "title": "TRANSACTION_ID",
                         "description": "Payment method using TRANSACTION_ID. Required when using the Payment SDK for processing payments. This method requires both the payment method and transaction ID from the prebook step.",
                         "required": ["method", "transactionId"],
                         "properties": {
@@ -1666,6 +1674,7 @@
                       {
                         "type": "object",
                         "additionalProperties": false,
+                        "title": "CREDIT_CARD",
                         "description": "Credit card payment via secure endpoint. Accepts any credit or debit card (including virtual credit cards). Send card details via the secure payment endpoint (https://pci-book.liteapi.travel) using the billingInfo object. Contact the team to enable this feature on your API key.",
                         "required": ["method", "billingInfo"],
                         "properties": {
@@ -1701,6 +1710,46 @@
                             }
                           }
                         }
+                      },
+                      {
+                        "type": "object",
+                        "additionalProperties": false,
+                        "title": "CREDIT_CARD_SCHEDULED",
+                        "description": "Credit card payment charged later. The booking is confirmed immediately without charging or verifying the card with the bank — card details are only checked for a valid format at booking. The card is charged 24 hours before check-in instead, so the guest is not billed up front. Accepts any credit or debit card (including virtual credit cards), as long as it does not expire before check-in. Send card details via the secure payment endpoint (https://pci-book.liteapi.travel) using the billingInfo object, exactly as for CREDIT_CARD. Available on any refundable or non-refundable rate (including partially refundable ones) with a check-in date within 20 months, and never on pay-at-property rates: look for `paymentSchedule: later` on the rate, or `CREDIT_CARD_SCHEDULED` in the prebook payment types. The exact charge time is returned to you as `paymentScheduledAt` on the prebook, book and retrieve-booking responses, so you can show it to the guest and reconcile against it. Cancellation on a fully refundable rate: cancelling while the free-cancellation window is still open charges nothing; cancelling after it closes charges the card the applicable cancellation fee immediately, refunding back anything above it. Cancellation on a fully non-refundable rate: charges the card in full immediately, at any time — there is no free-cancellation window. Either way the guest is never billed more than the fee that already applied to the rate. Contact the team to enable this feature on your API key.",
+                        "required": ["method", "billingInfo"],
+                        "properties": {
+                          "method": {
+                            "enum": ["CREDIT_CARD_SCHEDULED"],
+                            "description": "Credit card payment charged 24 hours before check-in instead of at booking. Fully refundable or fully non-refundable rates only, check-in within 20 months. Contact the team to enable this on your API key."
+                          },
+                          "billingInfo": {
+                            "type": "object",
+                            "description": "Card details for the payment taken later. The card must not expire before check-in, or the booking is rejected.",
+                            "required": ["creditCardNumber", "creditCardIdentifier", "creditCardExpirationMonth", "creditCardExpirationYear"],
+                            "properties": {
+                              "creditCardNumber": {
+                                "type": "string",
+                                "description": "The card number."
+                              },
+                              "creditCardIdentifier": {
+                                "type": "string",
+                                "description": "The card security code (CVC/CVV)."
+                              },
+                              "creditCardExpirationMonth": {
+                                "type": "string",
+                                "description": "Card expiration month (MM). Must not expire before check-in: the card is valid through the last day of this month."
+                              },
+                              "creditCardExpirationYear": {
+                                "type": "string",
+                                "description": "Card expiration year (YYYY)."
+                              },
+                              "holderName": {
+                                "type": "string",
+                                "description": "Cardholder name. Defaults to the booking holder's name if omitted."
+                              }
+                            }
+                          }
+                        }
                       }
                     ],
                     "description": "Specifies the payment method for completing the booking"
@@ -1722,7 +1771,7 @@
                       },
                       "method": {
                         "type": "string",
-                        "description": "Payment method used (e.g., ACC_CREDIT_CARD, WALLET)."
+                        "description": "Payment method used (e.g., ACC_CREDIT_CARD, CREDIT_CARD, WALLET)."
                       },
                       "payee_last_name": {
                         "type": "string",
@@ -2758,6 +2807,60 @@
                       }
                     }
                   },
+                  "invalid payment method (CREDIT_CARD not enabled)": {
+                    "value": {
+                      "error": {
+                        "code": 4003,
+                        "description": "invalid payment method",
+                        "message": "request field is invalid or wrong"
+                      }
+                    }
+                  },
+                  "credit card sent to wrong endpoint": {
+                    "value": {
+                      "error": {
+                        "code": 4003,
+                        "description": "credit card payments must be sent via the secure endpoint https://pci-book.liteapi.travel",
+                        "message": "request field is invalid or wrong"
+                      }
+                    }
+                  },
+                  "missing or empty billing info": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "missing or empty billing info",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "missing or empty credit card number": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "missing or empty credit card number",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "missing or empty credit card identifier": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "description": "missing or empty credit card identifier",
+                        "message": "required request field is missing or wrong input"
+                      }
+                    }
+                  },
+                  "credit card payment failed": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "credit card payment failed",
+                        "message": "unable to process request"
+                      }
+                    }
+                  },
                   "booking unique id generation failure, please try again": {
                     "value": {
                       "error": {
@@ -2947,7 +3050,7 @@
       "post": {
         "tags": ["Manage bookings"],
         "summary": "Complete a hard amendment (rebook)",
-        "description": "## Overview\n\n**Step 2 of 2** in the **hard amendment** flow. Use a `prebookId` produced by `POST /bookings/{bookingId}/alternative-prebooks` to create the replacement booking. On success, the new booking is created **and the original booking is automatically cancelled** \u2014 you do **not** need to call the cancel endpoint.\n\n## When to Use\n\n- **After alternative-prebooks** \u2014 Once the guest has chosen one of the alternative prebooks returned by `POST /bookings/{bookingId}/alternative-prebooks`.\n- **Date or occupancy changes** \u2014 The guest needs different check-in/check-out dates or a different number of adults/children at the same hotel.\n- **Hard amendments only** \u2014 For simple guest-name updates use `PUT /bookings/{bookingId}/amend` instead.\n\n## How It Works\n\n1. The provided `prebookId` is validated against the booking referenced by `existingBookingId` (it must have been produced by an `alternative-prebooks` call for that booking).\n2. The new booking is created with the supplier using the alternative rate.\n3. The original booking is then automatically cancelled. If the cancellation fails after the new booking is confirmed, the error is logged but the new booking is still returned \u2014 contact support to reconcile.\n\n## Payment\n\n- No payment is collected on this endpoint. The `payment.method` value is ignored \u2014 the request body must still include a `payment` object to satisfy the schema, but the server forces the method to `NONE` internally. Any price delta between the original and new rate is settled out of band.\n\n## Refundable vs Non-refundable Originals\n\n- **Refundable original** \u2014 Returns `200 OK` with the new booking, and the original is cancelled immediately.\n- **Non-refundable original** \u2014 Returns `202 Accepted` with a booking amendment record. The request is queued for the Nuitee operations team to handle manually (the original booking may incur cancellation fees).\n\n## Required Information\n\n- **prebookId** \u2014 A prebook session returned by `POST /bookings/{bookingId}/alternative-prebooks`.\n- **existingBookingId** \u2014 The `bookingId` of the original confirmed booking being replaced. Must match the `bookingId` that produced the prebook.\n- **holder** and **guests** \u2014 Same structure as `POST /rates/book`. If `holder` fields are empty they are copied from the original booking.\n\n## Quick Start\n\n1. Call `POST /bookings/{bookingId}/alternative-prebooks` and pick one of the returned `prebookId` values.\n2. Call this endpoint with that `prebookId`, the original `bookingId` as `existingBookingId`, and guest information.\n3. On success, the new booking is confirmed and the original is cancelled \u2014 no further calls are needed.",
+        "description": "## Overview\n\n**Step 2 of 2** in the **hard amendment** flow. Use a `prebookId` produced by `POST /bookings/{bookingId}/alternative-prebooks` to create the replacement booking. On success, the new booking is created **and the original booking is automatically cancelled** \u2014 you do **not** need to call the cancel endpoint.\n\n## When to Use\n\n- **After alternative-prebooks** \u2014 Once the guest has chosen one of the alternative prebooks returned by `POST /bookings/{bookingId}/alternative-prebooks`.\n- **Date or occupancy changes** \u2014 The guest needs different check-in/check-out dates or a different number of adults/children at the same hotel.\n- **Hard amendments only** \u2014 For simple guest-name updates use `PUT /bookings/{bookingId}/amend` instead.\n\n## How It Works\n\n1. The provided `prebookId` is validated against the booking referenced by `existingBookingId` (it must have been produced by an `alternative-prebooks` call for that booking).\n2. The new booking is created with the supplier using the alternative rate.\n3. The original booking is then automatically cancelled. If the cancellation fails after the new booking is confirmed, the error is logged but the new booking is still returned \u2014 contact support to reconcile.\n\n## Payment\n\n- **Pay-at-property bookings are not supported.** Bookings paid at the property (`PROPERTY_PAY`) cannot be rebooked through this endpoint.\n- No payment is collected on this endpoint. The `payment.method` value is ignored \u2014 the request body must still include a `payment` object to satisfy the schema, but the server forces the method to `NONE` internally. Any price delta between the original and new rate is settled out of band.\n\n## Refundable vs Non-refundable Originals\n\n- **Refundable original** \u2014 Returns `200 OK` with the new booking, and the original is cancelled immediately.\n- **Non-refundable original** \u2014 Returns `202 Accepted` with a booking amendment record. The request is queued for the Nuitee operations team to handle manually (the original booking may incur cancellation fees).\n\n## Required Information\n\n- **prebookId** \u2014 A prebook session returned by `POST /bookings/{bookingId}/alternative-prebooks`.\n- **existingBookingId** \u2014 The `bookingId` of the original confirmed booking being replaced. Must match the `bookingId` that produced the prebook.\n- **holder** and **guests** \u2014 Same structure as `POST /rates/book`. If `holder` fields are empty they are copied from the original booking.\n\n## Quick Start\n\n1. Call `POST /bookings/{bookingId}/alternative-prebooks` and pick one of the returned `prebookId` values.\n2. Call this endpoint with that `prebookId`, the original `bookingId` as `existingBookingId`, and guest information.\n3. On success, the new booking is confirmed and the original is cancelled \u2014 no further calls are needed.",
         "requestBody": {
           "required": true,
           "content": {
@@ -4096,7 +4199,8 @@
                           },
                           "paymentScheduledAt": {
                             "type": "string",
-                            "description": "Scheduled time for the payment process."
+                            "format": "date-time",
+                            "description": "When the saved card will be charged for CREDIT_CARD_SCHEDULED (24 hours before check-in). Omitted for other payment methods."
                           },
                           "addonsTotalAmount": {
                             "type": "number",
@@ -5119,7 +5223,8 @@
                         },
                         "paymentScheduledAt": {
                           "type": "string",
-                          "description": "Scheduled time for the payment process."
+                          "format": "date-time",
+                          "description": "When the saved card will be charged for CREDIT_CARD_SCHEDULED (24 hours before check-in). Omitted for other payment methods."
                         },
                         "addonsRedemptions": {
                           "type": "object",

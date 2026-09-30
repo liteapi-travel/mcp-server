@@ -62,28 +62,6 @@
       }
     },
     "schemas": {
-      "SuccessEnvelope": {
-        "type": "object",
-        "required": [
-          "data"
-        ],
-        "properties": {
-          "data": {
-            "description": "Dispatcher-standard envelope. Mirrors the normalized experiences-api payload: an object for single-resource responses (e.g. tour detail, availability) or an array when the provider returns a JSON array.",
-            "oneOf": [
-              {
-                "type": "object"
-              },
-              {
-                "type": "array",
-                "items": {
-                  "type": "object"
-                }
-              }
-            ]
-          }
-        }
-      },
       "BookingQuestionOptionResponse": {
         "type": "object",
         "required": [
@@ -92,10 +70,12 @@
         ],
         "properties": {
           "label": {
-            "type": "string"
+            "type": "string",
+            "description": "Human-readable option text shown in a dropdown or radio group."
           },
           "value": {
-            "type": "string"
+            "type": "string",
+            "description": "Machine value submitted as the booking question answer when this option is selected."
           }
         }
       },
@@ -108,11 +88,13 @@
         "properties": {
           "lat": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Latitude in decimal degrees."
           },
           "long": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Longitude in decimal degrees."
           }
         }
       },
@@ -127,19 +109,23 @@
         "properties": {
           "swLat": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Southwest corner latitude."
           },
           "swLong": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Southwest corner longitude."
           },
           "neLat": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Northeast corner latitude."
           },
           "neLong": {
             "type": "number",
-            "format": "double"
+            "format": "double",
+            "description": "Northeast corner longitude."
           }
         }
       },
@@ -395,10 +381,14 @@
         "type": "object",
         "properties": {
           "bookingId": {
-            "type": "string"
+            "type": "string",
+            "description": "Dispatcher booking identifier.",
+            "example": "ueTM5wXBX"
           },
           "prebookId": {
-            "type": "string"
+            "type": "string",
+            "description": "Dispatcher prebook session that created this booking.",
+            "example": "tJHcT_KHA"
           },
           "status": {
             "type": "string",
@@ -412,26 +402,36 @@
           },
           "providerStatus": {
             "type": "string",
+            "description": "Raw status from the upstream provider (e.g. `completed`, `pending`).",
             "example": "completed"
           },
           "cartId": {
-            "type": "string"
+            "type": "string",
+            "description": "Experiences-api shopping cart identifier from the validate step."
           },
           "experienceBookingId": {
-            "type": "string"
+            "type": "string",
+            "description": "Experiences-api internal booking UUID."
           },
           "providerBookingId": {
-            "type": "string"
+            "type": "string",
+            "description": "Provider-side booking reference hash."
           },
           "tourId": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Provider tour identifier.",
+            "example": 903304
           },
           "optionId": {
-            "type": "integer"
+            "type": "integer",
+            "description": "Chosen tour option from booking-options.",
+            "example": 1416025
           },
           "dateTime": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "Booked slot start time.",
+            "example": "2026-07-18T07:00:00Z"
           },
           "price": {
             "type": "number",
@@ -449,13 +449,19 @@
             "example": 7.5
           },
           "currency": {
-            "type": "string"
+            "type": "string",
+            "description": "ISO 4217 currency code for all monetary amounts on this booking.",
+            "example": "EUR"
           },
           "paymentStatus": {
-            "type": "string"
+            "type": "string",
+            "description": "Stripe payment lifecycle status (e.g. `succeeded`, `requires_capture`).",
+            "example": "succeeded"
           },
           "paymentTransactionId": {
-            "type": "string"
+            "type": "string",
+            "description": "Stripe PaymentIntent transaction identifier.",
+            "example": "tr_cts_test"
           },
           "customTags": {
             "type": "object",
@@ -468,7 +474,9 @@
             }
           },
           "voucher": {
-            "type": "object"
+            "type": "object",
+            "description": "Provider voucher payload available after the booking is confirmed. Structure varies by provider.",
+            "additionalProperties": true
           },
           "experienceSnapshot": {
             "type": "object",
@@ -585,9 +593,12 @@
         ],
         "properties": {
           "fieldId": {
-            "type": "string"
+            "type": "string",
+            "description": "Canonical field ID from `bookingQuestionSchema`."
           },
-          "value": {}
+          "value": {
+            "description": "Answer value. Type depends on the question: string for text/select, integer for date components, object for grouped fields like pickup_location."
+          }
         }
       },
       "ExperienceParticipantQuestionAnswers": {
@@ -960,6 +971,10 @@
                     "$ref": "#/components/schemas/CanonicalBookingValidationError"
                   }
                 ]
+              },
+              "key": {
+                "type": "string",
+                "description": "Dot-path to the offending field in the request body, present on field-level validation errors (e.g. `bodyRequest.selection.price.amount`)."
               }
             }
           }
@@ -1191,6 +1206,951 @@
             "$ref": "#/components/schemas/ExperienceSlotPricing"
           }
         }
+      },
+      "BookingOptionsRequest": {
+        "type": "object",
+        "required": [
+          "language",
+          "currency",
+          "date",
+          "participants"
+        ],
+        "properties": {
+          "language": {
+            "type": "string",
+            "description": "ISO language code for localized content.",
+            "example": "en"
+          },
+          "currency": {
+            "type": "string",
+            "description": "ISO 4217 currency code for prices.",
+            "example": "EUR"
+          },
+          "date": {
+            "type": "string",
+            "format": "date",
+            "description": "Tour date to price, `YYYY-MM-DD`.",
+            "example": "2026-07-18"
+          },
+          "participants": {
+            "type": "object",
+            "description": "Participant counts keyed by ticket category (age band), e.g. `adult`, `child`. Keys are lowercase and must match a `ticketCategory` returned by `GET /experiences/tours/{id}/availability` for this tour. An array (e.g. `[{\"category\":\"adult\",\"count\":2}]`) is rejected, and uppercase keys (e.g. `ADULT`) are rejected - use the exact lowercase category strings from availability.",
+            "additionalProperties": {
+              "type": "integer",
+              "minimum": 1,
+              "description": "Number of participants in this category."
+            },
+            "example": {
+              "adult": 2,
+              "child": 1
+            }
+          },
+          "addons": {
+            "type": "array",
+            "description": "Optional add-ons to price alongside the tour, from `GET .../availability` `addons[].id`.",
+            "items": {
+              "type": "object",
+              "required": [
+                "id",
+                "quantity"
+              ],
+              "properties": {
+                "id": {
+                  "type": "integer",
+                  "example": 10
+                },
+                "quantity": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "example": 1
+                }
+              }
+            }
+          }
+        }
+      },
+      "TourCoordinatesResponse": {
+        "type": "object",
+        "properties": {
+          "lat": {
+            "type": "number",
+            "format": "double",
+            "example": 48.8584
+          },
+          "long": {
+            "type": "number",
+            "format": "double",
+            "example": 2.2945
+          }
+        }
+      },
+      "TourPictureResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "url": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://cdn.example.com/tour-903304-1.jpg"
+          },
+          "verified": {
+            "type": "boolean",
+            "example": true
+          },
+          "copyright": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TourDealSummaryResponse": {
+        "type": "object",
+        "description": "Present only when a promotional deal applies to the tour's from-price.",
+        "properties": {
+          "originalPrice": {
+            "type": "number",
+            "example": 56.9
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "percentage": {
+            "type": "number",
+            "description": "Discount percentage, e.g. 20 for 20% off.",
+            "example": 20
+          },
+          "dateRange": {
+            "type": "object",
+            "properties": {
+              "start": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              },
+              "end": {
+                "type": "string",
+                "format": "date",
+                "nullable": true
+              }
+            }
+          }
+        }
+      },
+      "TourPriceResponse": {
+        "type": "object",
+        "properties": {
+          "amount": {
+            "type": "number",
+            "example": 45.5
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "dealSummary": {
+            "$ref": "#/components/schemas/TourDealSummaryResponse"
+          }
+        }
+      },
+      "TourCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 12
+          },
+          "name": {
+            "type": "string",
+            "example": "Sightseeing"
+          }
+        }
+      },
+      "TourLocationResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 1
+          },
+          "type": {
+            "type": "string",
+            "example": "city"
+          },
+          "name": {
+            "type": "string",
+            "example": "Paris"
+          },
+          "city": {
+            "type": "string",
+            "example": "Paris"
+          },
+          "country": {
+            "type": "string",
+            "example": "FR"
+          },
+          "coordinates": {
+            "$ref": "#/components/schemas/TourCoordinatesResponse"
+          },
+          "parentId": {
+            "type": "integer",
+            "example": 0
+          }
+        }
+      },
+      "TourDurationResponse": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "example": 2
+          },
+          "unit": {
+            "type": "string",
+            "example": "hours"
+          }
+        }
+      },
+      "TourOpeningHoursResponse": {
+        "type": "object",
+        "properties": {
+          "from": {
+            "type": "string",
+            "example": "09:00"
+          },
+          "to": {
+            "type": "string",
+            "example": "18:00"
+          }
+        }
+      },
+      "TourCancellationPolicyResponse": {
+        "type": "object",
+        "properties": {
+          "cancellable": {
+            "type": "boolean",
+            "example": true
+          },
+          "description": {
+            "type": "string",
+            "example": "Free cancellation up to 24 hours before the experience starts"
+          },
+          "cancellationFeeUnitFeeUnit": {
+            "type": "string",
+            "example": "percent"
+          },
+          "cancellationFeeUnitFeeValue": {
+            "type": "number",
+            "example": 100
+          },
+          "cancellationFeeUnitOffsetMin": {
+            "type": "integer",
+            "description": "Minutes before start time the fee schedule above applies.",
+            "example": 1440
+          },
+          "refundable": {
+            "type": "boolean",
+            "example": true
+          },
+          "partlyRefundable": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "TourItineraryItemDurationResponse": {
+        "type": "object",
+        "properties": {
+          "value": {
+            "type": "number",
+            "nullable": true,
+            "example": 45
+          },
+          "unit": {
+            "type": "string",
+            "nullable": true,
+            "example": "minutes"
+          }
+        }
+      },
+      "TourItineraryItemLocationResponse": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "nullable": true,
+            "example": "Eiffel Tower"
+          },
+          "coordinates": {
+            "$ref": "#/components/schemas/TourCoordinatesResponse"
+          }
+        }
+      },
+      "TourItineraryItemResponse": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Itinerary stop/segment type, e.g. `stop`, `transfer`, `break`.",
+            "example": "stop"
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "example": "Eiffel Tower"
+          },
+          "description": {
+            "type": "string",
+            "nullable": true,
+            "example": "Skip-the-line entry"
+          },
+          "startTime": {
+            "type": "string",
+            "nullable": true,
+            "example": "07:00"
+          },
+          "duration": {
+            "$ref": "#/components/schemas/TourItineraryItemDurationResponse"
+          },
+          "location": {
+            "$ref": "#/components/schemas/TourItineraryItemLocationResponse"
+          },
+          "optional": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "extraCost": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "entryIncluded": {
+            "type": "boolean",
+            "nullable": true
+          },
+          "mealType": {
+            "type": "string",
+            "nullable": true
+          },
+          "transportationType": {
+            "type": "string",
+            "nullable": true
+          }
+        }
+      },
+      "TourItineraryResponse": {
+        "type": "object",
+        "description": "One day (or the only day) of a structured itinerary. Empty `itineraries` on the tour means the provider has no structured itinerary data.",
+        "properties": {
+          "dayNumber": {
+            "type": "integer",
+            "nullable": true,
+            "example": 1
+          },
+          "title": {
+            "type": "string",
+            "nullable": true,
+            "example": "Morning tour"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourItineraryItemResponse"
+            }
+          }
+        }
+      },
+      "TourBaseResponse": {
+        "type": "object",
+        "description": "Shared tour fields returned by both search listings and the detail endpoint.",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 903304
+          },
+          "title": {
+            "type": "string",
+            "example": "Skip-the-line morning tour"
+          },
+          "description": {
+            "type": "string",
+            "example": "A guided morning tour with skip-the-line access."
+          },
+          "placeDetails": {
+            "type": "string",
+            "example": "Meet at the main entrance."
+          },
+          "additionalInfo": {
+            "type": "string",
+            "example": "Not wheelchair accessible."
+          },
+          "itemsToBring": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Comfortable shoes"
+            ]
+          },
+          "notAllowedItems": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Large backpacks"
+            ]
+          },
+          "badges": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "likely_to_sell_out"
+            ]
+          },
+          "hasPickUp": {
+            "type": "boolean",
+            "example": true
+          },
+          "overallRating": {
+            "type": "number",
+            "example": 4.7
+          },
+          "numberOfRatings": {
+            "type": "integer",
+            "example": 1523
+          },
+          "highlights": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "Skip the line",
+              "Expert local guide"
+            ]
+          },
+          "included": {
+            "type": "string",
+            "example": "Entry ticket, guided tour"
+          },
+          "excluded": {
+            "type": "string",
+            "example": "Hotel pickup, gratuities"
+          },
+          "pictures": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourPictureResponse"
+            }
+          },
+          "coordinates": {
+            "$ref": "#/components/schemas/TourCoordinatesResponse"
+          },
+          "price": {
+            "$ref": "#/components/schemas/TourPriceResponse"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourCategoryResponse"
+            }
+          },
+          "locations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourLocationResponse"
+            }
+          },
+          "availableLanguages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "en",
+              "fr"
+            ]
+          },
+          "translationLanguages": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "en",
+              "fr",
+              "es"
+            ]
+          },
+          "guideType": {
+            "type": "string",
+            "enum": [
+              "none",
+              "live_guide",
+              "audio_guide",
+              "driver",
+              "host_or_greeter",
+              "instructor"
+            ],
+            "example": "live_guide"
+          },
+          "mobileVoucher": {
+            "type": "boolean",
+            "example": true
+          },
+          "freeSale": {
+            "type": "boolean",
+            "example": false
+          },
+          "activityType": {
+            "type": "string",
+            "example": "tour"
+          },
+          "partnerBusinessCategory": {
+            "type": "string",
+            "example": "attraction"
+          },
+          "priceDescription": {
+            "type": "string",
+            "example": "per person"
+          },
+          "sourceUrl": {
+            "type": "string",
+            "format": "uri",
+            "example": "https://provider.example.com/tour/903304"
+          },
+          "durations": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourDurationResponse"
+            }
+          },
+          "openingHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourOpeningHoursResponse"
+            }
+          },
+          "cancellationPolicy": {
+            "$ref": "#/components/schemas/TourCancellationPolicyResponse"
+          }
+        }
+      },
+      "TourSummaryResponse": {
+        "description": "Tour listing as returned by tour search. The list mapper collapses `notSuitableFor` to a single string. Use `GET /experiences/tours/{id}` for the full detail payload including `itineraries`.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TourBaseResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "notSuitableFor": {
+                "type": "string",
+                "description": "First suitability restriction from the provider, collapsed to a single string by the list mapper.",
+                "example": "Guests with mobility impairments"
+              }
+            }
+          }
+        ]
+      },
+      "TourDetailResponse": {
+        "description": "Full tour detail including structured itineraries.",
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/TourBaseResponse"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "notSuitableFor": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Individual suitability restrictions from the provider.",
+                "example": [
+                  "Guests with mobility impairments",
+                  "Pregnant travelers"
+                ]
+              },
+              "itineraries": {
+                "type": "array",
+                "description": "Ordered structured itinerary. Empty when the provider has no structured itinerary data.",
+                "items": {
+                  "$ref": "#/components/schemas/TourItineraryResponse"
+                }
+              }
+            }
+          }
+        ]
+      },
+      "ToursMetaResponse": {
+        "type": "object",
+        "properties": {
+          "totalCount": {
+            "type": "integer",
+            "example": 102845
+          },
+          "limit": {
+            "type": "integer",
+            "example": 20
+          },
+          "offset": {
+            "type": "integer",
+            "example": 0
+          }
+        }
+      },
+      "ToursListResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/ToursMetaResponse"
+          },
+          "tours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourSummaryResponse"
+            }
+          }
+        }
+      },
+      "ToursListEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ToursListResponse"
+          }
+        }
+      },
+      "TourDetailEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TourDetailResponse"
+          }
+        }
+      },
+      "AvailabilityParticipantsRangeResponse": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer",
+            "example": 1
+          },
+          "max": {
+            "type": "integer",
+            "example": 15
+          }
+        }
+      },
+      "AvailabilityAgeRangeResponse": {
+        "type": "object",
+        "properties": {
+          "min": {
+            "type": "integer",
+            "example": 18
+          },
+          "max": {
+            "type": "integer",
+            "example": 99
+          }
+        }
+      },
+      "AvailabilityTicketCategoryResponse": {
+        "type": "object",
+        "properties": {
+          "ticketCategory": {
+            "type": "string",
+            "description": "Key to use in `booking-options` `participants`.",
+            "example": "adult"
+          },
+          "name": {
+            "type": "string",
+            "example": "Adult"
+          },
+          "ageRange": {
+            "$ref": "#/components/schemas/AvailabilityAgeRangeResponse"
+          },
+          "independentlyBookable": {
+            "type": "boolean",
+            "description": "Whether this category can be booked without an adult present.",
+            "example": true
+          }
+        }
+      },
+      "AvailabilityAddonResponse": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 10
+          },
+          "name": {
+            "type": "string",
+            "example": "Audio guide"
+          },
+          "maxQuantity": {
+            "type": "integer",
+            "example": 5
+          }
+        }
+      },
+      "AvailabilityDateResponse": {
+        "type": "object",
+        "properties": {
+          "date": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-07-18"
+          },
+          "hasDeal": {
+            "type": "boolean",
+            "example": false
+          }
+        }
+      },
+      "TourAvailabilityResponse": {
+        "type": "object",
+        "properties": {
+          "tourId": {
+            "type": "integer",
+            "example": 903304
+          },
+          "participantsRange": {
+            "$ref": "#/components/schemas/AvailabilityParticipantsRangeResponse"
+          },
+          "categories": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityTicketCategoryResponse"
+            }
+          },
+          "addons": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityAddonResponse"
+            }
+          },
+          "availableDates": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/AvailabilityDateResponse"
+            }
+          },
+          "updateTimestamp": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-07-01T12:00:00Z"
+          }
+        }
+      },
+      "TourAvailabilityEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TourAvailabilityResponse"
+          }
+        }
+      },
+      "TourReviewRatingBreakdownResponse": {
+        "type": "object",
+        "properties": {
+          "rating": {
+            "type": "integer",
+            "example": 5
+          },
+          "numberOfReviews": {
+            "type": "integer",
+            "example": 1200
+          },
+          "share": {
+            "type": "number",
+            "description": "Fraction of total reviews at this rating, 0-1.",
+            "example": 0.79
+          }
+        }
+      },
+      "TourReviewsSummaryResponse": {
+        "type": "object",
+        "properties": {
+          "ratingBreakdown": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourReviewRatingBreakdownResponse"
+            }
+          }
+        }
+      },
+      "TourReviewItemResponse": {
+        "type": "object",
+        "properties": {
+          "reviewId": {
+            "type": "integer",
+            "example": 55123
+          },
+          "reviewDate": {
+            "type": "string",
+            "format": "date",
+            "example": "2026-06-02"
+          },
+          "subject": {
+            "type": "string",
+            "example": "Amazing experience"
+          },
+          "comment": {
+            "type": "string",
+            "example": "Our guide was fantastic and skip-the-line saved us hours."
+          },
+          "reviewerDisplayName": {
+            "type": "string",
+            "example": "Jane D."
+          },
+          "reviewRating": {
+            "type": "number",
+            "example": 5
+          }
+        }
+      },
+      "TourReviewsResponse": {
+        "type": "object",
+        "properties": {
+          "meta": {
+            "$ref": "#/components/schemas/ToursMetaResponse"
+          },
+          "summary": {
+            "$ref": "#/components/schemas/TourReviewsSummaryResponse"
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourReviewItemResponse"
+            }
+          }
+        }
+      },
+      "TourReviewsEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/TourReviewsResponse"
+          }
+        }
+      },
+      "ExperienceCancellationRefundResponse": {
+        "type": "object",
+        "properties": {
+          "cancellationFee": {
+            "type": "number",
+            "example": 0
+          },
+          "refundAmount": {
+            "type": "number",
+            "example": 45.5
+          },
+          "refundType": {
+            "type": "string",
+            "example": "full"
+          },
+          "estimateConfidence": {
+            "type": "string",
+            "example": "high"
+          },
+          "currency": {
+            "type": "string",
+            "example": "EUR"
+          },
+          "sellingPrice": {
+            "type": "number",
+            "example": 45.5
+          }
+        }
+      },
+      "ExperienceCancelPreviewData": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "example": "444fe833-a84e-49b4-ae9f-b032c8619419"
+          },
+          "cancellable": {
+            "type": "boolean",
+            "example": true
+          },
+          "policy": {
+            "$ref": "#/components/schemas/ExperienceCancellationRefundResponse"
+          }
+        }
+      },
+      "ExperienceCancelPreviewEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExperienceCancelPreviewData"
+          }
+        }
+      },
+      "ExperienceCancelData": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string",
+            "example": "444fe833-a84e-49b4-ae9f-b032c8619419"
+          },
+          "status": {
+            "type": "string",
+            "example": "cancelled"
+          },
+          "providerStatus": {
+            "type": "string",
+            "nullable": true,
+            "example": "CANCELLED"
+          },
+          "refundPending": {
+            "type": "boolean",
+            "nullable": true,
+            "example": true
+          },
+          "refund": {
+            "$ref": "#/components/schemas/ExperienceCancellationRefundResponse"
+          }
+        }
+      },
+      "ExperienceCancelEnvelope": {
+        "type": "object",
+        "required": [
+          "data"
+        ],
+        "properties": {
+          "data": {
+            "$ref": "#/components/schemas/ExperienceCancelData"
+          }
+        }
       }
     },
     "responses": {
@@ -1200,6 +2160,29 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "relayedValidationError": {
+                "summary": "Relayed from experiences-api (e.g. malformed booking-options request)",
+                "value": {
+                  "error": {
+                    "code": 400,
+                    "message": "bad request",
+                    "description": "participants must be an object containing participant counts by age band, e.g. {\"adult\": 2}"
+                  }
+                }
+              },
+              "missingRequiredField": {
+                "summary": "Dispatcher-level required-field validation",
+                "value": {
+                  "error": {
+                    "code": 4002,
+                    "message": "required request field is missing or wrong input",
+                    "description": "field 'Currency' is required",
+                    "key": "bodyRequest.currency"
+                  }
+                }
+              }
             }
           }
         }
@@ -1260,6 +2243,41 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "missingSelectionPrice": {
+                "summary": "Missing required field (selection.price.amount)",
+                "value": {
+                  "error": {
+                    "code": 4002,
+                    "message": "required request field is missing or wrong input",
+                    "description": "field 'Amount' is required",
+                    "key": "bodyRequest.selection.price.amount"
+                  }
+                }
+              },
+              "usePaymentSdkRequired": {
+                "summary": "Phase 1 requires usePaymentSdk: true",
+                "value": {
+                  "error": {
+                    "code": 4002,
+                    "message": "required request field is missing or wrong input",
+                    "description": "usePaymentSdk must be true for Stripe checkout",
+                    "key": "bodyRequest.usePaymentSdk"
+                  }
+                }
+              },
+              "malformedJson": {
+                "summary": "Malformed JSON body",
+                "value": {
+                  "error": {
+                    "code": 4002,
+                    "message": "required request field is missing or wrong input",
+                    "description": "invalid request body format",
+                    "key": "bodyRequest"
+                  }
+                }
+              }
             }
           }
         }
@@ -1289,7 +2307,116 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/ToursListEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "meta": {
+                      "totalCount": 102845,
+                      "limit": 20,
+                      "offset": 0
+                    },
+                    "tours": [
+                      {
+                        "id": 903304,
+                        "title": "Skip-the-line morning tour",
+                        "description": "A guided morning tour with skip-the-line access.",
+                        "placeDetails": "Meet at the main entrance.",
+                        "additionalInfo": "Not wheelchair accessible.",
+                        "itemsToBring": [
+                          "Comfortable shoes"
+                        ],
+                        "notAllowedItems": [
+                          "Large backpacks"
+                        ],
+                        "notSuitableFor": "Guests with mobility impairments",
+                        "badges": [
+                          "likely_to_sell_out"
+                        ],
+                        "hasPickUp": true,
+                        "overallRating": 4.7,
+                        "numberOfRatings": 1523,
+                        "highlights": [
+                          "Skip the line",
+                          "Expert local guide"
+                        ],
+                        "included": "Entry ticket, guided tour",
+                        "excluded": "Hotel pickup, gratuities",
+                        "pictures": [
+                          {
+                            "id": 1,
+                            "url": "https://cdn.example.com/tour-903304-1.jpg",
+                            "verified": true
+                          }
+                        ],
+                        "coordinates": {
+                          "lat": 48.8584,
+                          "long": 2.2945
+                        },
+                        "price": {
+                          "amount": 45.5,
+                          "currency": "EUR"
+                        },
+                        "categories": [
+                          {
+                            "id": 12,
+                            "name": "Sightseeing"
+                          }
+                        ],
+                        "locations": [
+                          {
+                            "id": 1,
+                            "type": "city",
+                            "name": "Paris",
+                            "city": "Paris",
+                            "country": "FR",
+                            "coordinates": {
+                              "lat": 48.8566,
+                              "long": 2.3522
+                            },
+                            "parentId": 0
+                          }
+                        ],
+                        "availableLanguages": [
+                          "en",
+                          "fr"
+                        ],
+                        "translationLanguages": [
+                          "en",
+                          "fr",
+                          "es"
+                        ],
+                        "guideType": "live_guide",
+                        "mobileVoucher": true,
+                        "freeSale": false,
+                        "activityType": "tour",
+                        "partnerBusinessCategory": "attraction",
+                        "priceDescription": "per person",
+                        "sourceUrl": "https://provider.example.com/tour/903304",
+                        "durations": [
+                          {
+                            "value": 2,
+                            "unit": "hours"
+                          }
+                        ],
+                        "openingHours": [
+                          {
+                            "from": "09:00",
+                            "to": "18:00"
+                          }
+                        ],
+                        "cancellationPolicy": {
+                          "cancellable": true,
+                          "description": "Free cancellation up to 24 hours before the experience starts",
+                          "cancellationFeeUnitFeeUnit": "percent",
+                          "cancellationFeeUnitFeeValue": 100,
+                          "cancellationFeeUnitOffsetMin": 1440,
+                          "refundable": true,
+                          "partlyRefundable": false
+                        }
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -1330,11 +2457,144 @@
         ],
         "responses": {
           "200": {
-            "description": "Tour details",
+            "description": "Tour detail",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/TourDetailEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "id": 903304,
+                    "title": "Skip-the-line morning tour",
+                    "description": "A guided morning tour with skip-the-line access.",
+                    "placeDetails": "Meet at the main entrance.",
+                    "additionalInfo": "Not wheelchair accessible.",
+                    "itemsToBring": [
+                      "Comfortable shoes"
+                    ],
+                    "notAllowedItems": [
+                      "Large backpacks"
+                    ],
+                    "notSuitableFor": [
+                      "Guests with mobility impairments",
+                      "Pregnant travelers"
+                    ],
+                    "badges": [
+                      "likely_to_sell_out"
+                    ],
+                    "hasPickUp": true,
+                    "overallRating": 4.7,
+                    "numberOfRatings": 1523,
+                    "highlights": [
+                      "Skip the line",
+                      "Expert local guide"
+                    ],
+                    "included": "Entry ticket, guided tour",
+                    "excluded": "Hotel pickup, gratuities",
+                    "pictures": [
+                      {
+                        "id": 1,
+                        "url": "https://cdn.example.com/tour-903304-1.jpg",
+                        "verified": true
+                      }
+                    ],
+                    "coordinates": {
+                      "lat": 48.8584,
+                      "long": 2.2945
+                    },
+                    "price": {
+                      "amount": 45.5,
+                      "currency": "EUR"
+                    },
+                    "categories": [
+                      {
+                        "id": 12,
+                        "name": "Sightseeing"
+                      }
+                    ],
+                    "locations": [
+                      {
+                        "id": 1,
+                        "type": "city",
+                        "name": "Paris",
+                        "city": "Paris",
+                        "country": "FR",
+                        "coordinates": {
+                          "lat": 48.8566,
+                          "long": 2.3522
+                        },
+                        "parentId": 0
+                      }
+                    ],
+                    "availableLanguages": [
+                      "en",
+                      "fr"
+                    ],
+                    "translationLanguages": [
+                      "en",
+                      "fr",
+                      "es"
+                    ],
+                    "guideType": "live_guide",
+                    "mobileVoucher": true,
+                    "freeSale": false,
+                    "activityType": "tour",
+                    "partnerBusinessCategory": "attraction",
+                    "priceDescription": "per person",
+                    "sourceUrl": "https://provider.example.com/tour/903304",
+                    "durations": [
+                      {
+                        "value": 2,
+                        "unit": "hours"
+                      }
+                    ],
+                    "openingHours": [
+                      {
+                        "from": "09:00",
+                        "to": "18:00"
+                      }
+                    ],
+                    "cancellationPolicy": {
+                      "cancellable": true,
+                      "description": "Free cancellation up to 24 hours before the experience starts",
+                      "cancellationFeeUnitFeeUnit": "percent",
+                      "cancellationFeeUnitFeeValue": 100,
+                      "cancellationFeeUnitOffsetMin": 1440,
+                      "refundable": true,
+                      "partlyRefundable": false
+                    },
+                    "itineraries": [
+                      {
+                        "dayNumber": 1,
+                        "title": "Morning tour",
+                        "items": [
+                          {
+                            "type": "stop",
+                            "title": "Eiffel Tower",
+                            "description": "Skip-the-line entry",
+                            "startTime": "07:00",
+                            "duration": {
+                              "value": 45,
+                              "unit": "minutes"
+                            },
+                            "location": {
+                              "name": "Eiffel Tower",
+                              "coordinates": {
+                                "lat": 48.8584,
+                                "long": 2.2945
+                              }
+                            },
+                            "optional": false,
+                            "extraCost": false,
+                            "entryIncluded": true,
+                            "mealType": null,
+                            "transportationType": null
+                          }
+                        ]
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -1375,11 +2635,58 @@
         ],
         "responses": {
           "200": {
-            "description": "Availability",
+            "description": "Tour availability, participant ranges, and add-ons",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/TourAvailabilityEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "tourId": 903304,
+                    "participantsRange": {
+                      "min": 1,
+                      "max": 15
+                    },
+                    "categories": [
+                      {
+                        "ticketCategory": "adult",
+                        "name": "Adult",
+                        "ageRange": {
+                          "min": 18,
+                          "max": 99
+                        },
+                        "independentlyBookable": true
+                      },
+                      {
+                        "ticketCategory": "child",
+                        "name": "Child",
+                        "ageRange": {
+                          "min": 3,
+                          "max": 17
+                        },
+                        "independentlyBookable": false
+                      }
+                    ],
+                    "addons": [
+                      {
+                        "id": 10,
+                        "name": "Audio guide",
+                        "maxQuantity": 5
+                      }
+                    ],
+                    "availableDates": [
+                      {
+                        "date": "2026-07-18",
+                        "hasDeal": false
+                      },
+                      {
+                        "date": "2026-07-19",
+                        "hasDeal": true
+                      }
+                    ],
+                    "updateTimestamp": "2026-07-01T12:00:00Z"
+                  }
                 }
               }
             }
@@ -1423,11 +2730,44 @@
         ],
         "responses": {
           "200": {
-            "description": "Tour reviews",
+            "description": "Tour reviews with rating summary",
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/SuccessEnvelope"
+                  "$ref": "#/components/schemas/TourReviewsEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "meta": {
+                      "totalCount": 1523,
+                      "limit": 20,
+                      "offset": 0
+                    },
+                    "summary": {
+                      "ratingBreakdown": [
+                        {
+                          "rating": 5,
+                          "numberOfReviews": 1200,
+                          "share": 0.79
+                        },
+                        {
+                          "rating": 4,
+                          "numberOfReviews": 250,
+                          "share": 0.16
+                        }
+                      ]
+                    },
+                    "items": [
+                      {
+                        "reviewId": 55123,
+                        "reviewDate": "2026-06-02",
+                        "subject": "Amazing experience",
+                        "comment": "Our guide was fantastic and skip-the-line saved us hours.",
+                        "reviewerDisplayName": "Jane D.",
+                        "reviewRating": 5
+                      }
+                    ]
+                  }
                 }
               }
             }
@@ -1468,7 +2808,38 @@
           "content": {
             "application/json": {
               "schema": {
-                "$ref": "#/components/schemas/SuccessEnvelope"
+                "$ref": "#/components/schemas/BookingOptionsRequest"
+              },
+              "examples": {
+                "basic": {
+                  "summary": "Two adults, one child",
+                  "value": {
+                    "language": "en",
+                    "currency": "EUR",
+                    "date": "2026-07-18",
+                    "participants": {
+                      "adult": 2,
+                      "child": 1
+                    }
+                  }
+                },
+                "withAddons": {
+                  "summary": "With an add-on",
+                  "value": {
+                    "language": "en",
+                    "currency": "EUR",
+                    "date": "2026-07-18",
+                    "participants": {
+                      "adult": 2
+                    },
+                    "addons": [
+                      {
+                        "id": 10,
+                        "quantity": 1
+                      }
+                    ]
+                  }
+                }
               }
             }
           }
@@ -1574,25 +2945,49 @@
               "schema": {
                 "$ref": "#/components/schemas/ExperiencePrebookRequest"
               },
-              "example": {
-                "selection": {
-                  "optionId": 1416025,
-                  "dateTime": "2026-07-18T07:00:00",
-                  "price": {
-                    "amount": 45.5,
-                    "currency": "EUR"
-                  },
-                  "participants": [
-                    {
-                      "ticketCategory": "adult",
-                      "numberOfParticipants": 2
-                    }
-                  ]
+              "examples": {
+                "valid": {
+                  "summary": "Valid prebook request",
+                  "value": {
+                    "selection": {
+                      "optionId": 1416025,
+                      "dateTime": "2026-07-18T07:00:00",
+                      "price": {
+                        "amount": 45.5,
+                        "currency": "EUR"
+                      },
+                      "participants": [
+                        {
+                          "ticketCategory": "adult",
+                          "numberOfParticipants": 2
+                        }
+                      ]
+                    },
+                    "language": "en",
+                    "currency": "EUR",
+                    "clientReferenceId": "partner-ref-1",
+                    "usePaymentSdk": true
+                  }
                 },
-                "language": "en",
-                "currency": "EUR",
-                "clientReferenceId": "partner-ref-1",
-                "usePaymentSdk": true
+                "missingSelectionPrice": {
+                  "summary": "Invalid: selection.price omitted — returns 400 PrebookBadRequest",
+                  "value": {
+                    "selection": {
+                      "optionId": 1416025,
+                      "dateTime": "2026-07-18T07:00:00Z",
+                      "participants": [
+                        {
+                          "ticketCategory": "adult",
+                          "numberOfParticipants": 2
+                        }
+                      ]
+                    },
+                    "language": "en",
+                    "currency": "EUR",
+                    "clientReferenceId": "partner-ref-1",
+                    "usePaymentSdk": true
+                  }
+                }
               }
             }
           }
@@ -1767,6 +3162,129 @@
           },
           "404": {
             "$ref": "#/components/responses/NotFound"
+          }
+        }
+      }
+    },
+    "/experiences/bookings/{bookingId}/cancel-preview": {
+      "get": {
+        "operationId": "getExperienceBookingCancelPreview",
+        "summary": "Preview experience booking cancellation",
+        "description": "## Overview\n\nPreview the refund amount and cancellation fee for a booking before committing to cancel it.\n\n## When to Use\n\n- **Cancellation confirmation screens** - Show the guest exactly what they'll be refunded\n- **Support tooling** - Check whether a booking is still cancellable before offering a refund\n\n## What You Get\n\n- **`cancellable`** - Whether the booking can currently be cancelled\n- **`policy`** - `cancellationFee`, `refundAmount`, `refundType`, `estimateConfidence`, `currency`, `sellingPrice`\n\n## Quick Start\n\nGET this endpoint with the dispatcher `bookingId` from `POST /experiences/bookings`. This does not cancel the booking - call `POST /experiences/bookings/{bookingId}/cancel` to actually cancel.",
+        "tags": [
+          "Experiences"
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Dispatcher booking ID returned from POST /experiences/bookings"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Cancellation preview with refund estimate",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceCancelPreviewEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "bookingId": "444fe833-a84e-49b4-ae9f-b032c8619419",
+                    "cancellable": true,
+                    "policy": {
+                      "cancellationFee": 0,
+                      "refundAmount": 45.5,
+                      "refundType": "full",
+                      "estimateConfidence": "high",
+                      "currency": "EUR",
+                      "sellingPrice": 45.5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/BadGateway"
+          }
+        }
+      }
+    },
+    "/experiences/bookings/{bookingId}/cancel": {
+      "post": {
+        "operationId": "cancelExperienceBooking",
+        "summary": "Cancel experience booking",
+        "description": "## Overview\n\nCancel a confirmed experience booking and trigger any applicable refund.\n\n## When to Use\n\n- **Guest-initiated cancellation** - After the guest confirms via the cancel-preview screen\n\n## What You Get\n\n- **`status`** - Dispatcher-level booking status after cancellation\n- **`providerStatus`** - Raw upstream provider status, when available\n- **`refund`** - Present when a refund was calculated; `refundPending` indicates it hasn't settled yet\n\n## Quick Start\n\nPOST with the dispatcher `bookingId` from `POST /experiences/bookings`. Call `GET /experiences/bookings/{bookingId}/cancel-preview` first to show the guest the refund amount.",
+        "tags": [
+          "Experiences"
+        ],
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            },
+            "description": "Dispatcher booking ID returned from POST /experiences/bookings"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Booking cancelled",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperienceCancelEnvelope"
+                },
+                "example": {
+                  "data": {
+                    "bookingId": "444fe833-a84e-49b4-ae9f-b032c8619419",
+                    "status": "cancelled",
+                    "providerStatus": "CANCELLED",
+                    "refundPending": true,
+                    "refund": {
+                      "cancellationFee": 0,
+                      "refundAmount": 45.5,
+                      "refundType": "full",
+                      "estimateConfidence": "high",
+                      "currency": "EUR",
+                      "sellingPrice": 45.5
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "$ref": "#/components/responses/BadRequest"
+          },
+          "401": {
+            "$ref": "#/components/responses/Unauthorized"
+          },
+          "403": {
+            "$ref": "#/components/responses/Forbidden"
+          },
+          "404": {
+            "$ref": "#/components/responses/NotFound"
+          },
+          "502": {
+            "$ref": "#/components/responses/BadGateway"
           }
         }
       }
