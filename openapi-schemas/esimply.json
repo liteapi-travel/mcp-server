@@ -2,8 +2,8 @@
   "openapi": "3.0.0",
   "info": {
     "title": "API: eSIMply",
-    "version": "3.0.0",
-    "description": "The eSIMply API lets partners browse destinations and data packages, provision eSIMs in real time, top up existing eSIMs, and monitor usage. Access is gated by `users.esimply_access`. Use a `sand_*` API key for the eSIMply sandbox environment and a `prod_*` key for production."
+    "version": "3.1.0",
+    "description": "The eSIMply API lets partners browse destinations, regional/global groups and data packages, provision eSIMs in real time, top up existing eSIMs, and monitor usage. Access is gated by `users.esimply_access`. Use a `sand_*` API key for the eSIMply sandbox environment and a `prod_*` key for production."
   },
   "servers": [
     {
@@ -218,11 +218,174 @@
           "destinationFlag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/ma.svg"
         }
       },
+      "RegionCountry": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "example": "France"
+          },
+          "iso2": {
+            "type": "string",
+            "example": "FR"
+          }
+        }
+      },
+      "Region": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "example": 3
+          },
+          "title": {
+            "type": "string",
+            "example": "Europe"
+          },
+          "type": {
+            "type": "string",
+            "enum": [
+              "regional",
+              "global"
+            ],
+            "example": "regional"
+          },
+          "flag": {
+            "type": "string",
+            "description": "Region icon URL. Empty string if none.",
+            "example": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/europe.svg"
+          },
+          "startingPrice": {
+            "type": "integer",
+            "description": "Cheapest plan price in `currency`. Omitted when no priced plan exists.",
+            "example": 7
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "countries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionCountry"
+            }
+          }
+        },
+        "example": {
+          "id": 3,
+          "title": "Europe",
+          "type": "regional",
+          "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/europe.svg",
+          "startingPrice": 7,
+          "currency": "USD",
+          "countries": [
+            {
+              "name": "France",
+              "iso2": "FR"
+            },
+            {
+              "name": "Spain",
+              "iso2": "ES"
+            }
+          ]
+        }
+      },
+      "RegionPackage": {
+        "type": "object",
+        "properties": {
+          "packageId": {
+            "type": "integer",
+            "example": 12
+          },
+          "name": {
+            "type": "string",
+            "example": "5 GB"
+          },
+          "dataSizeMb": {
+            "type": "integer",
+            "example": 5120
+          },
+          "validityDays": {
+            "type": "integer",
+            "description": "Maximum days between `startDate` and `endDate` on create-cart.",
+            "example": 30
+          },
+          "providerId": {
+            "type": "integer",
+            "example": 4
+          },
+          "providerPackageId": {
+            "type": "integer",
+            "description": "Always `0` for regional plans.",
+            "example": 0
+          },
+          "externalPackageId": {
+            "type": "string",
+            "description": "Required in `POST /esimply/orders/cart` for regional plans.",
+            "example": "eurolink-30days-5gb"
+          },
+          "calculatedPrice": {
+            "type": "integer",
+            "example": 14
+          },
+          "b2bPrice": {
+            "type": "number",
+            "nullable": true,
+            "example": 16.8
+          },
+          "rn": {
+            "type": "integer",
+            "example": 1
+          },
+          "currency": {
+            "type": "string",
+            "example": "USD"
+          },
+          "isUnlimited": {
+            "type": "boolean",
+            "example": false
+          },
+          "regionId": {
+            "type": "integer",
+            "example": 3
+          },
+          "countries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/RegionCountry"
+            }
+          }
+        },
+        "example": {
+          "packageId": 12,
+          "name": "5 GB",
+          "dataSizeMb": 5120,
+          "validityDays": 30,
+          "providerId": 4,
+          "providerPackageId": 0,
+          "externalPackageId": "eurolink-30days-5gb",
+          "calculatedPrice": 14,
+          "b2bPrice": 16.8,
+          "rn": 1,
+          "currency": "USD",
+          "isUnlimited": false,
+          "regionId": 3,
+          "countries": [
+            {
+              "name": "France",
+              "iso2": "FR"
+            },
+            {
+              "name": "Spain",
+              "iso2": "ES"
+            }
+          ]
+        }
+      },
       "CartRequest": {
         "type": "object",
         "required": [
           "packageId",
-          "destinationCode",
           "startDate",
           "endDate"
         ],
@@ -233,7 +396,19 @@
           },
           "destinationCode": {
             "type": "string",
-            "example": "MA"
+            "example": "MA",
+            "description": "ISO2 destination code for a country plan. Do not send with `regionId` or `externalPackageId`."
+          },
+          "regionId": {
+            "type": "integer",
+            "minimum": 1,
+            "description": "Region ID from `GET /data/esimply/regions`. Do not send with `destinationCode`.",
+            "example": 3
+          },
+          "externalPackageId": {
+            "type": "string",
+            "description": "Required with `regionId`; taken from `GET /data/esimply/regions/{regionId}/packages`. Not allowed with `destinationCode`.",
+            "example": "eurolink-30days-5gb"
           },
           "startDate": {
             "type": "string",
@@ -251,7 +426,21 @@
           "destinationCode": "MA",
           "startDate": "2026-08-20",
           "endDate": "2026-08-27"
-        }
+        },
+        "description": "Send either `destinationCode` (country plan) or `regionId` + `externalPackageId` (regional/global plan). Sending both `destinationCode` and `regionId`, or `externalPackageId` with `destinationCode`, is rejected with 62001.",
+        "oneOf": [
+          {
+            "required": [
+              "destinationCode"
+            ]
+          },
+          {
+            "required": [
+              "regionId",
+              "externalPackageId"
+            ]
+          }
+        ]
       },
       "CartResponse": {
         "type": "object",
@@ -916,6 +1105,476 @@
         }
       }
     },
+    "/data/esimply/regions": {
+      "get": {
+        "tags": [
+          "eSIMply catalog"
+        ],
+        "summary": "List regions",
+        "operationId": "getESimplyRegions",
+        "description": "## Overview\n\nList regional (multi-country, e.g. \"Europe\") and global eSIM groups that currently have at least one active plan.\n\n## When to Use\n\n- **Regional plan discovery** - Offer one eSIM covering several countries\n- **Global coverage** - Offer a single plan for most of the world\n\n## What You Get\n\n- **Region catalog** - `id`, `title`, `type` (`regional` or `global`), flag and covered countries\n- **Starting price** - `startingPrice` is the cheapest plan in `currency`; omitted when no priced plan exists\n\n## Key Features\n\n- **Filter by type**: `?type=regional` or `?type=global`; omit for both\n- **Currency conversion**: Optional `Currency` header converts `startingPrice` via liteAPI FX rates\n- **Next step**: Use `id` with `GET /data/esimply/regions/{regionId}/packages`",
+        "parameters": [
+          {
+            "name": "type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "enum": [
+                "regional",
+                "global"
+              ]
+            },
+            "description": "Filter by region type. Omit to return both."
+          },
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/Region"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "id": 3,
+                      "title": "Europe",
+                      "type": "regional",
+                      "flag": "https://esimply-destinations-flags.s3.us-west-1.amazonaws.com/europe.svg",
+                      "startingPrice": 7,
+                      "currency": "USD",
+                      "countries": [
+                        {
+                          "name": "France",
+                          "iso2": "FR"
+                        },
+                        {
+                          "name": "Spain",
+                          "iso2": "ES"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid type or currency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidType": {
+                    "summary": "Invalid type filter",
+                    "value": {
+                      "error": {
+                        "code": 61201,
+                        "message": "validation error",
+                        "description": "type must be regional or global"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 61299,
+                    "message": "unable to process eSimply regions request",
+                    "description": "Failed to retrieve regions"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/esimply/regions/{regionId}/packages": {
+      "get": {
+        "tags": [
+          "eSIMply catalog"
+        ],
+        "summary": "List packages for a region",
+        "operationId": "getESimplyPackagesByRegion",
+        "description": "## Overview\n\nRetrieve the data plans sold for a regional or global group, including fixed-size and unlimited plans.\n\n## What You Get\n\n- **Plans** - Name, data size (MB), validity days, `isUnlimited`\n- **Pricing** - `calculatedPrice`, optional `b2bPrice`, and `currency`\n- **Coverage** - Countries covered by each plan\n\n## Key Features\n\n- **Currency conversion**: Optional `Currency` header converts prices via liteAPI FX rates\n- **Ready for cart**: Send `packageId`, `regionId` and `externalPackageId` to `POST /esimply/orders/cart`",
+        "parameters": [
+          {
+            "name": "regionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "example": 3
+            },
+            "description": "Region identifier returned by `GET /data/esimply/regions`"
+          },
+          {
+            "$ref": "#/components/parameters/CurrencyHeader"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RegionPackage"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "packageId": 12,
+                      "name": "5 GB",
+                      "dataSizeMb": 5120,
+                      "validityDays": 30,
+                      "providerId": 4,
+                      "providerPackageId": 0,
+                      "externalPackageId": "eurolink-30days-5gb",
+                      "calculatedPrice": 14,
+                      "b2bPrice": 16.8,
+                      "rn": 1,
+                      "currency": "USD",
+                      "isUnlimited": false,
+                      "regionId": 3,
+                      "countries": [
+                        {
+                          "name": "France",
+                          "iso2": "FR"
+                        },
+                        {
+                          "name": "Spain",
+                          "iso2": "ES"
+                        }
+                      ]
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid region id or currency",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidRegionId": {
+                    "summary": "regionId is not a positive integer",
+                    "value": {
+                      "error": {
+                        "code": 61301,
+                        "message": "validation error",
+                        "description": "invalid region id"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 61399,
+                    "message": "unable to process eSimply region packages request",
+                    "description": "Failed to retrieve region packages"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/esimply/regions/{regionId}/countries": {
+      "get": {
+        "tags": [
+          "eSIMply catalog"
+        ],
+        "summary": "List countries covered by a region",
+        "operationId": "getESimplyRegionCountries",
+        "description": "## Overview\n\nReturn the distinct list of countries covered by the plans currently sold for a region, sorted by name. Returns an empty array when the region has no active plans.",
+        "parameters": [
+          {
+            "name": "regionId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "example": 3
+            },
+            "description": "Region identifier returned by `GET /data/esimply/regions`"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "$ref": "#/components/schemas/RegionCountry"
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": [
+                    {
+                      "name": "France",
+                      "iso2": "FR"
+                    },
+                    {
+                      "name": "Spain",
+                      "iso2": "ES"
+                    }
+                  ]
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid region id",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "invalidRegionId": {
+                    "summary": "regionId is not a positive integer",
+                    "value": {
+                      "error": {
+                        "code": 61401,
+                        "message": "validation error",
+                        "description": "invalid region id"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Authentication required",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 401,
+                    "message": "unauthorized"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "eSIMply access not enabled for this account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "examples": {
+                  "accessNotEnabled": {
+                    "summary": "Account without eSIMply access",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API access is not enabled for this account. Please contact support to get access"
+                      }
+                    }
+                  },
+                  "sandboxOnlyWithProdKey": {
+                    "summary": "Sandbox-only account using a production API key",
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "eSIMply API for this account is limited to sandbox API keys only. Please contact support to get full access"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Provider or internal error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ErrorResponse"
+                },
+                "example": {
+                  "error": {
+                    "code": 61499,
+                    "message": "unable to process eSimply region countries request",
+                    "description": "Failed to retrieve region countries"
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/esimply/orders/cart": {
       "post": {
         "tags": [
@@ -923,7 +1582,7 @@
         ],
         "summary": "Create an eSIMply cart",
         "operationId": "createESimplyCart",
-        "description": "## Overview\n\nInitialize a shopping cart for a selected eSIM package and travel dates. The returned `cartKey` is required to submit the purchase.\n\n## When to Use\n\n- **Start checkout** - After the traveler selects a package and travel window\n- **Hold a package** - Create a short-lived cart before collecting traveler details\n- **Multi-step flows** - Separate package selection from payment/provisioning\n\n## What You Get\n\n- **Cart key** - Opaque `cartKey` used by submit order\n\n## Key Features\n\n- **Date-bound**: Requires `startDate` and `endDate` for the travel period\n- **Package-scoped**: Uses `packageId` and `destinationCode` from the catalog\n- **Idempotent submit later**: Reuse the same `cartKey` safely when submitting",
+        "description": "## Overview\n\nInitialize a shopping cart for a selected eSIM package and travel dates. The returned `cartKey` is required to submit the purchase.\n\n## When to Use\n\n- **Start checkout** - After the traveler selects a package and travel window\n- **Hold a package** - Create a short-lived cart before collecting traveler details\n- **Multi-step flows** - Separate package selection from payment/provisioning\n\n## What You Get\n\n- **Cart key** - Opaque `cartKey` used by submit order\n\n## Key Features\n\n- **Date-bound**: Requires `startDate` and `endDate` for the travel period\n- **Package-scoped**: Uses `packageId` with either `destinationCode` (country plan) or `regionId` + `externalPackageId` (regional/global plan) from the catalog\n- **Exclusive modes**: Sending both `destinationCode` and `regionId`, or `externalPackageId` with `destinationCode`, is rejected\n- **Idempotent submit later**: Reuse the same `cartKey` safely when submitting",
         "requestBody": {
           "required": true,
           "content": {
@@ -931,11 +1590,26 @@
               "schema": {
                 "$ref": "#/components/schemas/CartRequest"
               },
-              "example": {
-                "packageId": 1,
-                "destinationCode": "MA",
-                "startDate": "2026-08-20",
-                "endDate": "2026-08-27"
+              "examples": {
+                "countryPlan": {
+                  "summary": "Country plan",
+                  "value": {
+                    "packageId": 1,
+                    "destinationCode": "MA",
+                    "startDate": "2026-08-20",
+                    "endDate": "2026-08-27"
+                  }
+                },
+                "regionalPlan": {
+                  "summary": "Regional or global plan",
+                  "value": {
+                    "packageId": 12,
+                    "regionId": 3,
+                    "externalPackageId": "eurolink-30days-5gb",
+                    "startDate": "2026-08-20",
+                    "endDate": "2026-08-27"
+                  }
+                }
               }
             }
           }
@@ -978,7 +1652,7 @@
                       "error": {
                         "code": 62001,
                         "message": "validation error",
-                        "description": "Key: 'ESimplyCartRequest.DestinationCode' Error:Field validation for 'DestinationCode' failed on the 'required' tag\nKey: 'ESimplyCartRequest.StartDate' Error:Field validation for 'StartDate' failed on the 'required' tag\nKey: 'ESimplyCartRequest.EndDate' Error:Field validation for 'EndDate' failed on the 'required' tag"
+                        "description": "Key: 'ESimplyCartRequest.StartDate' Error:Field validation for 'StartDate' failed on the 'required' tag\nKey: 'ESimplyCartRequest.EndDate' Error:Field validation for 'EndDate' failed on the 'required' tag"
                       }
                     }
                   },
@@ -989,6 +1663,56 @@
                         "code": 62001,
                         "message": "validation error",
                         "description": "Key: 'ESimplyCartRequest.StartDate' Error:Field validation for 'StartDate' failed on the 'datetime' tag"
+                      }
+                    }
+                  },
+                  "bothDestinationAndRegion": {
+                    "summary": "send either destinationCode or regionId, not both",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "send either destinationCode or regionId, not both"
+                      }
+                    }
+                  },
+                  "missingDestination": {
+                    "summary": "destinationCode or regionId is required",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "destinationCode or regionId is required"
+                      }
+                    }
+                  },
+                  "externalPackageIdWithDestination": {
+                    "summary": "externalPackageId is not allowed with destinationCode",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "externalPackageId is not allowed with destinationCode"
+                      }
+                    }
+                  },
+                  "invalidRegionId": {
+                    "summary": "regionId must be a positive integer",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "regionId must be a positive integer"
+                      }
+                    }
+                  },
+                  "missingExternalPackageId": {
+                    "summary": "externalPackageId is required for a regional package",
+                    "value": {
+                      "error": {
+                        "code": 62001,
+                        "message": "validation error",
+                        "description": "externalPackageId is required for a regional package"
                       }
                     }
                   }

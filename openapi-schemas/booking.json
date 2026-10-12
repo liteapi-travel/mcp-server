@@ -1007,7 +1007,7 @@
                                       }
                                     },
                                     "paymentTypes": { "type": "array", "items": { "type": "string" }, "description": "An array of payment types supported for this booking request." },
-                                    "perks": { "type": "array", "description": "An array of perks or benefits associated with this rate.", "items": { "type": "object", "properties": { "perkId": { "type": "integer", "description": "Unique identifier for the perk." }, "name": { "type": "string", "description": "The name or description of the perk." }, "amount": { "type": "number", "description": "The monetary value of the perk." }, "currency": { "type": "string", "description": "The currency of the perk amount." }, "level": { "type": "string", "description": "The level or tier of the perk." } } } }
+                                    "perks": { "type": "array", "description": "An array of perks or benefits associated with this rate.", "items": { "type": "object", "properties": { "perkId": { "type": "integer", "description": "Unique identifier for the perk." }, "name": { "type": "string", "description": "The name or description of the perk." }, "amount": { "type": "number", "description": "The monetary value of the perk." }, "currency": { "type": "string", "description": "The currency of the perk amount." }, "level": { "type": "string", "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, or 'ROOM_RATE' for perks aggregated to a rate within a room." } } } }
                                   }
                                 }
                               }
@@ -2153,7 +2153,7 @@
                                         },
                                         "level": {
                                           "type": "string",
-                                          "description": "The level or tier of the perk."
+                                          "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, or 'ROOM_RATE' for perks aggregated to a rate within a room."
                                         }
                                       }
                                     }
@@ -2951,15 +2951,6 @@
                       }
                     }
                   },
-                  "booking not confirmed": {
-                    "value": {
-                      "error": {
-                        "code": 2010,
-                        "description": "booking not confirmed",
-                        "message": "booking is not confirmed"
-                      }
-                    }
-                  },
                   "booking failed provider response was unsuccessful": {
                     "value": {
                       "error": {
@@ -3036,6 +3027,47 @@
                           "type": "string",
                           "description": "Detailed message providing context about the error"
                         }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "410": {
+            "description": "Gone. The provider did not confirm the booking because the room is no longer available or the rate expired.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "description": "Contains details about the encountered error",
+                      "properties": {
+                        "code": {
+                          "type": "integer",
+                          "description": "Numeric error code representing the type of issue"
+                        },
+                        "description": {
+                          "type": "string",
+                          "description": "Brief explanation of the error type"
+                        },
+                        "message": {
+                          "type": "string",
+                          "description": "Detailed message providing context about the error"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "booking not confirmed": {
+                    "value": {
+                      "error": {
+                        "code": 4012,
+                        "description": "booking not confirmed",
+                        "message": "booking is not confirmed. The room(s) may no longer be available or the rate expired"
                       }
                     }
                   }
@@ -4776,7 +4808,7 @@
                                         },
                                         "level": {
                                           "type": "string",
-                                          "description": "The level or tier of the perk."
+                                          "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, or 'ROOM_RATE' for perks aggregated to a rate within a room."
                                         }
                                       }
                                     }
@@ -7325,7 +7357,7 @@
                                             "name": { "type": "string" },
                                             "amount": { "type": "number" },
                                             "currency": { "type": "string" },
-                                            "level": { "type": "string" }
+                                            "level": { "type": "string", "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, or 'ROOM_RATE' for perks aggregated to a rate within a room." }
                                           }
                                         }
                                       },

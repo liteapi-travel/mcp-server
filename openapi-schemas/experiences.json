@@ -3,7 +3,7 @@
   "info": {
     "title": "API: Experiences",
     "version": "3.0.0",
-    "description": "The Experiences API lets you search tours and activities, check availability, reviews, and booking options. Discovery endpoints proxy to experiences-api. Access requires `experiences_access` on your account."
+    "description": "The Experiences API lets you search tours and activities, check availability, reviews, and booking options. Access must be enabled on your account."
   },
   "servers": [
     {
@@ -17,8 +17,12 @@
   ],
   "tags": [
     {
-      "name": "Experiences",
-      "description": "Search tours, check availability, reviews, and booking options for tours and activities."
+      "name": "Tours",
+      "description": "Search tours, check availability and reviews, and price booking options for tours and activities."
+    },
+    {
+      "name": "Bookings",
+      "description": "Checkout flow: **1.** Create an experience checkout session (PREBOOK) → **2.** Confirm an experience booking. Also includes retrieving booking status, previewing a cancellation, and cancelling a booking."
     }
   ],
   "components": {
@@ -308,6 +312,94 @@
           "title": {
             "type": "string"
           },
+          "description": {
+            "type": "string"
+          },
+          "meetingPoint": {
+            "type": "string",
+            "nullable": true
+          },
+          "dropOff": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "number",
+            "example": 180
+          },
+          "durationUnit": {
+            "type": "string",
+            "example": "minutes"
+          },
+          "language": {
+            "type": "object",
+            "description": "Languages this option is conducted/supported in.",
+            "properties": {
+              "tourLanguage": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Live guide language(s), e.g. `en`."
+              },
+              "audioLanguage": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Audio guide language(s), when offered."
+              },
+              "bookletGuideLanguage": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                },
+                "description": "Printed/booklet guide language(s), when offered."
+              }
+            }
+          },
+          "services": {
+            "type": "object",
+            "description": "Provider-sourced service flags; exact upstream semantics aren't formally published. Based on the `flags` filter values used elsewhere, `prt`/`stl`/`wlc` likely correspond to private/skip-the-line/wheelchair-accessible respectively — treat as indicative, not guaranteed.",
+            "properties": {
+              "prt": {
+                "type": "boolean"
+              },
+              "stl": {
+                "type": "boolean"
+              },
+              "wlc": {
+                "type": "boolean"
+              }
+            }
+          },
+          "coordinates": {
+            "nullable": true,
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/TourCoordinatesResponse"
+              }
+            ]
+          },
+          "coordinatePrecision": {
+            "type": "string",
+            "nullable": true,
+            "description": "Precision/confidence of `coordinates`, when the provider supplies it."
+          },
+          "unlimitedAvailability": {
+            "type": "boolean"
+          },
+          "nextAvailableDate": {
+            "type": "string",
+            "description": "Next date/time this option can be booked, when the tour has no availability on the requested date.",
+            "example": "2026-10-08T10:00"
+          },
+          "openingHours": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/TourOpeningHoursResponse"
+            }
+          },
           "bookingQuestionSchema": {
             "type": "array",
             "items": {
@@ -316,18 +408,18 @@
           },
           "slots": {
             "type": "array",
-            "description": "Priced time slots for this option. Use pricing.totals.net (sell) for checkout.",
+            "description": "Priced time slots for this option. Use pricing.totals.net for checkout.",
             "items": {
               "$ref": "#/components/schemas/ExperienceBookingOptionSlot"
             }
           },
           "price": {
             "type": "object",
-            "description": "On booking-options, partner-facing sell for the requested mix: minimum available slot `pricing.totals.net` after markup (not GYG catalog from-price). Prefer the chosen slot `pricing.totals.net` for prebook `selection.price.amount`.",
+            "description": "The price for the requested mix, based on the lowest available slot. Prefer the chosen slot's `pricing.totals.net` for `selection.price.amount` on prebook.",
             "properties": {
               "amount": {
                 "type": "number",
-                "description": "Lowest available-slot sell total for this option and participant mix.",
+                "description": "Lowest available price for this option and participant mix.",
                 "example": 708.76
               },
               "currency": {
@@ -336,8 +428,7 @@
               }
             }
           }
-        },
-        "additionalProperties": true
+        }
       },
       "BookingOptionsResponse": {
         "type": "object",
@@ -382,12 +473,12 @@
         "properties": {
           "bookingId": {
             "type": "string",
-            "description": "Dispatcher booking identifier.",
+            "description": "LiteAPI booking identifier.",
             "example": "ueTM5wXBX"
           },
           "prebookId": {
             "type": "string",
-            "description": "Dispatcher prebook session that created this booking.",
+            "description": "LiteAPI prebook session that created this booking.",
             "example": "tJHcT_KHA"
           },
           "status": {
@@ -407,11 +498,11 @@
           },
           "cartId": {
             "type": "string",
-            "description": "Experiences-api shopping cart identifier from the validate step."
+            "description": "Shopping cart identifier from the provider checkout session."
           },
           "experienceBookingId": {
             "type": "string",
-            "description": "Experiences-api internal booking UUID."
+            "description": "Internal booking identifier from the provider checkout session."
           },
           "providerBookingId": {
             "type": "string",
@@ -435,17 +526,17 @@
           },
           "price": {
             "type": "number",
-            "description": "Partner sell price charged via Stripe / persisted on the booking. Not GYG retail. Public responses omit providerPayment.",
+            "description": "Price charged via Stripe and persisted on the booking.",
             "example": 101.25
           },
           "commission": {
             "type": "number",
-            "description": "Partner earn on this booking (sell − commercial net). Same value as clientCommission until experiences distributor markup exists.",
+            "description": "Your earnings on this booking.",
             "example": 7.5
           },
           "clientCommission": {
             "type": "number",
-            "description": "Partner earn on this booking (sell − commercial net). Hotel-parity field name.",
+            "description": "Your earnings on this booking.",
             "example": 7.5
           },
           "currency": {
@@ -463,6 +554,33 @@
             "description": "Stripe PaymentIntent transaction identifier.",
             "example": "tr_cts_test"
           },
+          "cancellationRequestedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When cancellation was requested on this booking, if any."
+          },
+          "cancelledAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When this booking was fully cancelled, if applicable."
+          },
+          "refundProcessedAt": {
+            "type": "string",
+            "format": "date-time",
+            "nullable": true,
+            "description": "When the refund for this booking's cancellation was processed, if applicable."
+          },
+          "refund": {
+            "nullable": true,
+            "description": "Refund details, present once a cancellation has been processed.",
+            "allOf": [
+              {
+                "$ref": "#/components/schemas/ExperienceCancellationRefundResponse"
+              }
+            ]
+          },
           "customTags": {
             "type": "object",
             "description": "Optional bag of up to 5 user-defined key/value labels persisted with the booking. Keys must match `^[A-Z0-9_-]+$`; values are strings up to 255 characters.",
@@ -475,13 +593,326 @@
           },
           "voucher": {
             "type": "object",
-            "description": "Provider voucher payload available after the booking is confirmed. Structure varies by provider.",
-            "additionalProperties": true
+            "nullable": true,
+            "description": "Provider voucher payload available after the booking is confirmed. Structure varies by provider; known fields for the current provider are listed below, but treat this object as provider-dependent.",
+            "additionalProperties": true,
+            "properties": {
+              "bookingReference": {
+                "type": "string"
+              },
+              "ticketUrl": {
+                "type": "string"
+              },
+              "ticketHash": {
+                "type": "string"
+              },
+              "supplierEmergencyPhoneNumber": {
+                "type": "string",
+                "description": "Supplier's emergency contact phone number. Not the traveler's phone number."
+              },
+              "supplierEmergencyEmail": {
+                "type": "string",
+                "description": "Supplier's emergency contact email. This is not, and must never be treated as, the traveler's/customer's email address."
+              },
+              "supplierBookingCodes": {
+                "type": "array",
+                "description": "One entry per ticket, when the provider issues per-ticket codes.",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "ticketHash": {
+                      "type": "string"
+                    },
+                    "label": {
+                      "type": "string"
+                    },
+                    "type": {
+                      "type": "string"
+                    },
+                    "code": {
+                      "type": "string"
+                    },
+                    "pricingCategoryId": {
+                      "type": "integer"
+                    }
+                  }
+                }
+              }
+            }
           },
           "experienceSnapshot": {
             "type": "object",
+            "nullable": true,
             "additionalProperties": true,
-            "description": "Optional versioned provider-neutral booking-time display snapshot."
+            "description": "Versioned, provider-neutral snapshot of the tour/booking as it looked at booking time, for rendering post-booking pages (confirmation, manage-booking) without re-fetching the tour. `version: 2` is the active schema below. Deprecated `version: 1` top-level fields (`title`, `rating`, `media`, `startingLocation`, `schedule`, `guide`, `payment`, `cancellationPolicy`) may still appear on bookings made before the V2 migration — read them for old data, don't rely on them for new integrations.",
+            "properties": {
+              "version": {
+                "type": "integer",
+                "description": "Snapshot schema version. `2` is current.",
+                "example": 2
+              },
+              "capturedAt": {
+                "type": "string",
+                "format": "date-time",
+                "nullable": true
+              },
+              "contentLanguage": {
+                "type": "string",
+                "nullable": true
+              },
+              "isPartial": {
+                "type": "boolean",
+                "description": "True if this snapshot is missing data (e.g. captured before all tour content was available)."
+              },
+              "product": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "title": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "optionTitle": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "primaryImageUrl": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "rating": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "value": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "scale": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "count": {
+                        "type": "integer",
+                        "nullable": true
+                      }
+                    }
+                  }
+                }
+              },
+              "selection": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "serviceType": {
+                    "type": "string",
+                    "nullable": true,
+                    "enum": [
+                      "driver",
+                      "guide",
+                      "host",
+                      "instructor",
+                      "audio_guide",
+                      "other"
+                    ]
+                  },
+                  "language": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "mode": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "code": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "participants": {
+                    "type": "array",
+                    "items": {
+                      "type": "object",
+                      "properties": {
+                        "ticketCategory": {
+                          "type": "string"
+                        },
+                        "label": {
+                          "type": "string"
+                        },
+                        "quantity": {
+                          "type": "integer"
+                        }
+                      }
+                    }
+                  }
+                }
+              },
+              "fulfilment": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "meetingPoint": {
+                    "type": "object",
+                    "nullable": true,
+                    "properties": {
+                      "instructions": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "latitude": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "coordinatePrecision": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "pickup": {
+                    "type": "object",
+                    "nullable": true,
+                    "description": "Present when the guest selected a pickup location during checkout.",
+                    "properties": {
+                      "selectedAddress": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "latitude": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "longitude": {
+                        "type": "number",
+                        "nullable": true
+                      },
+                      "instructions": {
+                        "type": "string",
+                        "nullable": true
+                      }
+                    }
+                  },
+                  "dropOffInstructions": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              },
+              "customerInstructions": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "additionalInformation": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "itemsToBring": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notAllowed": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "notSuitableFor": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "inclusions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  },
+                  "exclusions": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                }
+              },
+              "cancellationTerms": {
+                "type": "object",
+                "nullable": true,
+                "properties": {
+                  "cancellable": {
+                    "type": "boolean",
+                    "nullable": true
+                  },
+                  "refundable": {
+                    "type": "boolean",
+                    "nullable": true
+                  },
+                  "partlyRefundable": {
+                    "type": "boolean",
+                    "nullable": true
+                  },
+                  "feeUnit": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "feeValue": {
+                    "type": "number",
+                    "nullable": true
+                  },
+                  "offsetMinutes": {
+                    "type": "integer",
+                    "nullable": true
+                  },
+                  "summary": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "freeCancellationUntil": {
+                    "type": "string",
+                    "nullable": true
+                  }
+                }
+              },
+              "supplierEmergencyContact": {
+                "type": "object",
+                "nullable": true,
+                "description": "Supplier's emergency contact for this booking. Not the traveler's/customer's contact details.",
+                "properties": {
+                  "email": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "phone": {
+                    "type": "string",
+                    "nullable": true
+                  },
+                  "capturedAt": {
+                    "type": "string",
+                    "format": "date-time",
+                    "nullable": true
+                  },
+                  "source": {
+                    "type": "string",
+                    "nullable": true,
+                    "enum": [
+                      "provider_voucher",
+                      "provider_booking"
+                    ]
+                  }
+                }
+              }
+            }
           }
         }
       },
@@ -505,7 +936,7 @@
         "properties": {
           "amount": {
             "type": "number",
-            "description": "Partner-facing sell from booking-options (`slots[].pricing.totals.net`, equiv. `priceSummary.netPrice` after markup). Not provider retail.",
+            "description": "The price shown on booking-options (`slots[].pricing.totals.net`, equivalent to `priceSummary.netPrice`).",
             "example": 45.5
           },
           "currency": {
@@ -706,7 +1137,7 @@
         "properties": {
           "prebookId": {
             "type": "string",
-            "description": "Dispatcher checkout session id. Pass to `POST /experiences/bookings`.",
+            "description": "LiteAPI checkout session id. Pass to `POST /experiences/bookings`.",
             "example": "tJHcT_KHA"
           },
           "tourId": {
@@ -744,17 +1175,17 @@
           },
           "price": {
             "type": "number",
-            "description": "Authoritative checkout sell price used for the Stripe PaymentIntent (commercial net + partner markup).",
+            "description": "The price used to create the Stripe PaymentIntent for this checkout.",
             "example": 45.5
           },
           "commission": {
             "type": "number",
-            "description": "Partner earn on this checkout (sell − commercial net). Same value as clientCommission until experiences distributor markup exists.",
+            "description": "Your earnings on this checkout.",
             "example": 3.64
           },
           "clientCommission": {
             "type": "number",
-            "description": "Partner earn on this checkout (sell − commercial net). Hotel-parity field name.",
+            "description": "Your earnings on this checkout.",
             "example": 3.64
           },
           "currency": {
@@ -764,12 +1195,12 @@
           },
           "cartId": {
             "type": "string",
-            "description": "Experiences-api shopping cart id from validate.",
+            "description": "Shopping cart id from the provider checkout session.",
             "example": "S82SPCWONTFLXI77Z4D66BZKI8S6ROZC"
           },
           "experienceBookingId": {
             "type": "string",
-            "description": "Experiences-api internal booking uuid from validate.",
+            "description": "Internal booking identifier from the provider checkout session.",
             "example": "444fe833-a84e-49b4-ae9f-b032c8619419"
           },
           "providerBookingId": {
@@ -779,7 +1210,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Validate hold status from experiences-api (typically `temp`).",
+            "description": "Validate hold status from the provider (typically `temp`).",
             "example": "temp"
           },
           "transactionId": {
@@ -920,7 +1351,7 @@
         "properties": {
           "prebookId": {
             "type": "string",
-            "description": "Dispatcher prebook id from `POST /experiences/tours/{id}/prebooks`.",
+            "description": "LiteAPI prebook id from `POST /experiences/tours/{id}/prebooks`.",
             "example": "tJHcT_KHA"
           },
           "billing": {
@@ -990,6 +1421,20 @@
             "type": "string",
             "example": "adult"
           },
+          "minAge": {
+            "type": "integer",
+            "description": "Minimum age for this ticket category, from availability.",
+            "example": 18
+          },
+          "maxAge": {
+            "type": "integer",
+            "description": "Maximum age for this ticket category, from availability.",
+            "example": 99
+          },
+          "independentlyBookable": {
+            "type": "boolean",
+            "description": "Whether this ticket category can be booked on its own without a required adult, from availability."
+          },
           "quantity": {
             "type": "integer",
             "example": 2
@@ -997,13 +1442,13 @@
           "unitNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell per unit (commercial net marked up in place). unitNet × quantity may differ from totalNet by a cent.",
+            "description": "Price per unit. unitNet × quantity may differ from totalNet by a cent due to rounding.",
             "example": 48.87
           },
           "totalNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell for the line. Sum of totalNet reconciles to totals.net.",
+            "description": "Price for this line. Sum of totalNet reconciles to totals.net.",
             "example": 97.74
           },
           "currency": {
@@ -1024,12 +1469,12 @@
           "unitNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell per unit (commercial net marked up in place)."
+            "description": "Price per unit."
           },
           "totalNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell for the group ticket line."
+            "description": "Price for the group ticket line."
           },
           "currency": {
             "type": "string"
@@ -1045,12 +1490,12 @@
           "unitNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell per additional pax (commercial net marked up in place)."
+            "description": "Price per additional participant."
           },
           "totalNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell for the additional-pax line."
+            "description": "Price for the additional-participant line."
           },
           "currency": {
             "type": "string"
@@ -1088,12 +1533,12 @@
           "unitNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell per addon unit (commercial net marked up in place)."
+            "description": "Price per add-on unit."
           },
           "totalNet": {
             "type": "number",
             "format": "double",
-            "description": "Partner-facing sell for the addon line."
+            "description": "Price for the add-on line."
           },
           "currency": {
             "type": "string"
@@ -1110,13 +1555,13 @@
           "net": {
             "type": "number",
             "format": "double",
-            "description": "Authoritative slot sell total after partner markup. Use as selection.price.amount on prebook.",
+            "description": "The slot's total price. Use as selection.price.amount on prebook.",
             "example": 101.25
           },
           "commission": {
             "type": "number",
             "format": "double",
-            "description": "Partner earn on this slot (sell − commercial net). Present when experience markup is configured.",
+            "description": "Your earnings on this slot, when applicable.",
             "example": 7.5
           },
           "currency": {
@@ -1131,7 +1576,7 @@
           "netPrice": {
             "type": "number",
             "format": "double",
-            "description": "Slot sell total (same semantics as totals.net after markup). Replaces the former retailPrice field name.",
+            "description": "The slot's total price (same value as totals.net).",
             "example": 101.25
           },
           "currency": {
@@ -1142,7 +1587,7 @@
       },
       "ExperienceSlotPricing": {
         "type": "object",
-        "description": "Slot money fields are partner-facing sell amounts (commercial net marked up in place). Provider retail is not returned.",
+        "description": "All slot pricing fields reflect your price for this booking.",
         "properties": {
           "participants": {
             "type": "array",
@@ -1189,7 +1634,7 @@
           "unavailabilityReason": {
             "type": "string",
             "nullable": true,
-            "description": "Why the slot is unavailable when isAvailable is false. Official GetYourGuide groups: no_availability, not_enough_spots, invalid_request, others. Legacy responses may also include sold_out.",
+            "description": "Why the slot is unavailable when isAvailable is false. Official provider groups: no_availability, not_enough_spots, invalid_request, others. Legacy responses may also include sold_out.",
             "example": "not_enough_spots"
           },
           "minParticipants": {
@@ -2163,7 +2608,7 @@
             },
             "examples": {
               "relayedValidationError": {
-                "summary": "Relayed from experiences-api (e.g. malformed booking-options request)",
+                "summary": "Relayed from the provider (e.g. malformed booking-options request)",
                 "value": {
                   "error": {
                     "code": 400,
@@ -2173,7 +2618,7 @@
                 }
               },
               "missingRequiredField": {
-                "summary": "Dispatcher-level required-field validation",
+                "summary": "Required-field validation",
                 "value": {
                   "error": {
                     "code": 4002,
@@ -2213,6 +2658,28 @@
           "application/json": {
             "schema": {
               "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "tourNotFound": {
+                "summary": "Tour id does not exist",
+                "value": {
+                  "error": {
+                    "code": 401,
+                    "message": "invalid tour id",
+                    "description": "tour not found"
+                  }
+                }
+              },
+              "bookingNotFound": {
+                "summary": "Booking id does not exist, or doesn't belong to this account",
+                "value": {
+                  "error": {
+                    "code": 4008,
+                    "message": "bookingId not found",
+                    "description": "Booking not found"
+                  }
+                }
+              }
             }
           }
         }
@@ -2238,7 +2705,7 @@
         }
       },
       "PrebookBadRequest": {
-        "description": "Invalid prebook request or canonical booking validation error relayed from experiences-api.",
+        "description": "Invalid prebook request or canonical booking validation error relayed from the provider.",
         "content": {
           "application/json": {
             "schema": {
@@ -2281,6 +2748,62 @@
             }
           }
         }
+      },
+      "BookingConfirmBadRequest": {
+        "description": "Invalid booking confirmation request, or payment not yet confirmed with Stripe.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "paymentNotConfirmed": {
+                "summary": "Stripe PaymentIntent not confirmed yet",
+                "value": {
+                  "error": {
+                    "code": 40012,
+                    "message": "the provided payment token is missing a transaction id",
+                    "description": "payment has not been confirmed yet; complete the Stripe payment before booking",
+                    "key": "bodyRequest.payment.transactionId"
+                  }
+                }
+              },
+              "missingRequiredField": {
+                "summary": "Required-field validation",
+                "value": {
+                  "error": {
+                    "code": 4002,
+                    "message": "required request field is missing or wrong input",
+                    "description": "field 'Email' is required",
+                    "key": "bodyRequest.billing.email"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "CancelBadRequest": {
+        "description": "Booking is in a state that cannot be cancelled.",
+        "content": {
+          "application/json": {
+            "schema": {
+              "$ref": "#/components/schemas/Error"
+            },
+            "examples": {
+              "alreadyCancelled": {
+                "summary": "Booking was already cancelled",
+                "value": {
+                  "error": {
+                    "code": 400100,
+                    "message": "This booking has already been cancelled",
+                    "description": "This booking has already been cancelled"
+                  }
+                }
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -2289,9 +2812,9 @@
       "get": {
         "operationId": "searchExperienceTours",
         "summary": "Search tours",
-        "description": "## Overview\n\nSearch available tours and activities with localized content and prices in your chosen currency.\n\n## When to Use\n\n- **Search results** - Populate a tours listing or map view\n- **Destination pages** - Show activities available in a city or region\n- **Category browsing** - Filter tours by type, duration, or rating\n\n## What You Get\n\n- **Tour listings** - Titles, descriptions, images, and ratings\n- **Localized content** - Names and descriptions in the requested language\n- **Prices** - Amounts in the requested currency\n\n## Quick Start\n\nProvide required `language` and `currency` query parameters. Returns a paginated list of matching tours.",
+        "description": "## Overview\n\nSearch available tours and activities with localized content and prices in your chosen currency. Supports free-text or geo search, plus filtering by date, language, price, category, rating, duration, and tour flags.\n\n## When to Use\n\n- **Search results** - Populate a tours listing or map view\n- **Destination pages** - Show activities available in a city or region\n- **Category browsing** - Filter tours by type, duration, or rating\n\n## What You Get\n\n- **Tour listings** - Titles, descriptions, images, and ratings\n- **Localized content** - Names and descriptions in the requested language\n- **Prices** - Amounts in the requested currency\n\n## Quick Start\n\n**Required:** `language`, `currency`\n\n**Search (pick one):** `textSearch`, or `location[latitude]`/`location[longitude]`/`location[radiusKm]`\n\n**Filters:** `dateRange[from]`/`dateRange[to]`, `languages`, `price[min]`/`price[max]`, `categories`, `rating[min]`/`rating[max]`, `duration[min]`/`duration[max]`, `flags`\n\n**Sort:** `sort[field]`/`sort[direction]`\n\n**Pagination:** `pagination[limit]`/`pagination[offset]`\n\nReturns a paginated list of matching tours.",
         "tags": [
-          "Experiences"
+          "Tours"
         ],
         "parameters": [
           {
@@ -2299,6 +2822,228 @@
           },
           {
             "$ref": "#/components/parameters/currency"
+          },
+          {
+            "name": "textSearch",
+            "in": "query",
+            "required": false,
+            "description": "Free-text search term (location name, tour title, etc). Mutually exclusive with `location[latitude]`/`location[longitude]`.",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "location[latitude]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Geo filter latitude. Must be sent together with `location[longitude]` and `location[radiusKm]`. Mutually exclusive with `textSearch`.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "location[longitude]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Geo filter longitude. Must be sent together with `location[latitude]` and `location[radiusKm]`.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "location[radiusKm]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Geo filter radius in kilometers around `location[latitude]`/`location[longitude]`.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "dateRange[from]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Only return tours offered on or after this date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "dateRange[to]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Only return tours offered on or before this date (YYYY-MM-DD).",
+            "schema": {
+              "type": "string",
+              "format": "date"
+            }
+          },
+          {
+            "name": "languages",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "description": "Filter to tours conducted in one or more of these ISO language codes (repeat the param per value, e.g. `languages=en&languages=fr`). Distinct from the required `language` param, which only controls localized content on the response.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          {
+            "name": "price[min]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Minimum tour price, in the requested `currency`.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "price[max]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Maximum tour price, in the requested `currency`.",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "categories",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "description": "Filter to one or more category ids (repeat the param per value, e.g. `categories=1&categories=2`). See the category `id`/`name` pairs returned on each tour.",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "integer"
+              }
+            }
+          },
+          {
+            "name": "rating[min]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Minimum overall tour rating (0-5).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "rating[max]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Maximum overall tour rating (0-5).",
+            "schema": {
+              "type": "number"
+            }
+          },
+          {
+            "name": "duration[min]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Minimum tour duration in minutes.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "duration[max]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Maximum tour duration in minutes.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "flags",
+            "in": "query",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "description": "Filter to tours matching one or more of these properties (repeat the param per value, e.g. `flags=wheelchair&flags=pick-up`).",
+            "schema": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "private",
+                  "wheelchair",
+                  "skip-line",
+                  "pick-up",
+                  "special",
+                  "free-sale-only",
+                  "mobile-voucher-only"
+                ]
+              }
+            }
+          },
+          {
+            "name": "sort[field]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Field to sort results by. `popularity` returns an internal recommended ranking and ignores `sort[direction]`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "popularity",
+                "price",
+                "rating",
+                "duration"
+              ]
+            }
+          },
+          {
+            "name": "sort[direction]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Sort direction. Ignored when `sort[field]=popularity`.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ]
+            }
+          },
+          {
+            "name": "pagination[limit]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Maximum number of tours to return.",
+            "schema": {
+              "type": "integer"
+            }
+          },
+          {
+            "name": "pagination[offset]",
+            "in": "query",
+            "required": false,
+            "allowReserved": true,
+            "description": "Number of tours to skip, for pagination.",
+            "schema": {
+              "type": "integer"
+            }
           }
         ],
         "responses": {
@@ -2442,7 +3187,7 @@
         "summary": "Get tour details",
         "description": "## Overview\n\nRetrieve full details for a specific tour, including description, media, inclusions, pricing context, and structured itineraries when available.\n\n## When to Use\n\n- **Product pages** - Display a tour detail view before the user selects dates\n- **Comparison** - Show full metadata when comparing activities\n- **Content enrichment** - Fetch descriptions and images for marketing surfaces\n\n## What You Get\n\n- **Complete tour profile** - Title, description, duration, and highlights\n- **Media** - Images and cover assets\n- **Practical info** - Meeting points, cancellation policy, and inclusions\n- **Structured itineraries** - Ordered days/items (`itineraries`) when the provider supplies them. `locations` are importance-ordered tags, not itinerary order.\n- **Localized pricing** - Prices in the requested currency\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters.",
         "tags": [
-          "Experiences"
+          "Tours"
         ],
         "parameters": [
           {
@@ -2623,7 +3368,7 @@
         "summary": "Get tour availability",
         "description": "## Overview\n\nRetrieve available dates and time slots for a specific tour so users can pick when to attend.\n\n## When to Use\n\n- **Date pickers** - Populate a calendar or slot selector on the tour page\n- **Availability checks** - Confirm a tour runs on the user's travel dates\n- **Booking flow** - Gate the checkout path until a valid slot is selected\n\n## What You Get\n\n- **Available dates** - Days the tour can be booked\n- **Time slots** - Start times per date where applicable\n- **Capacity hints** - Whether slots are still bookable\n\n## Quick Start\n\nProvide the tour `id` in the URL path and the required `language` query parameter.",
         "tags": [
-          "Experiences"
+          "Tours"
         ],
         "parameters": [
           {
@@ -2713,9 +3458,9 @@
       "get": {
         "operationId": "getExperienceTourReviews",
         "summary": "Get tour reviews",
-        "description": "## Overview\n\nRetrieve normalized guest reviews and ratings for a specific tour.\n\n## When to Use\n\n- **Review sections** - Display guest feedback on tour detail pages\n- **Trust building** - Show authentic ratings before booking\n- **Decision support** - Help users evaluate tours before selecting dates\n\n## What You Get\n\n- **Guest reviews** - Review text, ratings, and dates\n- **Pagination** - `limit` and `offset` query parameters\n- **Localized content** - Reviews in the requested language where available\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters.",
+        "description": "## Overview\n\nRetrieve normalized guest reviews and ratings for a specific tour.\n\n## When to Use\n\n- **Review sections** - Display guest feedback on tour detail pages\n- **Trust building** - Show authentic ratings before booking\n- **Decision support** - Help users evaluate tours before selecting dates\n\n## What You Get\n\n- **Guest reviews** - Review text, ratings, and dates\n- **Pagination** - `limit` and `offset` query parameters\n- **Sorting** - `sortBy` (`date` or `rating`) with `sortDirection`\n- **Localized content** - Reviews in the requested language where available\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters. Optionally page through results with `limit`/`offset`, and sort with `sortBy`/`sortDirection`.",
         "tags": [
-          "Experiences"
+          "Tours"
         ],
         "parameters": [
           {
@@ -2726,6 +3471,54 @@
           },
           {
             "$ref": "#/components/parameters/currency"
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "description": "Maximum number of reviews to return.",
+            "schema": {
+              "type": "integer",
+              "minimum": 1,
+              "default": 10
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "description": "Number of reviews to skip, for pagination.",
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0
+            }
+          },
+          {
+            "name": "sortBy",
+            "in": "query",
+            "required": false,
+            "description": "Field to sort reviews by.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "date",
+                "rating"
+              ]
+            }
+          },
+          {
+            "name": "sortDirection",
+            "in": "query",
+            "required": false,
+            "description": "Sort direction.",
+            "schema": {
+              "type": "string",
+              "enum": [
+                "ASC",
+                "DESC"
+              ]
+            }
           }
         ],
         "responses": {
@@ -2793,10 +3586,10 @@
     "/experiences/tours/{id}/booking-options": {
       "post": {
         "operationId": "getExperienceTourBookingOptions",
-        "summary": "Get merged booking options",
-        "description": "## Overview\n\nResolve priced booking options, time slots, and required guest inputs for a selected tour date and participant mix.\n\n## When to Use\n\n- **Option/slot pickers** - Show available variants and start times for a date\n- **Live pricing** - Display authoritative slot sell totals (`pricing.totals.net` / `priceSummary.netPrice`)\n- **Checkout forms** - Collect `bookingQuestionSchema` before proceeding to payment\n\n## What You Get\n\n- **Booking options** - `optionId`, title, and `bookingQuestionSchema`\n- **Time slots** - `dateTime`, `isAvailable`, and slot-level pricing (`unitNet` / `totalNet` / `totals.net` / `priceSummary.netPrice`, plus `totals.commission` when markup applies)\n- **Participant mapping** - Uses `ticketCategory` keys from availability (e.g. `adult`, `child`)\n\n## Money semantics\n\nField names keep `*Net` from experiences-api; dispatcher marks commercial net up **in place** to partner sell. Use `slots[].pricing.totals.net` as `selection.price.amount` on prebook.\n\n## Quick Start\n\nPOST a body with `language`, `currency`, `date` (`YYYY-MM-DD`), and `participants` to `/experiences/tours/{id}/booking-options`. Use slot `pricing.totals.net` for display and checkout handoff.\n\n## Option-level `price`\n\n`options[].price.amount` is overwritten from the lowest available slot `pricing.totals.net` for the requested mix (after markup). It is not the GYG catalog from-price. Checkout still uses the chosen slot `pricing.totals.net`.",
+        "summary": "Get booking options",
+        "description": "## Overview\n\nResolve priced booking options, time slots, and required guest inputs for a selected tour date and participant mix.\n\n## When to Use\n\n- **Option/slot pickers** - Show available variants and start times for a date\n- **Live pricing** - Display slot totals (`pricing.totals.net` / `priceSummary.netPrice`)\n- **Checkout forms** - Collect `bookingQuestionSchema` before proceeding to payment\n\n## What You Get\n\n- **Booking options** - `optionId`, title, and `bookingQuestionSchema`\n- **Time slots** - `dateTime`, `isAvailable`, and slot-level pricing (`unitNet` / `totalNet` / `totals.net` / `priceSummary.netPrice`, plus `totals.commission`)\n- **Participant mapping** - Uses `ticketCategory` keys from availability (e.g. `adult`, `child`)\n\n## Quick Start\n\nPOST a body with `language`, `currency`, `date` (`YYYY-MM-DD`), and `participants` to `/experiences/tours/{id}/booking-options`. Use slot `pricing.totals.net` as `selection.price.amount` on prebook, and for checkout handoff.\n\n## Option-level `price`\n\n`options[].price.amount` reflects the lowest available slot price for the requested mix. Checkout uses the chosen slot's `pricing.totals.net`.",
         "tags": [
-          "Experiences"
+          "Tours"
         ],
         "parameters": [
           {
@@ -2928,10 +3721,10 @@
     "/experiences/tours/{id}/prebooks": {
       "post": {
         "operationId": "prebookExperienceTour",
-        "summary": "Create experience prebook (validate + Stripe intent)",
+        "summary": "1. Create an experience checkout session (PREBOOK)",
         "description": "## Overview\n\nCreate a temporary hold on the selected tour slot and a Stripe PaymentIntent for checkout.\n\n## When to Use\n\n- **Checkout start** — After the user picks option, slot, and participants from booking-options\n- **Payment setup** — Obtain `transactionId` and `secretKey` for Stripe SDK confirmation\n- **Hold window** — Reserve inventory for ~10 minutes before book\n\n## What You Get\n\n- **Checkout context** — `tourId`, `optionId`, `dateTime`, `language`, `participants`, and pricing echoed back\n- **Provider refs** — `cartId`, `experienceBookingId`, `providerBookingId`, `status`, `reservationExpiresAt`\n- **Stripe fields** — `transactionId`, `secretKey`, `paymentTypes: [\"TRANSACTION_ID\"]`\n\n## Quick Start\n\nPOST the same `selection` used for display pricing from booking-options with `usePaymentSdk: true`. Confirm payment with Stripe, then call `POST /experiences/bookings`.",
         "tags": [
-          "Experiences"
+          "Bookings"
         ],
         "parameters": [
           {
@@ -3054,10 +3847,10 @@
     "/experiences/bookings": {
       "post": {
         "operationId": "createExperienceBooking",
-        "summary": "Confirm experience booking (capture + book cart)",
-        "description": "Capture Stripe payment then confirm cart with experiences-api. Cart status `completed` maps to dispatcher `PENDING_CONFIRMATION`; final `CONFIRMED` arrives via webhook. Cart status `ERROR` returns 502.\n\nPublic booking responses expose partner **sell** in `price` and partner earn in `commission` / `clientCommission`. Provider retail / invoice (`providerPayment`) is omitted.",
+        "summary": "2. Confirm an experience booking",
+        "description": "## Overview\n\nConfirm the booking after the guest completes payment, using the `prebookId` and `transactionId` from the prebook step.\n\n## When to Use\n\n- **Final booking step** - After the guest confirms payment via the Stripe SDK using the prebook's `secretKey`\n\n## What You Get\n\n- **`status`** - `PENDING_CONFIRMATION` right away; final `CONFIRMED` status arrives via webhook\n- **`price`** / **`commission`** / **`clientCommission`** - Your price and earnings for this booking\n\n## Quick Start\n\nPOST with `prebookId`, `billing`, `traveler`, and `payment.method: TRANSACTION_ID`. An `ERROR` status on the underlying cart returns HTTP 502.",
         "tags": [
-          "Experiences"
+          "Bookings"
         ],
         "requestBody": {
           "required": true,
@@ -3101,7 +3894,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "$ref": "#/components/responses/BookingConfirmBadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3127,10 +3920,10 @@
     "/experiences/bookings/{bookingId}": {
       "get": {
         "operationId": "getExperienceBooking",
-        "summary": "Get experience booking status",
-        "description": "Poll booking status while pending confirmation or retrieve voucher after webhook confirms.\n\nPublic response omits `providerPayment` (provider retail/invoice).",
+        "summary": "Get experience booking details",
+        "description": "## Overview\n\nRetrieve the current state of an experience booking by its booking ID, including status, pricing, and voucher details once available.\n\n## When to Use\n\n- **Poll for confirmation** - Check whether a booking has moved from `PENDING_CONFIRMATION` to `CONFIRMED`\n- **Booking details page** - Display status, price, and voucher to the guest\n- **Support queries** - Look up a booking's current state\n\n## What You Get\n\n- **`status`** - Current booking status (`PENDING_CONFIRMATION`, `CONFIRMED`, `FAILED`, `CANCELLED`)\n- **`voucher`** - Ticket/reference details, once available\n- **`price`** / **`commission`** / **`clientCommission`** - Your price and earnings for this booking\n- **Cancellation details** - `refund`, `cancellationRequestedAt`, `cancelledAt`, `refundProcessedAt`, when applicable\n\n## Quick Start\n\nGET with the `bookingId` from `POST /experiences/bookings`. Poll until `status` is `CONFIRMED` (or use webhooks), or retrieve the voucher once available.",
         "tags": [
-          "Experiences"
+          "Bookings"
         ],
         "parameters": [
           {
@@ -3140,7 +3933,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Dispatcher booking ID returned from POST /experiences/bookings"
+            "description": "LiteAPI booking ID returned from POST /experiences/bookings"
           }
         ],
         "responses": {
@@ -3169,10 +3962,10 @@
     "/experiences/bookings/{bookingId}/cancel-preview": {
       "get": {
         "operationId": "getExperienceBookingCancelPreview",
-        "summary": "Preview experience booking cancellation",
-        "description": "## Overview\n\nPreview the refund amount and cancellation fee for a booking before committing to cancel it.\n\n## When to Use\n\n- **Cancellation confirmation screens** - Show the guest exactly what they'll be refunded\n- **Support tooling** - Check whether a booking is still cancellable before offering a refund\n\n## What You Get\n\n- **`cancellable`** - Whether the booking can currently be cancelled\n- **`policy`** - `cancellationFee`, `refundAmount`, `refundType`, `estimateConfidence`, `currency`, `sellingPrice`\n\n## Quick Start\n\nGET this endpoint with the dispatcher `bookingId` from `POST /experiences/bookings`. This does not cancel the booking - call `POST /experiences/bookings/{bookingId}/cancel` to actually cancel.",
+        "summary": "Get experience cancellation quote",
+        "description": "## Overview\n\nPreview the refund amount and cancellation fee for a booking before committing to cancel it.\n\n## When to Use\n\n- **Cancellation confirmation screens** - Show the guest exactly what they'll be refunded\n- **Support tooling** - Check whether a booking is still cancellable before offering a refund\n\n## What You Get\n\n- **`cancellable`** - Whether the booking can currently be cancelled\n- **`policy`** - `cancellationFee`, `refundAmount`, `refundType`, `estimateConfidence`, `currency`, `sellingPrice`\n\n## Quick Start\n\nGET this endpoint with the `bookingId` from `POST /experiences/bookings`. This does not cancel the booking - call `POST /experiences/bookings/{bookingId}/cancel` to actually cancel.",
         "tags": [
-          "Experiences"
+          "Bookings"
         ],
         "parameters": [
           {
@@ -3182,7 +3975,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Dispatcher booking ID returned from POST /experiences/bookings"
+            "description": "LiteAPI booking ID returned from POST /experiences/bookings"
           }
         ],
         "responses": {
@@ -3210,6 +4003,9 @@
               }
             }
           },
+          "400": {
+            "$ref": "#/components/responses/CancelBadRequest"
+          },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
           },
@@ -3229,9 +4025,9 @@
       "post": {
         "operationId": "cancelExperienceBooking",
         "summary": "Cancel experience booking",
-        "description": "## Overview\n\nCancel a confirmed experience booking and trigger any applicable refund.\n\n## When to Use\n\n- **Guest-initiated cancellation** - After the guest confirms via the cancel-preview screen\n\n## What You Get\n\n- **`status`** - Dispatcher-level booking status after cancellation\n- **`providerStatus`** - Raw upstream provider status, when available\n- **`refund`** - Present when a refund was calculated; `refundPending` indicates it hasn't settled yet\n\n## Quick Start\n\nPOST with the dispatcher `bookingId` from `POST /experiences/bookings`. Call `GET /experiences/bookings/{bookingId}/cancel-preview` first to show the guest the refund amount.",
+        "description": "## Overview\n\nCancel a confirmed experience booking and trigger any applicable refund.\n\n## When to Use\n\n- **Guest-initiated cancellation** - After the guest confirms via the cancel-preview screen\n\n## What You Get\n\n- **`status`** - Booking status after cancellation\n- **`providerStatus`** - Raw upstream provider status, when available\n- **`refund`** - Present when a refund was calculated; `refundPending` indicates it hasn't settled yet\n\n## Quick Start\n\nPOST with the `bookingId` from `POST /experiences/bookings`. Call `GET /experiences/bookings/{bookingId}/cancel-preview` first to show the guest the refund amount.",
         "tags": [
-          "Experiences"
+          "Bookings"
         ],
         "parameters": [
           {
@@ -3241,7 +4037,7 @@
             "schema": {
               "type": "string"
             },
-            "description": "Dispatcher booking ID returned from POST /experiences/bookings"
+            "description": "LiteAPI booking ID returned from POST /experiences/bookings"
           }
         ],
         "responses": {
@@ -3272,7 +4068,7 @@
             }
           },
           "400": {
-            "$ref": "#/components/responses/BadRequest"
+            "$ref": "#/components/responses/CancelBadRequest"
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
@@ -3289,5 +4085,10 @@
         }
       }
     }
+  },
+  "x-readme": {
+    "explorer-enabled": true,
+    "proxy-enabled": true,
+    "samples-enabled": true
   }
 }

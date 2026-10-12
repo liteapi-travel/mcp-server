@@ -1090,11 +1090,11 @@
           },
           "phase": {
             "type": "string",
-            "description": "Provider phase, e.g. 'post_booking'"
+            "description": "When the service joined the booking: 'pre_booking', 'post_booking', or 'post_ticketing' (sold on the ticketed booking with POST /flights/bookings/{bookingId}/services/confirm)"
           },
           "status": {
             "type": "string",
-            "description": "Provider status of this service, e.g. 'pending', 'confirmed'"
+            "description": "Provider status of this service: 'pending', 'requested', 'confirmed', 'failed', 'dropped', 'replaced' or 'cancelled'"
           },
           "pricing": {
             "$ref": "#/components/schemas/FlightItemPricing",
@@ -1153,6 +1153,11 @@
                 }
               }
             }
+          },
+          "emdNumber": {
+            "type": "string",
+            "nullable": true,
+            "description": "Airline document (EMD) number issued for a service sold after ticketing. Null until the provider reports it on a later read of the reservation."
           }
         }
       },
@@ -2290,6 +2295,17 @@
                 "description": "Stripe transaction id when `method` is `TRANSACTION_ID`"
               }
             }
+          },
+          "canAddServicesAfterTicketing": {
+            "type": "boolean",
+            "description": "On ticketed bookings (status CONFIRMED): true when seats / bags can still be bought with POST /flights/bookings/{bookingId}/services. Requires the provider and fare to support it, a booking paid by Stripe transaction or credit line, and the account option. When false this is the last chance to sell ancillaries before ticketing."
+          },
+          "ticketedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FlightTicketedServicesSale"
+            },
+            "description": "Seats / bags sales on the ticketed booking. Sold services also appear in pricing.servicesAmount and bookedServices."
           }
         }
       },
@@ -3558,6 +3574,216 @@
           }
         },
         "description": "Booking totals after extra charges are confirmed and persisted"
+      },
+      "FlightTicketedServicesSale": {
+        "type": "object",
+        "description": "One sale of seats / bags on a ticketed booking (a batch). Amounts are in the booking currency and post-margin.",
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "description": "Identifier of the selection returned by POST /flights/bookings/{bookingId}/services; send it to /services/confirm"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "pending",
+              "confirming",
+              "requested",
+              "sold",
+              "partially_sold",
+              "failed",
+              "cancelled"
+            ],
+            "description": "pending: selected and payment prepared. confirming: being sold. requested: the sale outcome is not known yet and the payment is held until the reservation confirms it. sold / partially_sold: sold (the unsold part of the payment was released). failed: nothing sold, payment released. cancelled: replaced by a new selection, cleared, or released by a cancellation."
+          },
+          "services": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedService"
+            },
+            "description": "Selected services"
+          },
+          "soldServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedService"
+            },
+            "description": "Services the provider sold"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "amount": {
+            "type": "number",
+            "description": "Services total of the selection"
+          },
+          "soldAmount": {
+            "type": "number",
+            "description": "Services total of what was sold"
+          },
+          "platformFee": {
+            "type": "number",
+            "description": "Merchant-of-record fee added on top of the services (only when platform fees are passed to the customer)"
+          },
+          "chargeAmount": {
+            "type": "number",
+            "description": "Amount authorized on the payment intent (or checked against the credit line)"
+          },
+          "chargedAmount": {
+            "type": "number",
+            "description": "Amount kept from the customer after the sale"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "TRANSACTION_ID",
+              "CREDIT"
+            ],
+            "description": "Always the booking's own payment method"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "Stripe payment intent of the services (TRANSACTION_ID). Distinct from the booking's fare payment."
+          },
+          "failedCategories": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Categories the provider did not sell"
+          },
+          "error": {
+            "type": "string",
+            "description": "'price_changed' (nothing sold: a service is no longer offered at the price shown), 'rejected', or 'payment_collection_failed'"
+          },
+          "refundStatus": {
+            "type": "string",
+            "enum": [
+              "refunded",
+              "manual"
+            ],
+            "description": "Set when the booking is cancelled after the sale: refunded automatically, or settled by support (the provider did not reverse every airline document)"
+          },
+          "amountRefunded": {
+            "type": "number"
+          },
+          "createdAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "confirmedAt": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "settledAt": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "FlightTicketedServicesAttachRequest": {
+        "type": "object",
+        "required": [
+          "selectedServices"
+        ],
+        "properties": {
+          "selectedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedService"
+            },
+            "description": "Services from GET /flights/bookings/{bookingId}/services (encoded serviceId + passengerIndex, optional quantity). An empty array clears the pending selection and releases its payment."
+          }
+        }
+      },
+      "FlightTicketedServicesAttachData": {
+        "type": "object",
+        "properties": {
+          "bookingId": {
+            "type": "string"
+          },
+          "batchId": {
+            "type": "string",
+            "description": "Send to POST /flights/bookings/{bookingId}/services/confirm"
+          },
+          "selectedServices": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/SelectedService"
+            }
+          },
+          "servicesAmount": {
+            "type": "number",
+            "description": "Services total (post-margin)"
+          },
+          "platformFee": {
+            "type": "number",
+            "description": "Merchant-of-record fee passed to the customer"
+          },
+          "pendingTotal": {
+            "type": "number",
+            "description": "Amount to pay: servicesAmount + platformFee"
+          },
+          "currency": {
+            "type": "string"
+          },
+          "paymentTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The only accepted method: TRANSACTION_ID for Stripe bookings, CREDIT for credit-line bookings"
+          },
+          "transactionId": {
+            "type": "string",
+            "description": "New Stripe payment intent for the services (TRANSACTION_ID). Confirm it with the Stripe SDK before /services/confirm."
+          },
+          "secretKey": {
+            "type": "string",
+            "description": "Stripe client secret of transactionId"
+          },
+          "creditLine": {
+            "type": "object",
+            "description": "Remaining credit (CREDIT)",
+            "properties": {
+              "remainingCredit": {
+                "type": "number"
+              },
+              "currency": {
+                "type": "string"
+              }
+            }
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "FlightTicketedServicesConfirmRequest": {
+        "type": "object",
+        "required": [
+          "batchId"
+        ],
+        "properties": {
+          "batchId": {
+            "type": "string",
+            "description": "batchId returned by POST /flights/bookings/{bookingId}/services"
+          }
+        }
+      },
+      "FlightTicketedServicesConfirmData": {
+        "type": "object",
+        "properties": {
+          "booking": {
+            "$ref": "#/components/schemas/FlightBooking"
+          },
+          "sale": {
+            "$ref": "#/components/schemas/FlightTicketedServicesSale"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
       }
     }
   },
@@ -3935,7 +4161,7 @@
           "Flight Search"
         ],
         "summary": "Search for flights (legs-based itinerary)",
-        "description": "## Overview\n\nSearch for available flights with real-time pricing from multiple providers. The itinerary **must** be sent as a non-empty `legs` array. Each leg follows the provider **SearchLeg** shape: required `origin`, `destination`, and `date` (YYYY-MM-DD); optional `direction` (`OUTBOUND` or `INBOUND`); optional per-leg `filters` that override global `filters` for that leg only.\n\n**Not supported:** top-level `origin`, `destination`, `departureDate`, or `returnDate` — use `legs` only.\n\n## When to Use\n\n- **Listings** — live prices for search results UI\n- **One-way, round-trip, or multi-city** — one leg per segment, in order\n- **Filtering** — cabin class, stops, price, refundability, times (globally or per leg)\n- **Streaming** — incremental provider results over SSE\n\n## What You Get\n\n- Offers from multiple providers\n- Itineraries with segments, layovers, and durations\n- Price breakdown (fares, taxes, fees) and baggage hints\n\n## Key Features\n\n- Multi-provider aggregation in one request\n- **SSE:** send header `Accept: text/event-stream` on `POST /flights/rates`, or `POST /flights/rates/stream` with the same JSON body\n- Global `filters`, `sort`\n\n## Quick Start\n\n**Required:** `legs` (at least one object with `origin`, `destination`, `date`), `adults` (≥ 1), `currency`\n\n**Round-trip:** two legs (e.g. outbound then return with `direction` `OUTBOUND` / `INBOUND`). **One-way:** one leg.",
+        "description": "## Overview\n\nSearch for available flights with real-time pricing from multiple providers. The itinerary **must** be sent as a non-empty `legs` array. Each leg follows the provider **SearchLeg** shape: required `origin`, `destination`, and `date` (YYYY-MM-DD); optional `direction` (`OUTBOUND` or `INBOUND`); optional per-leg `filters` that override global `filters` for that leg only.\n\n**Not supported:** top-level `origin`, `destination`, `departureDate`, or `returnDate` — use `legs` only.\n\n## When to Use\n\n- **Listings** — live prices for search results UI\n- **One-way, round-trip, or multi-city** — one leg per segment, in order\n- **Filtering** — cabin class, stops, price, refundability, times (globally or per leg)\n- **Streaming** — incremental provider results over SSE\n\n## What You Get\n\n- Offers from multiple providers\n- Itineraries with segments, layovers, and durations\n- Price breakdown (fares, taxes, fees) and baggage hints\n\n## Key Features\n\n- Multi-provider aggregation in one request\n- **SSE:** send header `Accept: text/event-stream` on `POST /flights/rates`, or `POST /flights/rates/stream` with the same JSON body\n- Global `filters`, `sort`\n\n## Quick Start\n\n**Required:** `legs` (at least one object with `origin`, `destination`, `date`), `adults` (≥ 1), `currency`\n\n**Date limit:** each leg `date` must not be more than 11 months from today.\n\n**Round-trip:** two legs (e.g. outbound then return with `direction` `OUTBOUND` / `INBOUND`). **One-way:** one leg.",
         "parameters": [],
         "requestBody": {
           "required": true,
@@ -3974,7 +4200,7 @@
                         "date": {
                           "type": "string",
                           "format": "date",
-                          "description": "Departure date for this leg (YYYY-MM-DD)",
+                          "description": "Departure date for this leg (YYYY-MM-DD). Must not be more than 11 months from today.",
                           "example": "2026-07-01"
                         },
                         "direction": {
@@ -3989,59 +4215,108 @@
                         "filters": {
                           "type": "object",
                           "description": "Optional per-leg filters overriding global `filters` for this leg",
+                          "example": {
+                            "departureTimeAfter": "06:00",
+                            "departureTimeBefore": "14:00",
+                            "arrivalTimeAfter": "08:00",
+                            "arrivalTimeBefore": "22:00",
+                            "excludeConnectionAirports": [
+                              "IST",
+                              "DOH"
+                            ],
+                            "excludeOvernight": false,
+                            "flightNumbers": [
+                              "DE2017",
+                              "DE4265"
+                            ],
+                            "flightNumbersMatch": "any",
+                            "maxDuration": 600,
+                            "maxStops": 1
+                          },
                           "properties": {
                             "departureTimeAfter": {
                               "type": "string",
                               "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
-                              "description": "Departure after this local time (HH:MM, 24h)"
+                              "description": "Departure after this local time (HH:MM, 24h)",
+                              "example": "06:00"
                             },
                             "departureTimeBefore": {
                               "type": "string",
                               "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
-                              "description": "Departure before this local time (HH:MM, 24h)"
+                              "description": "Departure before this local time (HH:MM, 24h)",
+                              "example": "14:00"
                             },
                             "arrivalTimeAfter": {
                               "type": "string",
                               "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
-                              "description": "Arrival after this local time (HH:MM, 24h)"
+                              "description": "Arrival after this local time (HH:MM, 24h)",
+                              "example": "08:00"
                             },
                             "arrivalTimeBefore": {
                               "type": "string",
                               "pattern": "^([01]?[0-9]|2[0-3]):[0-5][0-9]$",
-                              "description": "Arrival before this local time (HH:MM, 24h)"
+                              "description": "Arrival before this local time (HH:MM, 24h)",
+                              "example": "22:00"
                             },
                             "excludeConnectionAirports": {
                               "type": "array",
                               "items": {
                                 "type": "string"
-                              }
+                              },
+                              "description": "Exclude layovers at these airports (e.g. IST, DOH)",
+                              "example": [
+                                "IST",
+                                "DOH"
+                              ]
+                            },
+                            "excludeAirlines": {
+                              "type": "array",
+                              "items": {
+                                "type": "string",
+                                "pattern": "^[A-Za-z0-9]{2}$"
+                              },
+                              "description": "Exclude airlines on this leg only (2-character IATA airline codes, case-insensitive): a journey is removed when a flight on this leg is marketed or operated by one of them. Replaces the top-level filters.excludeAirlines on this leg; airlines excluded on your account are always excluded.",
+                              "example": [
+                                "AA"
+                              ]
                             },
                             "excludeOvernight": {
-                              "type": "boolean"
+                              "type": "boolean",
+                              "description": "Exclude red-eye flights and overnight layovers",
+                              "example": false
                             },
                             "flightNumbers": {
                               "type": "array",
                               "items": {
                                 "type": "string"
-                              }
+                              },
+                              "description": "Filter by flight numbers (e.g. SK500, AF123)",
+                              "example": [
+                                "DE2017",
+                                "DE4265"
+                              ]
                             },
                             "flightNumbersMatch": {
                               "type": "string",
                               "enum": [
                                 "any",
                                 "all"
-                              ]
+                              ],
+                              "description": "'any' = at least one match, 'all' = all specified flights",
+                              "example": "any"
                             },
                             "maxDuration": {
                               "type": "integer",
                               "minimum": 1,
-                              "description": "Max leg duration in minutes"
+                              "description": "Max leg duration in minutes",
+                              "example": 600
                             },
                             "maxStops": {
                               "type": "integer",
                               "minimum": 0,
                               "maximum": 2,
-                              "description": "Max stops for this leg. Counts connections between segments and en-route technical stops inside a segment (segments[].stopCount); 0 = genuinely non-stop."
+                              "description": "Max stops for this leg. Counts connections between segments and en-route technical stops inside a segment (segments[].stopCount); 0 = genuinely non-stop.",
+                              "example": 1
                             }
                           }
                         }
@@ -4052,13 +4327,35 @@
                         "origin": "JFK",
                         "destination": "CDG",
                         "date": "2026-07-01",
-                        "direction": "OUTBOUND"
+                        "direction": "OUTBOUND",
+                        "filters": {
+                          "departureTimeAfter": "06:00",
+                          "departureTimeBefore": "14:00",
+                          "arrivalTimeAfter": "08:00",
+                          "arrivalTimeBefore": "22:00",
+                          "excludeConnectionAirports": [
+                            "IST",
+                            "DOH"
+                          ],
+                          "excludeOvernight": false,
+                          "flightNumbers": [
+                            "DE2017",
+                            "DE4265"
+                          ],
+                          "flightNumbersMatch": "any",
+                          "maxDuration": 600,
+                          "maxStops": 1
+                        }
                       },
                       {
                         "origin": "CDG",
                         "destination": "JFK",
                         "date": "2026-08-02",
-                        "direction": "INBOUND"
+                        "direction": "INBOUND",
+                        "filters": {
+                          "maxStops": 1,
+                          "excludeOvernight": true
+                        }
                       }
                     ]
                   },
@@ -4166,10 +4463,39 @@
                     "type": "object",
                     "description": "Optional filters to refine search results",
                     "example": {
+                      "departureTimeBefore": "14:00",
+                      "arrivalTimeBefore": "18:00",
+                      "excludeConnectionAirports": [
+                        "IST",
+                        "DOH"
+                      ],
+                      "excludeOvernight": false,
+                      "flightNumbers": [
+                        "DE2017",
+                        "DE4265"
+                      ],
+                      "flightNumbersMatch": "any",
+                      "maxDuration": 600,
                       "maxStops": 1,
                       "maxPrice": 1500,
+                      "minPrice": 200,
+                      "includesCarryOnBag": false,
                       "includesCheckedBag": false,
-                      "refundableOnly": false
+                      "changeableOnly": false,
+                      "refundableOnly": false,
+                      "showCheapestOfferOnly": false,
+                      "cabinClass": "BUSINESS",
+                      "cabinClassMatch": "at_least",
+                      "legDurations": [
+                        {
+                          "direction": "OUTBOUND",
+                          "maxMinutes": 600
+                        },
+                        {
+                          "direction": "INBOUND",
+                          "maxMinutes": 720
+                        }
+                      ]
                     },
                     "properties": {
                       "arrivalTimeBefore": {
@@ -4221,6 +4547,17 @@
                         "example": [
                           "IST",
                           "DOH"
+                        ]
+                      },
+                      "excludeAirlines": {
+                        "type": "array",
+                        "items": {
+                          "type": "string",
+                          "pattern": "^[A-Za-z0-9]{2}$"
+                        },
+                        "description": "Exclude airlines (2-character IATA airline codes, case-insensitive): a journey is removed when any of its flights is marketed or operated by one of them (codeshares included), and an offer is removed when one of them is its validating (ticketing) carrier. A leg's own filters.excludeAirlines replaces this list on that leg. Airlines excluded on your account are always excluded in addition to this list.",
+                        "example": [
+                          "AA"
                         ]
                       },
                       "excludeOvernight": {
@@ -4374,13 +4711,35 @@
                     "origin": "JFK",
                     "destination": "CDG",
                     "date": "2026-07-01",
-                    "direction": "OUTBOUND"
+                    "direction": "OUTBOUND",
+                    "filters": {
+                      "departureTimeAfter": "06:00",
+                      "departureTimeBefore": "14:00",
+                      "arrivalTimeAfter": "08:00",
+                      "arrivalTimeBefore": "22:00",
+                      "excludeConnectionAirports": [
+                        "IST",
+                        "DOH"
+                      ],
+                      "excludeOvernight": false,
+                      "flightNumbers": [
+                        "DE2017",
+                        "DE4265"
+                      ],
+                      "flightNumbersMatch": "any",
+                      "maxDuration": 600,
+                      "maxStops": 1
+                    }
                   },
                   {
                     "origin": "CDG",
                     "destination": "JFK",
                     "date": "2026-08-02",
-                    "direction": "INBOUND"
+                    "direction": "INBOUND",
+                    "filters": {
+                      "maxStops": 1,
+                      "excludeOvernight": true
+                    }
                   }
                 ],
                 "adults": 1,
@@ -4388,6 +4747,12 @@
                 "infants": 0,
                 "currency": "USD",
                 "country": "US",
+                "filters": {
+                  "maxStops": 1,
+                  "maxPrice": 1500,
+                  "includesCheckedBag": false,
+                  "refundableOnly": false
+                },
                 "sort": {
                   "sortBy": "price",
                   "sortOrder": "asc"
@@ -4842,7 +5207,7 @@
         ],
         "operationId": "searchFlightsMatrix",
         "summary": "Flexible-date price matrix (one-way or round-trip)",
-        "description": "## Overview\n\nSearch the cheapest fare for each departure (and, on round-trips, return) date combination across a grid of nearby dates — `±flexDays` around the dates in your request. Accepts the same `legs`-based body as `POST /flights/rates` plus optional `flexDays` (1–3, default 3).\n\n**Supported:** one-way (1 leg) or round-trip (2 legs) only. Multi-city (3+ legs) is not supported.\n\n**Not supported:** top-level `origin`, `destination`, `departureDate`, or `returnDate` — use `legs` only.\n\n## Access\n\nRequires Flights API access and matrix enablement on your account. Matrix search is not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- **Flexible-date calendars** — price heatmap when the traveller can shift dates\n- **Cheap-date discovery** — find the lowest fare in a ±N day window before a full `/flights/rates` search\n- **Round-trip date pairing** — compare outbound × return combinations on one grid\n- **Progressive UI** — stream cells over SSE as each underlying search completes\n\n## What You Get\n\n- **`cells`** — one entry per valid date combination, sorted by `(outboundOffset, returnOffset)`\n- **`cheapest`** — globally lowest-priced cell (null when nothing was priced)\n- **`currency`** — currency of the global cheapest cell\n- **`baseOutboundDate`** / **`baseReturnDate`** — the originally requested dates\n- **`flexDays`**, **`roundTrip`** — grid metadata\n- Per-cell **`price`**, **`currency`**, date offsets, and whether the underlying search was **`cached`** or **`success`**\n- **Margined prices** — cell `price`, `cheapest`, and `currency` include the authenticated user's rate-search margin (same as `/flights/rates`)\n\n## Key Features\n\n- Probes `±flexDays` (1–3) around requested departure and return dates\n- Each underlying date pair uses normal provider caching — a later `POST /flights/rates` for a matrix date is served from warm cache\n- **SSE:** send header `Accept: text/event-stream` for incremental events: `matrix-start` (grid skeleton), `matrix-chunk` (one priced cell), `matrix-complete` (full sorted grid + cheapest)\n- Same global `filters`, `sort`, and `options` as `/flights/rates` where applicable\n\n## Quick Start\n\n**Required:** `legs` (1 leg for one-way or 2 for round-trip, each with `origin`, `destination`, `date`), `adults` (≥ 1), `currency`\n\n**Optional:** `flexDays` (1–3, default 3), `country`, passenger counts, `filters`, `sort`\n\n**Round-trip:** two legs — outbound then return with optional `direction` `OUTBOUND` / `INBOUND`. **One-way:** one leg.\n\nAfter choosing a date pair from the matrix, call `POST /flights/rates` with `legs` set to those dates for full offer details.",
+        "description": "## Overview\n\nSearch the cheapest fare for each departure (and, on round-trips, return) date combination across a grid of nearby dates — `±flexDays` around the dates in your request. Accepts the same `legs`-based body as `POST /flights/rates` plus optional `flexDays` (1–3, default 3).\n\n**Supported:** one-way (1 leg) or round-trip (2 legs) only. Multi-city (3+ legs) is not supported.\n\n**Date limit:** each leg `date` must not be more than 11 months from today (same as `POST /flights/rates`).\n\n**Not supported:** top-level `origin`, `destination`, `departureDate`, or `returnDate` — use `legs` only.\n\n## Access\n\nRequires Flights API access and matrix enablement on your account. Matrix search is not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- **Flexible-date calendars** — price heatmap when the traveller can shift dates\n- **Cheap-date discovery** — find the lowest fare in a ±N day window before a full `/flights/rates` search\n- **Round-trip date pairing** — compare outbound × return combinations on one grid\n- **Progressive UI** — stream cells over SSE as each underlying search completes\n\n## What You Get\n\n- **`cells`** — one entry per valid date combination, sorted by `(outboundOffset, returnOffset)`\n- **`cheapest`** — globally lowest-priced cell (null when nothing was priced)\n- **`currency`** — currency of the global cheapest cell\n- **`baseOutboundDate`** / **`baseReturnDate`** — the originally requested dates\n- **`flexDays`**, **`roundTrip`** — grid metadata\n- Per-cell **`price`**, **`currency`**, date offsets, and whether the underlying search was **`cached`** or **`success`**\n- **Margined prices** — cell `price`, `cheapest`, and `currency` include the authenticated user's rate-search margin (same as `/flights/rates`)\n\n## Key Features\n\n- Probes `±flexDays` (1–3) around requested departure and return dates\n- Each underlying date pair uses normal provider caching — a later `POST /flights/rates` for a matrix date is served from warm cache\n- **SSE:** send header `Accept: text/event-stream` for incremental events: `matrix-start` (grid skeleton), `matrix-chunk` (one priced cell), `matrix-complete` (full sorted grid + cheapest)\n- Same global `filters`, `sort`, and `options` as `/flights/rates` where applicable\n\n## Quick Start\n\n**Required:** `legs` (1 leg for one-way or 2 for round-trip, each with `origin`, `destination`, `date`), `adults` (≥ 1), `currency`\n\n**Optional:** `flexDays` (1–3, default 3), `country`, passenger counts, `filters`, `sort`\n\n**Round-trip:** two legs — outbound then return with optional `direction` `OUTBOUND` / `INBOUND`. **One-way:** one leg.\n\nAfter choosing a date pair from the matrix, call `POST /flights/rates` with `legs` set to those dates for full offer details.",
         "requestBody": {
           "required": true,
           "content": {
@@ -4881,7 +5246,7 @@
                         "date": {
                           "type": "string",
                           "format": "date",
-                          "description": "Departure date for this leg (YYYY-MM-DD).",
+                          "description": "Departure date for this leg (YYYY-MM-DD). Must not be more than 11 months from today.",
                           "example": "2026-08-26"
                         },
                         "direction": {
@@ -4890,10 +5255,19 @@
                             "OUTBOUND",
                             "INBOUND"
                           ],
-                          "description": "Leg direction (optional; defaults to OUTBOUND on the provider)."
+                          "description": "Leg direction (optional; defaults to OUTBOUND on the provider).",
+                          "example": "OUTBOUND"
                         }
                       }
-                    }
+                    },
+                    "example": [
+                      {
+                        "origin": "LON",
+                        "destination": "PAR",
+                        "date": "2026-08-26",
+                        "direction": "OUTBOUND"
+                      }
+                    ]
                   },
                   "adults": {
                     "type": "integer",
@@ -4943,7 +5317,8 @@
                     "minimum": 1,
                     "maximum": 3,
                     "default": 3,
-                    "description": "Days before/after requested dates to probe"
+                    "description": "Days before/after requested dates to probe",
+                    "example": 3
                   }
                 }
               }
@@ -7632,7 +8007,7 @@
           "Flight Bookings"
         ],
         "summary": "Get booking services",
-        "description": "## Overview\n\nRetrieve the ancillary services (seats, baggage) for an existing flight booking: services that are **already booked** together with the live catalog of services that **can still be booked**.\n\n## When to Use\n\n- **Post-booking upsell** - Show the passenger which seats and bags they can still add after the booking was created\n- **Booking management** - Display the services already attached to the booking with the prices that were charged\n- **Availability refresh** - The bookable catalog is fetched live from the provider on every call\n\n## What You Get\n\n- **`groups`** - Bookable services grouped by category (seat, baggage) with post-margin prices and encoded `serviceId`s\n- **`bookedServices`** - Services already attached to the booking; entries booked through the API carry the exact price that was charged at attach time\n- **`expiresAt`** - Validity window of the bookable catalog\n\n## Key Features\n\n- **Read-only**: Safe to call at any time; the catalog reflects live availability\n- **Consistent pricing**: Booked services echo the post-margin amounts the user actually paid\n\n## Quick Start\n\nProvide the `bookingId` (returned from `POST /flights/bookings`) in the URL path.\n\n> **Note:** Booking additional services on an existing booking is not available yet; this endpoint currently only reports availability.",
+        "description": "## Overview\n\nRetrieve the ancillary services (seats, baggage) for an existing flight booking: services that are **already booked** together with the live catalog of services that **can still be booked**.\n\n## When to Use\n\n- **Post-booking upsell** - Show the passenger which seats and bags they can still add after the booking was created\n- **Booking management** - Display the services already attached to the booking with the prices that were charged\n- **Availability refresh** - The bookable catalog is fetched live from the provider on every call\n\n## What You Get\n\n- **`groups`** - Bookable services grouped by category (seat, baggage) with post-margin prices and encoded `serviceId`s\n- **`bookedServices`** - Services already attached to the booking; entries booked through the API carry the exact price that was charged at attach time\n- **`expiresAt`** - Validity window of the bookable catalog\n\n## Key Features\n\n- **Read-only**: Safe to call at any time; the catalog reflects live availability\n- **Consistent pricing**: Booked services echo the post-margin amounts the user actually paid\n\n## Quick Start\n\nProvide the `bookingId` (returned from `POST /flights/bookings`) in the URL path.\n\nOn a ticketed booking (status `CONFIRMED`) `groups` lists only what can be sold after ticketing (provider-dependent, usually baggage) and only when `canAddServicesAfterTicketing` is true; buy them with `POST /flights/bookings/{bookingId}/services` and `/services/confirm`.",
         "parameters": [
           {
             "name": "bookingId",
@@ -7643,6 +8018,26 @@
             },
             "description": "The unique booking identifier",
             "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          },
+          {
+            "name": "forceRefresh",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Bypass the provider's 15-minute services cache"
+          },
+          {
+            "name": "includeServicesHistory",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false
+            },
+            "description": "Include non-confirmed bookedServices rows (pending, requested, failed, replaced, dropped). By default only confirmed rows are returned."
           }
         ],
         "responses": {
@@ -7777,6 +8172,10 @@
                             "items": {
                               "$ref": "#/components/schemas/FlightBookedService"
                             }
+                          },
+                          "canAddServicesAfterTicketing": {
+                            "type": "boolean",
+                            "description": "Ticketed bookings only: whether groups can be bought after ticketing"
                           }
                         }
                       }
@@ -7952,6 +8351,225 @@
                         "message": "booking not found"
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "Select services on a ticketed booking",
+        "operationId": "attachFlightTicketedServices",
+        "description": "## Overview\n\nSelects seats / bags to sell on a **ticketed** booking (status `CONFIRMED`, `canAddServicesAfterTicketing: true`) and prepares their payment. Nothing is sold yet: confirm with `POST /flights/bookings/{bookingId}/services/confirm`.\n\n## Payment\n\nThe services are paid with the booking's own method:\n\n- **Stripe bookings (`TRANSACTION_ID`)** - a new payment intent is created for `pendingTotal` (`transactionId`, `secretKey`). Confirm it with the Stripe SDK; it is captured only once the airline sells the services.\n- **Credit-line bookings (`CREDIT`)** - the credit line is checked now and billed after the sale.\n\nBookings paid otherwise (partner card, account card, third party) cannot buy services after ticketing.\n\n## Changing the selection\n\nCalling this endpoint again replaces the pending selection (its payment intent is cancelled). Send `selectedServices: []` to clear it.\n\n## Access\n\nNot enabled by default — contact the LiteAPI team. System admins and operations users (Connect dashboard) can act on any account's booking; the request then uses the booking owner's markups and payment settings.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Flight booking identifier",
+            "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlightTicketedServicesAttachRequest"
+              },
+              "examples": {
+                "bag": {
+                  "summary": "Add a checked bag",
+                  "value": {
+                    "selectedServices": [
+                      {
+                        "serviceId": "g6x...",
+                        "passengerIndex": 0,
+                        "quantity": 1
+                      }
+                    ]
+                  }
+                },
+                "clear": {
+                  "summary": "Clear the pending selection",
+                  "value": {
+                    "selectedServices": []
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Selection stored and payment prepared",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FlightTicketedServicesAttachData"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "bookingId": "1297abe4-57c5-4605-b8e7-5caad983c4a7",
+                    "batchId": "0b8c1f6e-6f9a-4b44-9d7f-2f3c8e5d1a20",
+                    "selectedServices": [
+                      {
+                        "serviceId": "g6x...",
+                        "passengerIndex": 0,
+                        "quantity": 1
+                      }
+                    ],
+                    "servicesAmount": 49.5,
+                    "pendingTotal": 49.5,
+                    "currency": "USD",
+                    "paymentTypes": [
+                      "TRANSACTION_ID"
+                    ],
+                    "transactionId": "tr_ct_abc",
+                    "secretKey": "pi_..._secret_..."
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "the services request is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44101,
+                    "message": "validation error: invalid services request",
+                    "description": "the services request is invalid"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "402": {
+            "description": "Credit line over limit",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "limit": {
+                      "type": "string",
+                      "enum": [
+                        "total_risk",
+                        "billing_period"
+                      ]
+                    },
+                    "currentUsage": {
+                      "type": "number"
+                    },
+                    "remaining": {
+                      "type": "number"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Adding flight services after ticketing is not enabled for this account. Please contact support to get access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 40301,
+                    "message": "user does not have enough permissions to perform this action",
+                    "description": "Adding flight services after ticketing is not enabled for this account. Please contact support to get access"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "the booking was not found",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44105,
+                    "message": "booking not found",
+                    "description": "the booking was not found"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "services cannot be added to this booking after ticketing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44111,
+                    "message": "services cannot be added after ticketing",
+                    "description": "services cannot be added to this booking after ticketing"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "provider authentication failed; nothing was sold",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 54104,
+                    "message": "provider auth failed: credential resolution failed",
+                    "description": "provider authentication failed; nothing was sold"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "services cannot be added to this booking after ticketing",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 54101,
+                    "message": "provider disabled: services not supported after ticketing",
+                    "description": "services cannot be added to this booking after ticketing"
                   }
                 }
               }
@@ -11597,6 +12215,196 @@
                         "message": "prebook service unavailable"
                       }
                     }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/flights/bookings/{bookingId}/services/confirm": {
+      "post": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "Sell selected services on a ticketed booking",
+        "operationId": "confirmFlightTicketedServices",
+        "description": "## Overview\n\nSells the selection `batchId` on the ticketed reservation and settles its payment. Runs synchronously.\n\n## Outcomes\n\n- **200 `sold` / `partially_sold`** - the payment is captured (credit line billed) for what was sold; the unsold part is released. `booking.pricing` and `booking.ticketedServices` include the sale.\n- **202 `requested`** - the provider did not answer: the sale may have happened. The payment stays authorized until the reservation confirms or drops the services (webhook or a later `GET /flights/bookings/{bookingId}`). Do not select the services again.\n- **409 `44115`** - a service is no longer offered at the price shown: nothing was sold, the payment was released. Select again.\n- **502 `54105`** - the airline rejected the services: nothing was sold, the payment was released.\n\n## Retrying\n\nThe call is idempotent on `batchId`: a retry returns the first result (`X-Idempotent-Replayed: true`) and never sells or charges twice.\n\n## Partner events\n\n`flight.book.services_sold` / `flight.book.services_failed` fire once per sale.\n\n## Access\n\nSame as `POST /flights/bookings/{bookingId}/services`: account option, or system admin / operations on any account's booking.",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Flight booking identifier",
+            "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlightTicketedServicesConfirmRequest"
+              },
+              "example": {
+                "batchId": "0b8c1f6e-6f9a-4b44-9d7f-2f3c8e5d1a20"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Services sold (or the earlier result replayed)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FlightTicketedServicesConfirmData"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "202": {
+            "description": "Sale outcome not known yet; payment held",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/FlightTicketedServicesConfirmData"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "the services request is invalid",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44101,
+                    "message": "validation error: invalid services request",
+                    "description": "the services request is invalid"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "402": {
+            "description": "the payment for the services was not confirmed; confirm the payment intent and retry",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44114,
+                    "message": "payment not confirmed",
+                    "description": "the payment for the services was not confirmed; confirm the payment intent and retry"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Adding flight services after ticketing is not enabled for this account. Please contact support to get access",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 40301,
+                    "message": "user does not have enough permissions to perform this action",
+                    "description": "Adding flight services after ticketing is not enabled for this account. Please contact support to get access"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "the batchId was not found on this booking",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44112,
+                    "message": "services batch not found",
+                    "description": "the batchId was not found on this booking"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "a selected service conflicts with one already sold (a sold seat cannot be replaced, a segment cannot take a second bag)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 44108,
+                    "message": "conflict: service conflict",
+                    "description": "a selected service conflicts with one already sold (a sold seat cannot be replaced, a segment cannot take a second bag)"
+                  }
+                }
+              }
+            }
+          },
+          "502": {
+            "description": "the airline rejected the services; nothing was sold and the payment was released",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 54105,
+                    "message": "provider error: services rejected",
+                    "description": "the airline rejected the services; nothing was sold and the payment was released"
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "selling services after ticketing is temporarily unavailable; the selection stays pending",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 54102,
+                    "message": "service unavailable: payment not enabled",
+                    "description": "selling services after ticketing is temporarily unavailable; the selection stays pending"
                   }
                 }
               }

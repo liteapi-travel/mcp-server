@@ -90,7 +90,7 @@
                   },
                               "included": {
                                 "type": "boolean",
-                                "description": "For hotel-declared (direct) rules: true when the charge is collected at booking time (online), false when it is collected at the property; every listed tax applies on top of the price. For learned (booking/expedia) rules this reflects whether the supplier displayed the tax inside the headline price.",
+                                "description": "Whether the charge is settled with the booking (true) or paid by the guest at the property (false); every listed tax applies on top of the price. Always the opposite of payAtProperty. Hotel-declared rules take it from the hotel; learned rules from how the supplier displayed the tax, and when the supplier was contradictory the tax is reported as paid at the property.",
                                 "example": false
                               },
                               "type": {
@@ -114,7 +114,7 @@
                               },
                               "currency": {
                                 "type": "string",
-                                "description": "Currency of fixedAmount. 'USD' for learned rules and for hotel-declared rules once converted from the hotel's currency; the hotel's own currency when no exchange rate was available; omitted only when the hotel's currency is unknown.",
+                                "description": "Currency of fixedAmount. 'USD' for learned rules and for hotel-declared rules once converted from the hotel's currency; the hotel's own currency when no exchange rate was available. Always present on a fixed amount: a hotel-declared amount whose currency cannot be determined is not returned.",
                                 "example": "USD"
                               },
                               "perAdult": {
@@ -152,7 +152,7 @@
                               },
                               "payAtProperty": {
                                 "type": "boolean",
-                                "description": "true when the charge is collected at the property, false when it is collected at booking time. Direct source only.",
+                                "description": "true when the guest pays the charge at the property, false when it is settled with the booking. Always the opposite of included. Only present when the direct source is enabled for the calling account.",
                                 "example": false
                               },
                               "validFrom": {
@@ -1965,9 +1965,8 @@
         "tags": [
           "Hotels"
         ],
-        "summary": "Generate hotel highlights (Beta)",
-        "description": "## Overview\n\n**Beta Feature** - Generate short, AI-written \"Smart Highlight\" cards for a hotel. Each highlight is a title plus a one or two sentence description, generated directly in the requested language.\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** per API key for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Hotel detail pages** - Show a few compelling reasons to consider a property\n- **Partner-specific tone** - Adjust voice and emphasis per surface via `tone`, `style` and per-highlight `context`\n\n## What You Get\n\n- Exactly `count` highlights, always, in the requested order\n- `type` echoed back from the request so you can map each card to your own UI\n- `generated` indicating whether the copy is AI-generated or template fallback\n\n## Behaviour\n\nHotel facts are resolved server-side from `hotelId`; the caller never supplies them. The model sees the name, city, country, and description, plus a sample of facilities, rooms, and policies, guest sentiment when one is stored, and classification (star rating, hotel type, chain). Generated copy is grounded in those facts.\n\nIf AI generation fails, the endpoint still returns `200` with the requested number of neutral template highlights and `generated: false`. It never returns an empty array for a valid hotel.\n\nResults are cached, so repeated calls with an identical request body return identical copy.\n\n**Note:** This is a beta feature and may be subject to changes.",
-        "x-beta": true,
+        "summary": "Generate hotel highlights",
+        "description": "## Overview\n\nGenerate short, AI-written \"Smart Highlight\" cards for a hotel. Each highlight is a title plus a one or two sentence description, generated directly in the requested language.\n\n**Pricing**: $0.02 per request\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** per API key for both sandbox and production API keys. Exceeding this limit will result in a `429 Too Many Requests` response.\n\n## When to Use\n\n- **Hotel detail pages** - Show a few compelling reasons to consider a property\n- **Partner-specific tone** - Adjust voice and emphasis per surface via `tone`, `style` and per-highlight `context`\n\n## What You Get\n\n- Exactly `count` highlights, always, in the requested order\n- `type` echoed back from the request so you can map each card to your own UI\n- `generated` indicating whether the copy is AI-generated or template fallback\n\n## Behaviour\n\nHotel facts are resolved server-side from `hotelId`; the caller never supplies them. The model sees the name, city, country, street address, parking, and description, plus a sample of facilities, rooms, policies, and nearby places (with a server-computed distance phrase: on the property, short walk, short drive, or longer drive; farther places are omitted), guest sentiment strengths when stored (not drawbacks), and classification (star rating, hotel type, chain). Generated copy is grounded in those facts. Straight apostrophes in titles and descriptions are normalized to typographic apostrophes. Enterprise API keys also omit wifi and the phrase modern amenities from the facts and from the copy, and they omit review-style wording such as guests say. Other API keys still return wifi and connectivity copy when the request asks for it. When `tone` or `style` specify length or format, those rules override the default title and description lengths.\n\nIf AI generation fails, the endpoint still returns `200` with the requested number of neutral template highlights and `generated: false`. It never returns an empty array for a valid hotel.\n\nResults are cached, so repeated calls with an identical request body return identical copy.\n\n`tone` and `style` are truncated to 200 characters (5,000 for enterprise accounts). Each highlight `context` is truncated to 300 characters (10,000 for enterprise accounts).",
         "security": [
           {
             "apikeyAuth": []
@@ -2004,12 +2003,12 @@
                   },
                   "tone": {
                     "type": "string",
-                    "description": "Global writing guidance, e.g. `professional and inviting` or `calm and practical`.",
+                    "description": "Global writing guidance, e.g. `professional and inviting` or `calm and practical`. Truncated to 200 characters (5,000 for enterprise accounts).",
                     "example": "professional and inviting"
                   },
                   "style": {
                     "type": "string",
-                    "description": "Formatting preferences such as title or description length.",
+                    "description": "Formatting preferences such as title or description length. When supplied, these rules override the default title (2-4 words) and description (~180 characters) lengths. Truncated to 200 characters (5,000 for enterprise accounts).",
                     "example": "short titles, one sentence descriptions"
                   },
                   "highlights": {
@@ -2025,7 +2024,7 @@
                         },
                         "context": {
                           "type": "string",
-                          "description": "Free-text guidance describing what this highlight should emphasise. Treated as topic guidance only; claims not supported by the hotel's data will not be invented.",
+                          "description": "Free-text guidance describing what this highlight should emphasise. Treated as topic guidance only; claims not supported by the hotel's data will not be invented. Truncated to 300 characters (10,000 for enterprise accounts).",
                           "example": "nearby attractions and neighbourhood vibe"
                         }
                       }
@@ -2152,6 +2151,168 @@
           },
           "500": {
             "description": "Technical failure fetching hotel data."
+          }
+        }
+      }
+    },
+    "/data/hotel/description-evaluation": {
+      "post": {
+        "operationId": "evaluateHotelDescription",
+        "tags": ["Hotels"],
+        "summary": "Evaluate a hotel description (Beta)",
+        "description": "## Overview\n\n**Beta Feature** - Check a customer-written hotel description against LiteAPI hotel data. The check compares the text with the hotel's static record (name, description, important information, facilities, rooms, policies, location, stars, and nearby places) and with stored guest-review sentiment. It does not fetch live reviews.\n\n**Access**: enterprise API keys only. Other keys receive `403`.\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** per API key for both sandbox and production API keys. Exceeding this limit returns `429 Too Many Requests`.\n\n## What You Get\n\n- `verdict`: `pass` when there are no flags, `review` when there is a minor or unverified flag and no red flag, `fail` when any flag is red. The verdict is computed from the flags.\n- `confidence`: the model's certainty in that judgment, from 0 to 1. It is not a second verdict and it is not a writing-quality score.\n- `flags`: concrete claims in the submitted text.\n\n## Flag severity\n\n- `red`: the text contradicts hotel data or stored sentiment. `evidence` quotes the contradicting fact.\n- `minor`: the text matches hotel data but overstates it (distance, star level, or policy strength). `evidence` is set.\n- `unverified`: a concrete fact in the text that our data neither supports nor contradicts. `evidence` is null. A swimming pool that is absent from facilities, rooms, the hotel description, important information, and sentiment is unverified, not red.\n\nMarketing with no checkable fact (`perfect getaway`, `unforgettable stay`) produces no flag.\n\n`description` is rejected above 20,000 characters. It is not truncated. `language` selects the language of `summary` and each `explanation` and defaults to `en`. The description itself may be any language.\n\nHotel facts are resolved server-side from `hotelId`. A child property is checked against its parent record. The response `hotelId` is the id you sent.\n\nIf the model call fails, the endpoint returns `500`. It does not return a pass it did not compute.\n\n**Note:** This is a beta feature and may be subject to changes.",
+        "x-beta": true,
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["hotelId", "description"],
+                "properties": {
+                  "hotelId": {
+                    "type": "string",
+                    "description": "Unique ID of the hotel (liteAPI format).",
+                    "example": "lp1897"
+                  },
+                  "description": {
+                    "type": "string",
+                    "description": "Customer-written hotel description to check. Maximum 20,000 characters.",
+                    "example": "Guests can relax by the swimming pool. Pets are welcome. The hotel is steps from the beach."
+                  },
+                  "language": {
+                    "type": "string",
+                    "description": "Language of the summary and flag explanations. Defaults to en. The description may be in any language.",
+                    "example": "en"
+                  }
+                }
+              },
+              "example": {
+                "hotelId": "lp1897",
+                "description": "Guests can relax by the swimming pool. Pets are welcome. The hotel is steps from the beach.",
+                "language": "en"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": ["hotelId", "language", "verdict", "confidence", "summary", "flags"],
+                      "properties": {
+                        "hotelId": {"type": "string", "example": "lp1897"},
+                        "language": {"type": "string", "example": "en"},
+                        "verdict": {
+                          "type": "string",
+                          "enum": ["pass", "review", "fail"],
+                          "description": "pass: no flags. review: minor or unverified flags only. fail: one or more red flags."
+                        },
+                        "confidence": {
+                          "type": "number",
+                          "minimum": 0,
+                          "maximum": 1,
+                          "description": "Model certainty in the judgment, from 0 to 1.",
+                          "example": 0.86
+                        },
+                        "summary": {"type": "string"},
+                        "flags": {
+                          "type": "array",
+                          "items": {
+                            "type": "object",
+                            "required": ["severity", "category", "claim", "excerpt", "explanation", "evidence"],
+                            "properties": {
+                              "severity": {"type": "string", "enum": ["red", "minor", "unverified"]},
+                              "category": {"type": "string", "enum": ["amenity", "policy", "location", "room", "rating", "sentiment", "other"]},
+                              "claim": {"type": "string", "example": "pets are welcome"},
+                              "excerpt": {"type": "string", "description": "Verbatim substring of the submitted description.", "example": "Pets are welcome."},
+                              "explanation": {"type": "string"},
+                              "evidence": {
+                                "nullable": true,
+                                "type": "object",
+                                "description": "Null when severity is unverified.",
+                                "required": ["source", "detail"],
+                                "properties": {
+                                  "source": {
+                                    "type": "string",
+                                    "enum": ["facility", "policy", "description", "importantInformation", "room", "location", "rating", "sentiment"]
+                                  },
+                                  "detail": {"type": "string", "example": "petsAllowed: no"}
+                                }
+                              }
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "hotelId": "lp1897",
+                    "language": "en",
+                    "verdict": "fail",
+                    "confidence": 0.86,
+                    "summary": "The description contradicts the pet policy and overstates the beach distance. The pool is not in our data.",
+                    "flags": [
+                      {
+                        "severity": "red",
+                        "category": "policy",
+                        "claim": "pets are welcome",
+                        "excerpt": "Pets are welcome.",
+                        "explanation": "Hotel policy says pets are not allowed.",
+                        "evidence": {"source": "policy", "detail": "petsAllowed: no"}
+                      },
+                      {
+                        "severity": "minor",
+                        "category": "location",
+                        "claim": "steps from the beach",
+                        "excerpt": "The hotel is steps from the beach.",
+                        "explanation": "The nearest beach is a short drive, not on the property.",
+                        "evidence": {"source": "location", "detail": "Beach — short drive"}
+                      },
+                      {
+                        "severity": "unverified",
+                        "category": "amenity",
+                        "claim": "swimming pool",
+                        "excerpt": "Guests can relax by the swimming pool.",
+                        "explanation": "Facilities, rooms, description, important information, and review sentiment do not mention a pool.",
+                        "evidence": null
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid request: missing or malformed hotelId, empty or over-cap description, or unsupported language."
+          },
+          "401": {
+            "description": "Authentication required."
+          },
+          "403": {
+            "description": "The API key is not an enterprise key. Hotel description evaluation is available to enterprise accounts only."
+          },
+          "404": {
+            "description": "The hotelId was not found."
+          },
+          "429": {
+            "description": "Too Many Requests - Rate limit exceeded (10 requests per minute per API key)."
+          },
+          "500": {
+            "description": "Technical failure fetching hotel data or evaluating the description. A model failure is never returned as a pass."
           }
         }
       }
@@ -2543,9 +2704,22 @@
                           "type": "string",
                           "description": "Detailed description of the hotel."
                         },
+                        "markdownDescription": {
+                          "type": "string",
+                          "description": "Detailed description of the hotel, formatted as Markdown."
+                        },
+                        "normalizedDescription": {
+                          "type": "string",
+                          "description": "Normalized plain-text description of the hotel."
+                        },
                         "hotelImportantInformation": {
                           "type": "string",
                           "description": "Critical information and important details about the hotel."
+                        },
+                        "connectivityType": {
+                          "type": "string",
+                          "enum": ["Pull", "Pull&Push"],
+                          "description": "How the property is connected: `Pull&Push` for Cloud properties connected as Push+Pull, `Pull` otherwise."
                         },
                         "securityDeposit": {
                           "type": "object",
@@ -2722,9 +2896,21 @@
                                 "type": "string",
                                 "description": "Name or type designation of the room."
                               },
+                              "roomTitle": {
+                                "type": "string",
+                                "description": "Display title of the room."
+                              },
                               "description": {
                                 "type": "string",
                                 "description": "Detailed description of the room and its features."
+                              },
+                              "markdownDescription": {
+                                "type": "string",
+                                "description": "Description of the room and its features, formatted as Markdown."
+                              },
+                              "normalizedDescription": {
+                                "type": "string",
+                                "description": "Normalized plain-text description of the room and its features."
                               },
                               "roomSizeSquare": {
                                 "type": "number",

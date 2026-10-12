@@ -690,7 +690,7 @@
                                             },
                                             "level": {
                                               "type": "string",
-                                              "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, 'RATE' for rate-level perks, or 'ROOM' for room-level perks."
+                                              "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, or 'ROOM_RATE' for perks aggregated to a rate within a room."
                                             }
                                           }
                                         }
