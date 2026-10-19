@@ -15,7 +15,7 @@
         ],
         "operationId": "getHotelTaxSchema",
         "summary": "Get the normalized tax schema of a hotel",
-        "description": "## Overview\n\nReturns the tax schema of a hotel as normalized static data, independent of the supply provider the rules were learned from. Each entry describes one tax or fee: whether it is already included in the room rate, whether it is a percentage of the rate or a fixed amount, and how fixed amounts scale (per adult and/or per night).\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Excluded taxes are typically collected at the hotel\n- **Tax auditing** - Compare supplier-declared taxes against the reference schema\n\n## Notes\n\n- Fixed amounts are expressed in USD\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- The schema is learned by an offline pipeline; hotels without learned data return 404\n- When the direct (hotel-declared) source is enabled, taxes declared by the hotel in Nuitee Cloud take precedence over learned rules and each entry carries `source`, `chargeType`, `appliedPer`, `appliedOn`, `payAtProperty` and validity dates",
+        "description": "## Overview\n\nReturns the tax schema of a hotel as normalized static data, independent of the supply provider the rules were learned from. Each entry describes one tax or fee: whether it is already included in the room rate, whether it is a percentage of the rate or a fixed amount, and how fixed amounts scale (per adult and/or per night).\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Excluded taxes are typically collected at the hotel\n- **Tax auditing** - Compare supplier-declared taxes against the reference schema\n\n## Notes\n\n- Fixed amounts are expressed in USD\n- Percentage rates apply to the room rate (e.g. 14.62 means 14.62%)\n- The schema is learned by an offline pipeline; hotels without learned data return 404\n- Enterprise accounts also receive `category`, `chargeType`, and `payAtProperty` on each tax. `payAtProperty` is always the opposite of `included`. When the hotel declared the rule, an enterprise response may also include `appliedPer`, `appliedOn`, `validFrom`, and `validTo`",
         "security": [
           {
             "apikeyAuth": []
@@ -30,7 +30,7 @@
             },
             "description": "Unique identifier of the hotel, in 'lp' format or numeric.",
             "required": true,
-            "example": "lp3803c"
+            "example": "lp7556b"
           }
         ],
         "responses": {
@@ -65,12 +65,12 @@
                         "hotelId": {
                           "type": "string",
                           "description": "Hotel identifier in 'lp' format.",
-                          "example": "lp3803c"
+                          "example": "lp7556b"
                         },
                         "lastUpdated": {
                           "type": "string",
                           "description": "When the tax schema was last refreshed by the tax pipeline.",
-                          "example": "2026-07-01T10:15:00Z"
+                          "example": "2026-10-06T22:57:05Z"
                         },
                         "taxes": {
                           "type": "array",
@@ -86,12 +86,12 @@
                   "name": {
                     "type": "string",
                     "description": "Public-facing display name of the tax or fee.",
-                    "example": "City Tax"
+                    "example": "Resort Fee"
                   },
                               "included": {
                                 "type": "boolean",
-                                "description": "Whether the charge is settled with the booking (true) or paid by the guest at the property (false); every listed tax applies on top of the price. Always the opposite of payAtProperty. Hotel-declared rules take it from the hotel; learned rules from how the supplier displayed the tax, and when the supplier was contradictory the tax is reported as paid at the property.",
-                                "example": false
+                                "description": "Whether the charge is settled with the booking (true) or paid by the guest at the property (false). On an enterprise response this is always the opposite of payAtProperty.",
+                                "example": true
                               },
                               "type": {
                                 "type": "string",
@@ -104,13 +104,13 @@
                               },
                               "percentageRate": {
                                 "type": "number",
-                                "description": "Highest percentage of the room rate observed for this tax, rounded to two decimals (e.g. 13.5 means 13.5%). May be present alongside fixedAmount when the tax was observed in both forms.",
-                                "example": 13.5
+                                "description": "Highest percentage of the room rate observed for this tax, rounded to two decimals (e.g. 14.62 means 14.62%). Present when type is 'percentage'. May also be present alongside fixedAmount when the tax was observed in both forms.",
+                                "example": 14.62
                               },
                               "fixedAmount": {
                                 "type": "number",
                                 "description": "Highest flat amount per unit (see perAdult/perNight) observed for this tax. Only present when type is 'fixed'.",
-                                "example": 5
+                                "example": 22
                               },
                               "currency": {
                                 "type": "string",
@@ -130,46 +130,111 @@
                               "category": {
                                 "type": "string",
                                 "enum": ["Value Added Tax (VAT)", "Goods and services tax (GST)", "City tax", "City hotel fee", "County tax", "State tax", "Federal tax", "Country tax", "National government tax", "Sales tax", "Occupancy tax", "Lodging tax", "Room tax", "Bed tax", "Total tax", "Tourism tax", "Convention tax", "Convention / Tourism fee", "Destination marketing fee", "Tourism marketing fee", "Assessment/license tax", "Energy tax", "Service charge", "Resort fee", "Destination amenity fee", "Maintenance fee", "Local amenity usage/maintenance fee", "Local Government fee", "Local fee", "Local ordinance surcharge", "Surcharge", "Total surcharges", "Sustainability fee", "Charity support fee", "Hotel development Fee", "State cost recovery fee", "Extra person charge", "Extra child charge", "Crib fee", "Rollaway fee", "Miscellaneous", "Miscellaneous fee"],
-                                "description": "Category of the tax or fee, one of the OpenTravel Fee Tax Type names. 'Total tax' is used when the hotel reports one combined rate without a breakdown. Assigned from a reviewed name table; absent when the name is not in the table. Only present when the direct source is enabled for the calling account.",
+                                "description": "Category of the tax or fee, one of the OpenTravel Fee Tax Type names. 'Total tax' is used when the hotel reports one combined rate without a breakdown. Assigned from a reviewed name table; absent when the name is not in the table. Enterprise accounts only.",
                                 "example": "Resort fee"
                               },
                               "chargeType": {
                                 "type": "string",
                                 "enum": ["tax", "fee", "charge"],
-                                "description": "tax (government-imposed), fee (property-imposed) or charge (extra person). Derived from the category when the name is in the category table, otherwise from the hotel's own declaration.",
+                                "description": "tax (government-imposed), fee (property-imposed) or charge (extra person). Derived from the category when the name is in the category table, otherwise from the hotel's own declaration. Enterprise accounts only.",
                                 "example": "fee"
                               },
                               "appliedPer": {
                                 "type": "string",
-                                "description": "Unit the charge applies to as declared by the hotel, e.g. 'per_room_per_night', 'per_person_per_night', 'per_room_per_stay'. Direct source only.",
+                                "description": "Unit the charge applies to as declared by the hotel, e.g. 'per_room_per_night', 'per_person_per_night', 'per_room_per_stay'. Enterprise accounts only, and only when the hotel declared it.",
                                 "example": "per_person_per_night"
                               },
                               "appliedOn": {
                                 "type": "string",
                                 "enum": ["net", "net_vat"],
-                                "description": "Base a percentage applies to: 'net' (room rate) or 'net_vat' (room rate plus VAT, i.e. compounded). Direct source only.",
+                                "description": "Base a percentage applies to: 'net' (room rate) or 'net_vat' (room rate plus VAT, i.e. compounded). Enterprise accounts only, and only when the hotel declared it.",
                                 "example": "net"
                               },
                               "payAtProperty": {
                                 "type": "boolean",
-                                "description": "true when the guest pays the charge at the property, false when it is settled with the booking. Always the opposite of included. Only present when the direct source is enabled for the calling account.",
+                                "description": "true when the guest pays the charge at the property, false when it is settled with the booking. Always the opposite of included. Enterprise accounts only.",
                                 "example": false
                               },
                               "validFrom": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "First stay date the rule applies to, when it does not apply year-round. Direct source only.",
+                                "description": "First stay date the rule applies to, when it does not apply year-round. Enterprise accounts only, and only when the hotel declared a date range.",
                                 "example": "2014-01-01"
                               },
                               "validTo": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Last stay date the rule applies to, when it does not apply year-round. Direct source only.",
+                                "description": "Last stay date the rule applies to, when it does not apply year-round. Enterprise accounts only, and only when the hotel declared a date range.",
                                 "example": "2050-12-31"
                               }
                             }
                           }
                         }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "standard": {
+                    "summary": "Standard account",
+                    "value": {
+                      "data": {
+                        "hotelId": "lp7556b",
+                        "lastUpdated": "2026-10-06T22:57:05Z",
+                        "taxes": [
+                          {
+                            "name": "Resort Fee",
+                            "included": true,
+                            "type": "fixed",
+                            "fixedAmount": 22,
+                            "currency": "USD",
+                            "perAdult": false,
+                            "perNight": true
+                          },
+                          {
+                            "name": "Tax",
+                            "included": true,
+                            "type": "percentage",
+                            "percentageRate": 14.62,
+                            "perAdult": false,
+                            "perNight": false
+                          }
+                        ]
+                      }
+                    }
+                  },
+                  "enterprise": {
+                    "summary": "Enterprise account",
+                    "description": "Enterprise accounts also receive category, chargeType, and payAtProperty.",
+                    "value": {
+                      "data": {
+                        "hotelId": "lp7556b",
+                        "lastUpdated": "2026-10-06T22:57:05Z",
+                        "taxes": [
+                          {
+                            "name": "Resort Fee",
+                            "included": true,
+                            "type": "fixed",
+                            "fixedAmount": 22,
+                            "currency": "USD",
+                            "perAdult": false,
+                            "perNight": true,
+                            "category": "Resort fee",
+                            "chargeType": "fee",
+                            "payAtProperty": false
+                          },
+                          {
+                            "name": "Tax",
+                            "included": true,
+                            "type": "percentage",
+                            "percentageRate": 14.62,
+                            "perAdult": false,
+                            "perNight": false,
+                            "category": "Total tax",
+                            "chargeType": "tax",
+                            "payAtProperty": false
+                          }
+                        ]
                       }
                     }
                   }
@@ -2723,18 +2788,626 @@
                         },
                         "securityDeposit": {
                           "type": "object",
-                          "description": "The refundable deposit the property collects from the guest, taken from the property's own disclosure in hotelImportantInformation. Amount and currency are as the property states them, in the property's currency. Absent when the text does not disclose a deposit in the known form or is not in English.",
+                          "description": "The refundable deposit the property collects from the guest. Only amount, currency and basis are returned.",
                           "properties": {
-                            "amount": { "type": "number", "description": "Deposit amount in the currency given." },
-                            "currency": { "type": "string", "description": "ISO 4217 code, e.g. USD." },
-                            "collectedAt": { "type": "string", "enum": ["arrival", "before_arrival"], "description": "When the property collects the deposit." },
-                            "collectedDaysBeforeArrival": { "type": "integer", "description": "Only when collectedAt is before_arrival: how many days before." },
-                            "collectedBy": { "type": "string", "description": "How it is collected: cash, credit_card, bank_transfer or paypal. Absent when not stated." },
-                            "refundedAt": { "type": "string", "enum": ["check_out", "after_check_out"], "description": "When the deposit is returned. Absent when not stated." },
-                            "refundedWithinDays": { "type": "integer", "description": "Only when refundedAt is after_check_out: the stated window in days." },
-                            "refundedBy": { "type": "string", "description": "How it is returned: cash, credit_card, bank_transfer or paypal. Absent when not stated." },
-                            "subjectToInspection": { "type": "boolean", "description": "Whether the refund is subject to an inspection of the property." },
-                            "description": { "type": "string", "description": "The property's disclosure as written, including the refund terms." }
+                            "amount": { "type": "number", "description": "Deposit amount in the currency given.", "example": 150 },
+                            "currency": { "type": "string", "description": "ISO 4217 code, e.g. USD.", "example": "USD" },
+                            "basis": { "type": "string", "description": "How the amount is charged, e.g. per_stay or per_night. Absent when not known.", "example": "per_stay" }
+                          }
+                        },
+                        "state": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "State or province. 2-letter code for the US.",
+                          "example": "UT"
+                        },
+                        "website": {
+                          "type": "string",
+                          "nullable": true,
+                          "description": "Official website."
+                        },
+                        "contact": {
+                          "type": "object",
+                          "description": "Legal and licensing details.",
+                          "properties": {
+                            "legalEntity": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Legal entity name."
+                            },
+                            "registrationNumber": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Business registration number."
+                            },
+                            "licenceNumbers": {
+                              "type": "array",
+                              "nullable": true,
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "Licence or permit numbers."
+                            }
+                          }
+                        },
+                        "operatingStatus": {
+                          "type": "object",
+                          "description": "Whether the property is operating.",
+                          "properties": {
+                            "status": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Status.",
+                              "enum": [
+                                "open",
+                                "temporarily_closed",
+                                "permanently_closed",
+                                "likely_closed",
+                                "unknown",
+                                null
+                              ]
+                            },
+                            "checkedAt": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "When the status was checked.",
+                              "format": "date-time"
+                            }
+                          }
+                        },
+                        "policyAttributes": {
+                          "type": "object",
+                          "description": "Typed hotel policies and facility flags. Every boolean is true, false or null. null means not stated. Flags derived from the facility list are false when the facility is absent; all flags are null when the hotel has no facilities.",
+                          "properties": {
+                            "checkIn": {
+                              "type": "object",
+                              "description": "Check-in window, HH:MM.",
+                              "properties": {
+                                "from": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Earliest check-in."
+                                },
+                                "until": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Latest check-in."
+                                }
+                              }
+                            },
+                            "checkOut": {
+                              "type": "object",
+                              "description": "Check-out, HH:MM.",
+                              "properties": {
+                                "until": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Latest check-out."
+                                }
+                              }
+                            },
+                            "minimumCheckInAge": {
+                              "type": "integer",
+                              "nullable": true,
+                              "description": "Minimum age to check in."
+                            },
+                            "saleCutoff": {
+                              "type": "object",
+                              "description": "Latest time a booking can be made.",
+                              "properties": {
+                                "time": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "HH:MM."
+                                },
+                                "daysBefore": {
+                                  "type": "integer",
+                                  "nullable": true,
+                                  "description": "Days before arrival."
+                                }
+                              }
+                            },
+                            "children": {
+                              "type": "object",
+                              "description": "Children policy.",
+                              "properties": {
+                                "allowed": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Children allowed."
+                                },
+                                "infantsAllowed": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Infants allowed."
+                                },
+                                "cribAvailable": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Crib or cot available."
+                                },
+                                "cribFee": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Crib fee, 0 when free."
+                                },
+                                "cribAgeMax": {
+                                  "type": "integer",
+                                  "nullable": true,
+                                  "description": "Maximum age for a crib."
+                                }
+                              }
+                            },
+                            "pets": {
+                              "type": "object",
+                              "description": "Pet policy.",
+                              "properties": {
+                                "allowed": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Pets allowed."
+                                },
+                                "fee": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "A pet fee applies."
+                                },
+                                "feeAmount": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Pet fee amount."
+                                },
+                                "feeCurrency": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "ISO 4217 code."
+                                },
+                                "feeBasis": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "How the fee is charged."
+                                },
+                                "weightLimitLb": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Weight limit in pounds."
+                                },
+                                "feeRefundable": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Fee is refundable."
+                                },
+                                "terms": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Pet policy text."
+                                }
+                              }
+                            },
+                            "deposit": {
+                              "type": "object",
+                              "description": "Security deposit.",
+                              "properties": {
+                                "required": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Deposit is required."
+                                },
+                                "amount": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Amount."
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "ISO 4217 code."
+                                },
+                                "basis": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "per_stay or per_night."
+                                },
+                                "collectedAt": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "When it is collected, e.g. checkin."
+                                },
+                                "refundedAt": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "When it is refunded, e.g. checkout."
+                                },
+                                "method": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "How it is collected, e.g. credit_card."
+                                }
+                              }
+                            },
+                            "payment": {
+                              "type": "object",
+                              "description": "Payment methods at the property.",
+                              "properties": {
+                                "cardsAccepted": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Cards accepted."
+                                },
+                                "cashAccepted": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Cash accepted."
+                                }
+                              }
+                            },
+                            "wifi": {
+                              "type": "object",
+                              "description": "WiFi.",
+                              "properties": {
+                                "inRoom": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "WiFi in guest rooms."
+                                },
+                                "free": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "WiFi is free."
+                                },
+                                "feeAmount": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "WiFi fee."
+                                },
+                                "feePeriod": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "per_night, per_stay or per_hour."
+                                },
+                                "freeInPublicAreas": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Free WiFi in public areas."
+                                }
+                              }
+                            },
+                            "parking": {
+                              "type": "object",
+                              "description": "Parking.",
+                              "properties": {
+                                "selfParking": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Self parking available."
+                                },
+                                "free": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Parking is free."
+                                },
+                                "chargeMode": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Charge mode.",
+                                  "enum": [
+                                    "free",
+                                    "per_day",
+                                    "per_hour",
+                                    "charges_may_apply",
+                                    "charges_apply",
+                                    null
+                                  ]
+                                },
+                                "feeAmount": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Parking fee."
+                                },
+                                "feePeriod": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "per_night, per_stay or per_hour."
+                                },
+                                "location": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Parking location.",
+                                  "enum": [
+                                    "on_site",
+                                    "offsite",
+                                    null
+                                  ]
+                                },
+                                "reservationRequired": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Reservation needed."
+                                },
+                                "valet": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Valet parking."
+                                },
+                                "evCharger": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Electric vehicle charging."
+                                }
+                              }
+                            },
+                            "facilities": {
+                              "type": "object",
+                              "description": "Facility flags.",
+                              "properties": {
+                                "nonSmokingProperty": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Whole property is non-smoking."
+                                },
+                                "elevator": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Elevator."
+                                },
+                                "fitnessCenter": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Fitness center."
+                                },
+                                "fitnessOpen24h": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Fitness center open 24 hours."
+                                },
+                                "pool": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Pool."
+                                },
+                                "poolType": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "indoor, outdoor or indoor_and_outdoor."
+                                },
+                                "poolCurrentlyClosed": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Pool closed today."
+                                },
+                                "hotTub": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Hot tub."
+                                },
+                                "spaServices": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Spa services."
+                                },
+                                "sauna": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Sauna."
+                                },
+                                "saunaCurrentlyClosed": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Sauna closed today."
+                                }
+                              }
+                            },
+                            "foodAndDrink": {
+                              "type": "object",
+                              "description": "Food and drink.",
+                              "properties": {
+                                "bar": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Bar on property."
+                                },
+                                "restaurant": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Restaurant on property."
+                                },
+                                "restaurantNames": {
+                                  "type": "array",
+                                  "nullable": true,
+                                  "items": {
+                                    "type": "string"
+                                  },
+                                  "description": "Restaurant names."
+                                },
+                                "roomService": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Room service."
+                                },
+                                "breakfastAvailable": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Breakfast available."
+                                },
+                                "breakfastIncluded": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Breakfast included."
+                                },
+                                "breakfastPrice": {
+                                  "type": "object",
+                                  "description": "Breakfast price.",
+                                  "properties": {
+                                    "amount": {
+                                      "type": "number",
+                                      "nullable": true,
+                                      "description": "Amount."
+                                    },
+                                    "currency": {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "description": "ISO 4217 code."
+                                    },
+                                    "period": {
+                                      "type": "string",
+                                      "nullable": true,
+                                      "description": "per_night, per_stay or per_hour."
+                                    }
+                                  }
+                                },
+                                "breakfastType": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Breakfast type.",
+                                  "enum": [
+                                    "continental",
+                                    "hot",
+                                    "buffet",
+                                    "american",
+                                    "other",
+                                    null
+                                  ]
+                                }
+                              }
+                            },
+                            "renovation": {
+                              "type": "object",
+                              "description": "Renovation.",
+                              "properties": {
+                                "underway": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Renovation underway."
+                                },
+                                "notes": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "Renovation notes."
+                                }
+                              }
+                            },
+                            "resortFee": {
+                              "type": "object",
+                              "description": "Resort fee.",
+                              "properties": {
+                                "amount": {
+                                  "type": "number",
+                                  "nullable": true,
+                                  "description": "Amount."
+                                },
+                                "currency": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "ISO 4217 code."
+                                },
+                                "period": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "per_night, per_stay or per_hour."
+                                }
+                              }
+                            },
+                            "cancellationTerms": {
+                              "type": "string",
+                              "nullable": true,
+                              "description": "Property cancellation terms."
+                            },
+                            "houseRules": {
+                              "type": "array",
+                              "nullable": true,
+                              "items": {
+                                "type": "string"
+                              },
+                              "description": "House rules."
+                            },
+                            "facilityClosures": {
+                              "type": "array",
+                              "nullable": true,
+                              "description": "Facility closures with ISO dates.",
+                              "items": {
+                                "type": "object",
+                                "description": "Closure.",
+                                "properties": {
+                                  "facility": {
+                                    "type": "string"
+                                  },
+                                  "from": {
+                                    "type": "string",
+                                    "format": "date"
+                                  },
+                                  "until": {
+                                    "type": "string",
+                                    "format": "date"
+                                  }
+                                }
+                              }
+                            },
+                            "roomAmenitiesAllRooms": {
+                              "type": "object",
+                              "description": "Room amenities true only when every room has them; false when a room states it lacks them.",
+                              "properties": {
+                                "television": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "TV in the room."
+                                },
+                                "televisionSize": {
+                                  "type": "string",
+                                  "nullable": true,
+                                  "description": "TV size, e.g. 40-inch."
+                                },
+                                "airConditioner": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Air conditioning."
+                                },
+                                "hairDryer": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Hair dryer."
+                                },
+                                "iron": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Iron or ironing facilities."
+                                },
+                                "hangers": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Hangers."
+                                },
+                                "coffeeMaker": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Coffee or tea maker."
+                                },
+                                "crib": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Crib or cot available."
+                                },
+                                "laptopFriendlyWorkplace": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Desk or laptop-friendly workspace."
+                                },
+                                "kitchen": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Kitchen or kitchenette."
+                                },
+                                "smokeDetector": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Smoke detector."
+                                },
+                                "carbonMonoxideDetector": {
+                                  "type": "boolean",
+                                  "nullable": true,
+                                  "description": "Carbon monoxide detector."
+                                }
+                              }
+                            }
                           }
                         },
                         "checkinCheckoutTimes": {
@@ -2935,6 +3608,84 @@
                               "maxOccupancy": {
                                 "type": "integer",
                                 "description": "Overall maximum occupancy of the room."
+                              },
+                              "officialSiteRoomName": {
+                                "type": "string",
+                                "nullable": true,
+                                "description": "Room name as shown on the property's own website. Not for display as a title."
+                              },
+                              "attributes": {
+                                "type": "object",
+                                "description": "Room amenity flags. Every boolean is true, false or null. null means not stated. false only when the room states it lacks the amenity.",
+                                "properties": {
+                                  "television": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "TV in the room."
+                                  },
+                                  "televisionSize": {
+                                    "type": "string",
+                                    "nullable": true,
+                                    "description": "TV size, e.g. 40-inch."
+                                  },
+                                  "airConditioner": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Air conditioning."
+                                  },
+                                  "hairDryer": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Hair dryer."
+                                  },
+                                  "iron": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Iron or ironing facilities."
+                                  },
+                                  "hangers": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Hangers."
+                                  },
+                                  "coffeeMaker": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Coffee or tea maker."
+                                  },
+                                  "crib": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Crib or cot available."
+                                  },
+                                  "laptopFriendlyWorkplace": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Desk or laptop-friendly workspace."
+                                  },
+                                  "kitchen": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Kitchen or kitchenette."
+                                  },
+                                  "smokeDetector": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Smoke detector."
+                                  },
+                                  "carbonMonoxideDetector": {
+                                    "type": "boolean",
+                                    "nullable": true,
+                                    "description": "Carbon monoxide detector."
+                                  }
+                                }
+                              },
+                              "ranking": {
+                                "type": "integer",
+                                "minimum": 1,
+                                "maximum": 5,
+                                "description": "Popularity rank of the room, from 1 (low) to 5 (high).",
+                                "example": 3
                               },
                               "bedTypes": {
                                 "type": "array",
@@ -3902,6 +4653,7 @@
                             "maxAdults": 2,
                             "maxChildren": 1,
                             "maxOccupancy": 2,
+                            "ranking": 1,
                             "bedTypes": [],
                             "roomAmenities": [
                               {
@@ -4031,6 +4783,7 @@
                             "maxAdults": 2,
                             "maxChildren": 1,
                             "maxOccupancy": 2,
+                            "ranking": 1,
                             "bedTypes": [],
                             "roomAmenities": [
                               {
@@ -4184,6 +4937,7 @@
                             "maxAdults": 2,
                             "maxChildren": 1,
                             "maxOccupancy": 2,
+                            "ranking": 1,
                             "bedTypes": [
                               {
                                 "quantity": 1,
@@ -4338,6 +5092,7 @@
                             "maxAdults": 2,
                             "maxChildren": 1,
                             "maxOccupancy": 2,
+                            "ranking": 1,
                             "bedTypes": [
                               {
                                 "quantity": 1,
@@ -4533,6 +5288,7 @@
                             "maxAdults": 4,
                             "maxChildren": 3,
                             "maxOccupancy": 4,
+                            "ranking": 5,
                             "bedTypes": [
                               {
                                 "quantity": 2,
@@ -4692,6 +5448,7 @@
                             "maxAdults": 2,
                             "maxChildren": 1,
                             "maxOccupancy": 2,
+                            "ranking": 1,
                             "bedTypes": [
                               {
                                 "quantity": 1,

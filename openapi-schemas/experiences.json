@@ -2903,7 +2903,7 @@
             "in": "query",
             "required": false,
             "allowReserved": true,
-            "description": "Minimum tour price, in the requested `currency`.",
+            "description": "Minimum partner-facing selling price, in the requested `currency`. Bounds are interpreted using the same cent rounding as the returned price.",
             "schema": {
               "type": "number"
             }
@@ -2913,7 +2913,7 @@
             "in": "query",
             "required": false,
             "allowReserved": true,
-            "description": "Maximum tour price, in the requested `currency`.",
+            "description": "Maximum partner-facing selling price, in the requested `currency`. Bounds are interpreted using the same cent rounding as the returned price.",
             "schema": {
               "type": "number"
             }

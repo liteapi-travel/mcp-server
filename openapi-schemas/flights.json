@@ -1521,7 +1521,7 @@
           },
           "status": {
             "type": "string",
-            "description": "Normalized dispatcher booking status. Provider statuses are mapped before being returned (e.g. PENDING→CREATED, CONFIRMING/QUEUED/DISPATCHING→PENDING_CONFIRMATION, TICKETED→CONFIRMED).",
+            "description": "Booking status.",
             "enum": [
               "CREATED",
               "PENDING_CONFIRMATION",
@@ -1556,14 +1556,6 @@
           "distributorPrice": {
             "type": "number",
             "description": "Price after distributor commission."
-          },
-          "providerEnvironment": {
-            "type": "string",
-            "enum": [
-              "sandbox",
-              "production"
-            ],
-            "description": "Provider environment used for this booking (sandbox or production). Not returned on prebook endpoints."
           },
           "ticketLimitTime": {
             "type": "string",
@@ -2311,6 +2303,10 @@
       },
       "SelectedService": {
         "type": "object",
+        "required": [
+          "passengerIndex",
+          "serviceId"
+        ],
         "properties": {
           "passengerIndex": {
             "type": "integer",
@@ -2598,7 +2594,7 @@
       },
       "FlightPrebookBooking": {
         "type": "object",
-        "description": "Flight checkout booking snapshot returned on prebook create/get/attach-services. Omits booking-only and internal fields (status, paymentStatus, distributor*, providerEnvironment, ticketLimitTime, cancellation).",
+        "description": "Flight checkout booking snapshot returned on prebook create/get/attach-services. Omits booking-only fields (status, paymentStatus, distributor*, ticketLimitTime, cancellation).",
         "properties": {
           "bookingId": {
             "type": "string",
@@ -3611,7 +3607,8 @@
             "description": "Services the provider sold"
           },
           "currency": {
-            "type": "string"
+            "type": "string",
+            "description": "Booking currency (ISO 4217)"
           },
           "amount": {
             "type": "number",
@@ -3665,19 +3662,23 @@
             "description": "Set when the booking is cancelled after the sale: refunded automatically, or settled by support (the provider did not reverse every airline document)"
           },
           "amountRefunded": {
-            "type": "number"
+            "type": "number",
+            "description": "Amount refunded to the customer when the booking was cancelled after the sale (refundStatus = refunded). Includes the platform fee when it is refundable."
           },
           "createdAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the selection was created (UTC)"
           },
           "confirmedAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the sale was submitted via /services/confirm (UTC)"
           },
           "settledAt": {
             "type": "string",
-            "format": "date-time"
+            "format": "date-time",
+            "description": "When the batch reached a final status: sold, partially_sold, failed, or cancelled (UTC)"
           }
         }
       },
@@ -7521,6 +7522,39 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "missingSelectedServices": {
+                    "summary": "Missing selectedServices",
+                    "value": {
+                      "error": {
+                        "code": 44001,
+                        "description": "field 'SelectedServices' is required",
+                        "key": "bodyRequest.selectedServices",
+                        "message": "required field missing: ancillary not found"
+                      }
+                    }
+                  },
+                  "missingPassengerIndex": {
+                    "summary": "Missing selectedServices[0].passengerIndex",
+                    "value": {
+                      "error": {
+                        "code": 44001,
+                        "description": "field 'PassengerIndex' is required",
+                        "key": "bodyRequest.selectedServices[0].passengerIndex",
+                        "message": "required field missing: ancillary not found"
+                      }
+                    }
+                  },
+                  "missingServiceId": {
+                    "summary": "Missing selectedServices[0].serviceId",
+                    "value": {
+                      "error": {
+                        "code": 44001,
+                        "description": "field 'ServiceID' is required",
+                        "key": "bodyRequest.selectedServices[0].serviceID",
+                        "message": "required field missing: ancillary not found"
+                      }
+                    }
+                  },
                   "missingFieldAncillary": {
                     "summary": "Missing field: ancillary not found",
                     "value": {
@@ -8452,11 +8486,38 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": 44101,
-                    "message": "validation error: invalid services request",
-                    "description": "the services request is invalid"
+                "examples": {
+                  "missingPassengerIndex": {
+                    "summary": "Missing selectedServices[0].passengerIndex",
+                    "value": {
+                      "error": {
+                        "code": 44101,
+                        "description": "Key: 'FlightAttachServicesRequest.SelectedServices[0].PassengerIndex' Error:Field validation for 'PassengerIndex' failed on the 'required' tag",
+                        "key": "bodyRequest.selectedServices",
+                        "message": "validation error: invalid services request"
+                      }
+                    }
+                  },
+                  "missingServiceId": {
+                    "summary": "Missing selectedServices[0].serviceId",
+                    "value": {
+                      "error": {
+                        "code": 44101,
+                        "description": "Key: 'FlightAttachServicesRequest.SelectedServices[0].ServiceID' Error:Field validation for 'ServiceID' failed on the 'required' tag",
+                        "key": "bodyRequest.selectedServices",
+                        "message": "validation error: invalid services request"
+                      }
+                    }
+                  },
+                  "invalidServicesRequest": {
+                    "summary": "Invalid services request",
+                    "value": {
+                      "error": {
+                        "code": 44101,
+                        "message": "validation error: invalid services request",
+                        "description": "the services request is invalid"
+                      }
+                    }
                   }
                 }
               }
@@ -10796,6 +10857,28 @@
                   "$ref": "#/components/schemas/Error"
                 },
                 "examples": {
+                  "missingPrebookId": {
+                    "summary": "Missing prebookId",
+                    "value": {
+                      "error": {
+                        "code": 45013,
+                        "description": "field 'PrebookID' is required",
+                        "key": "bodyRequest.prebookID",
+                        "message": "missing required field: invalid passenger data"
+                      }
+                    }
+                  },
+                  "missingPaymentMethod": {
+                    "summary": "Missing payment.method",
+                    "value": {
+                      "error": {
+                        "code": 45009,
+                        "description": "payment method must be CREDIT, TRANSACTION_ID, CREDIT_CARD, ACC_CREDIT_CARD, or THIRD_PARTY",
+                        "key": "bodyRequest.payment.method",
+                        "message": "invalid format: payment method unsupported"
+                      }
+                    }
+                  },
                   "invalidFormatPassengerData": {
                     "summary": "Invalid format: passenger data",
                     "value": {
@@ -11142,7 +11225,7 @@
           "Flight Bookings"
         ],
         "summary": "1. Create a checkout session (PREBOOK)",
-        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services — all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true — for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer → payment setup (Stripe payment intent or credit line) → books with provider → fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** (sandbox or whitelabel) and either an **enabled credit line** or a **whitelabel/CMI** checkout (no Stripe intent; complete payment via WL and call `/flights/bookings` with `payment.method: THIRD_PARTY` and `payment.token`)\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, phone), `passengers` (with birthday, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` when paying on credit line or via whitelabel/CMI (requires payment bypass); otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
+        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services — all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true — for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer → payment setup (Stripe payment intent or credit line) → books with provider → fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** (sandbox or whitelabel) and either an **enabled credit line** or a **whitelabel/CMI** checkout (no Stripe intent; complete payment via WL and call `/flights/bookings` with `payment.method: THIRD_PARTY` and `payment.token`)\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, `phoneCountryCode`, phone), `passengers` (with `passengerType`, birthday, gender, nationality, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` when paying on credit line or via whitelabel/CMI (requires payment bypass); otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -11260,6 +11343,7 @@
                       "firstName",
                       "lastName",
                       "email",
+                      "phoneCountryCode",
                       "phoneNumber"
                     ],
                     "properties": {
@@ -11285,7 +11369,7 @@
                       },
                       "phoneCountryCode": {
                         "type": "string",
-                        "description": "Phone country code without + (e.g. 1 for US, 33 for France)",
+                        "description": "Phone country calling code without + (e.g. 1 for US, 33 for France). Required by the flights provider.",
                         "example": "33"
                       },
                       "phoneNumber": {
@@ -11300,6 +11384,14 @@
                     "description": "List of passengers travelling. Length must match the adults+children+infants counts from the search.",
                     "items": {
                       "type": "object",
+                      "required": [
+                        "passengerType",
+                        "firstName",
+                        "lastName",
+                        "birthday",
+                        "gender",
+                        "nationality"
+                      ],
                       "properties": {
                         "birthday": {
                           "type": "string",
@@ -11308,22 +11400,27 @@
                         },
                         "documentExpiry": {
                           "type": "string",
-                          "description": "Travel document expiry date (YYYY-MM-DD)",
+                          "format": "date",
+                          "description": "Travel document expiry date (YYYY-MM-DD) (optional)",
                           "example": "2030-04-28"
                         },
                         "documentIssueCountry": {
                           "type": "string",
-                          "description": "ISO country code of the document issuing country",
+                          "description": "ISO 3166-1 alpha-2 code of the document issuing country (optional)",
                           "example": "US"
                         },
                         "documentNumber": {
                           "type": "string",
-                          "description": "Travel document number",
+                          "description": "Travel document number (optional)",
                           "example": "123456789"
                         },
                         "documentType": {
                           "type": "string",
-                          "description": "Type of travel document (e.g. passport, id_card)",
+                          "enum": [
+                            "passport",
+                            "id"
+                          ],
+                          "description": "Type of travel document (optional)",
                           "example": "passport"
                         },
                         "firstName": {
@@ -11333,7 +11430,7 @@
                         },
                         "gender": {
                           "type": "string",
-                          "description": "Passenger gender: M or F",
+                          "description": "Passenger gender: M, F, or X",
                           "example": "M"
                         },
                         "lastName": {
@@ -11353,8 +11450,24 @@
                         },
                         "passengerType": {
                           "type": "integer",
-                          "description": "Passenger type: 0 = adult, 1 = child, 2 = infant",
+                          "enum": [
+                            0,
+                            1,
+                            2
+                          ],
+                          "description": "Passenger type: 0 = adult (12+), 1 = child (2–11), 2 = infant (under 2). Required by the flights provider.",
                           "example": 0
+                        },
+                        "title": {
+                          "type": "string",
+                          "enum": [
+                            "MR",
+                            "MS",
+                            "MRS",
+                            "MISS"
+                          ],
+                          "description": "Optional passenger title/salutation",
+                          "example": "MR"
                         },
                         "loyaltyPrograms": {
                           "type": "array",
@@ -11988,7 +12101,106 @@
                         "code": 43001,
                         "description": "field 'OfferID' is required",
                         "message": "required prebook field is missing",
-                        "key": "bodyRequest.offerID"
+                        "key": "bodyRequest.offerId"
+                      }
+                    }
+                  },
+                  "missingPhoneCountryCode": {
+                    "summary": "Missing contact.phoneCountryCode",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'PhoneCountryCode' is required",
+                        "key": "bodyRequest.contact.phoneCountryCode",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "emptyPhoneCountryCode": {
+                    "summary": "Empty contact.phoneCountryCode",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'PhoneCountryCode' is required",
+                        "key": "bodyRequest.contact.phoneCountryCode",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "missingPhoneNumber": {
+                    "summary": "Missing contact.phoneNumber",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'PhoneNumber' is required",
+                        "key": "bodyRequest.contact.phoneNumber",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "missingPassengerType": {
+                    "summary": "Missing passengers[0].passengerType",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'PassengerType' is required",
+                        "key": "bodyRequest.passengers[0].passengerType",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "invalidPassengerType": {
+                    "summary": "Invalid passengers[0].passengerType (must be 0, 1, or 2)",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "invalid value for 'PassengerType', must be one of: 0, 1, 2",
+                        "key": "bodyRequest.passengers[0].passengerType",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "emptyContactFirstName": {
+                    "summary": "Empty contact.firstName",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'FirstName' is required",
+                        "key": "bodyRequest.contact.firstName",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "missingPassengers": {
+                    "summary": "Missing passengers",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'Passengers' is required",
+                        "key": "bodyRequest.passengers",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "missingContact": {
+                    "summary": "Missing contact (zero-value nested required fields)",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "field 'FirstName' is required",
+                        "key": "bodyRequest.contact.firstName",
+                        "message": "required prebook field is missing"
+                      }
+                    }
+                  },
+                  "invalidOfferId": {
+                    "summary": "Invalid offerId (binding passed)",
+                    "value": {
+                      "error": {
+                        "code": 43001,
+                        "description": "invalid offerId",
+                        "key": "bodyRequest.offerId",
+                        "message": "required prebook field is missing"
                       }
                     }
                   },
@@ -12295,11 +12507,27 @@
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": 44101,
-                    "message": "validation error: invalid services request",
-                    "description": "the services request is invalid"
+                "examples": {
+                  "missingBatchId": {
+                    "summary": "Missing batchId",
+                    "value": {
+                      "error": {
+                        "code": 44101,
+                        "description": "Key: 'FlightTicketedServicesConfirmRequest.BatchID' Error:Field validation for 'BatchID' failed on the 'required' tag",
+                        "key": "bodyRequest.batchId",
+                        "message": "validation error: invalid services request"
+                      }
+                    }
+                  },
+                  "invalidServicesRequest": {
+                    "summary": "Invalid services request",
+                    "value": {
+                      "error": {
+                        "code": 44101,
+                        "message": "validation error: invalid services request",
+                        "description": "the services request is invalid"
+                      }
+                    }
                   }
                 }
               }
