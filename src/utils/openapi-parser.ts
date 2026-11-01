@@ -1,4 +1,4 @@
-import { readFileSync } from 'fs';
+import { readdirSync, readFileSync } from 'fs';
 import { join } from 'path';
 
 export interface OpenAPISpec {
@@ -68,18 +68,13 @@ export interface ParsedEndpoint {
 
 export function loadOpenAPISpecs(specsDir: string): Map<string, OpenAPISpec> {
   const specs = new Map<string, OpenAPISpec>();
-  const specFiles = [
-    'search.json',
-    'booking.json',
-    'voucher.json',
-    'analytics.json',
-    'static.json',
-    'loyalty.json',
-    'supplyCustomization.json',
-    'prices.json',
-    'flights.json',
-    'experiences.json',
-  ];
+  let specFiles: string[] = [];
+  try {
+    specFiles = readdirSync(specsDir).filter((file) => file.endsWith('.json')).sort();
+  } catch (error) {
+    console.error(`Failed to read ${specsDir}:`, error);
+    return specs;
+  }
 
   for (const file of specFiles) {
     try {

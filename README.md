@@ -13,12 +13,30 @@ MCP endpoint: `http://localhost:3000/api/mcp`
 
 ## ChatGPT Setup
 
-Add to ChatGPT MCP Server URL:
-```
-https://mcp.liteapi.travel/api/mcp?apiKey=YOUR_LITEAPI_KEY
+Send the key on the `X-API-Key` header. The URL stays free of the secret:
+
+```json
+{
+  "mcpServers": {
+    "liteapi": {
+      "url": "https://mcp.liteapi.travel/api/mcp",
+      "headers": {
+        "X-API-Key": "YOUR_LITEAPI_KEY"
+      }
+    }
+  }
+}
 ```
 
-Or set `LITEAPI_API_KEY` in Vercel environment variables for single-tenant deployment.
+`?apiKey=` on the URL and `Authorization: Bearer` still work. Header wins if more than one is set.
+
+For the local stdio server, set `LITEAPI_API_KEY` instead. There is no HTTP header on stdio.
+
+With no key, sample calls use the shared sandbox key `sand_ca230deb-5a6b-42e7-bb72-869facd8892b`. That key only hits sandbox. Send `X-API-Key` to use your own key. `list_endpoints`, `describe_endpoint`, `search_docs`, and `fetch_docs_page` stay available either way.
+
+```
+https://mcp.liteapi.travel/api/mcp
+```
 
 ---
 
@@ -27,7 +45,7 @@ Or set `LITEAPI_API_KEY` in Vercel environment variables for single-tenant deplo
 
 - 🔄 **Dynamic Tool Generation**: Automatically generates MCP tools from OpenAPI specs
 - 📚 **Multiple API Modules**: Supports Search, Booking, Vouchers, Analytics, Static, Loyalty, and Supply Customization APIs
-- 🔐 **API Key Authentication**: Secure API key management via environment variables
+- 🔐 **API key optional**: no key runs sample calls on the shared sandbox key. `X-API-Key`, `?apiKey=`, or `Authorization: Bearer` uses the caller's key.
 - 🎯 **Type-Safe**: Uses Zod for schema validation and type safety
 - 🚀 **Easy Integration**: Works with Claude Desktop and other MCP-compatible clients
 
@@ -35,7 +53,7 @@ Or set `LITEAPI_API_KEY` in Vercel environment variables for single-tenant deplo
 
 - Node.js 18+
 - npm or yarn
-- LiteAPI API Key
+- LiteAPI API key, only if this process should execute live API calls
 
 ## Installation
 
@@ -318,7 +336,7 @@ npm run watch
 
 ## Environment Variables
 
-- `LITEAPI_API_KEY` (required): Your LiteAPI API key for authentication
+- `LITEAPI_API_KEY` (stdio only): API key for live calls. Omit it to run discovery, wiring, and docs tools.
 
 ## API Modules
 

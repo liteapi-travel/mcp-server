@@ -4,8 +4,9 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
-import { loadOpenAPISpecs, parseEndpoints } from '../src/utils/openapi-parser';
 import { makeAPIRequest } from '../src/utils/api-client';
+import { loadEndpointMap, wiringForEndpoint } from '../src/utils/catalog';
+import { registerDiscoveryTools } from '../src/utils/discovery-tools';
 
 const READ_ONLY_POST_OPS = new Set([
   'post_hotels_rates',
@@ -95,32 +96,15 @@ function createZodShape(endpoint: any): Record<string, z.ZodTypeAny> {
   return shape;
 }
 
-export type ApiKeyGetter = (extra?: { authInfo?: { extra?: { apiKey?: string } } }) => string;
+export type ApiKeyGetter = (extra?: { authInfo?: { extra?: { apiKey?: string } } }) => string | undefined;
 
 export function registerLiteApiTools(server: McpServer, apiKeyOrGetter: string | ApiKeyGetter) {
   const getApiKey: ApiKeyGetter = (extra) => {
-    if (typeof apiKeyOrGetter === 'function') {
-      return apiKeyOrGetter(extra);
-    }
-    return apiKeyOrGetter;
+    const value = typeof apiKeyOrGetter === 'function' ? apiKeyOrGetter(extra) : apiKeyOrGetter;
+    return value || undefined;
   };
-  const projectRoot = process.cwd();
-  const specsDir = `${projectRoot}/openapi-schemas`;
-  const specs = loadOpenAPISpecs(specsDir);
-  const endpoints = new Map<string, any>();
-
-  for (const [, spec] of specs.entries()) {
-    const parsedEndpoints = parseEndpoints(spec);
-    for (const endpoint of parsedEndpoints) {
-      let finalToolName = endpoint.operationId;
-      let counter = 1;
-      while (endpoints.has(finalToolName)) {
-        finalToolName = `${endpoint.operationId}_${counter}`;
-        counter++;
-      }
-      endpoints.set(finalToolName, { ...endpoint, operationId: finalToolName });
-    }
-  }
+  const endpoints = loadEndpointMap();
+  registerDiscoveryTools(server, endpoints);
 
   for (const endpoint of endpoints.values()) {
     const inputSchema = createZodShape(endpoint);
@@ -131,8 +115,12 @@ export function registerLiteApiTools(server: McpServer, apiKeyOrGetter: string |
       inputSchema as any,
       annotations,
       async (args: any, extra: { authInfo?: { extra?: { apiKey?: string } } }) => {
-        const apiKey = getApiKey(extra) || process.env.LITEAPI_API_KEY;
-        if (!apiKey) throw new Error('API key not found. Pass ?apiKey= in URL or set LITEAPI_API_KEY.');
+        const apiKey = getApiKey(extra);
+        if (!apiKey) {
+          return {
+            content: [{ type: 'text' as const, text: JSON.stringify(wiringForEndpoint(endpoint), null, 2) }],
+          };
+        }
         try {
           const pathParams: Record<string, any> = {};
           const queryParams: Record<string, any> = {};

@@ -20,9 +20,7 @@ async function testServer() {
   console.log('🚀 Testing LiteAPI MCP Server...\n');
 
   if (!process.env.LITEAPI_API_KEY) {
-    console.error('❌ Error: LITEAPI_API_KEY environment variable not set');
-    console.error('   Please run: export LITEAPI_API_KEY=your_api_key_here');
-    process.exit(1);
+    console.error('No LITEAPI_API_KEY. Sample calls use the shared sandbox key.');
   }
 
   const serverPath = join(__dirname, 'dist', 'index.js');

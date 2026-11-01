@@ -4,6 +4,9 @@ import { z } from 'zod';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { loadOpenAPISpecs, parseEndpoints, ParsedEndpoint } from './utils/openapi-parser.js';
 import { makeAPIRequest } from './utils/api-client.js';
+import { wiringForEndpoint } from './utils/catalog.js';
+import { registerDiscoveryTools } from './utils/discovery-tools.js';
+import { SANDBOX_SAMPLE_API_KEY } from './utils/sandbox-key.js';
 
 const API_KEY_ENV = 'LITEAPI_API_KEY';
 
@@ -40,18 +43,12 @@ function getToolAnnotations(method: string, operationId: string): ToolAnnotation
 
 export class LiteAPIMCPServer {
   private server: McpServer;
-  private apiKey: string;
+  private apiKey?: string;
   private endpoints: Map<string, ParsedEndpoint> = new Map();
 
   constructor() {
-    const apiKey = process.env[API_KEY_ENV];
-    if (!apiKey) {
-      throw new Error(
-        `Missing required environment variable: ${API_KEY_ENV}. ` +
-        `Please set it before starting the server.`
-      );
-    }
-    this.apiKey = apiKey;
+    // Env key wins. Otherwise sample calls use the shared sandbox key.
+    this.apiKey = process.env[API_KEY_ENV] || SANDBOX_SAMPLE_API_KEY;
 
     this.server = new McpServer(
       {
@@ -127,6 +124,17 @@ export class LiteAPIMCPServer {
               }
             }
 
+            if (!this.apiKey) {
+              return {
+                content: [
+                  {
+                    type: 'text' as const,
+                    text: JSON.stringify(wiringForEndpoint(endpoint), null, 2),
+                  },
+                ],
+              };
+            }
+
             // Make the API request
             const result = await makeAPIRequest(
               endpoint.baseUrl,
@@ -160,6 +168,7 @@ export class LiteAPIMCPServer {
         }
       );
     }
+    registerDiscoveryTools(this.server, this.endpoints);
   }
 
   private createZodShape(endpoint: ParsedEndpoint): Record<string, z.ZodTypeAny> {

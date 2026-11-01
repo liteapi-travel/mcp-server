@@ -1,7 +1,8 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import { LiteAPIMCPServer } from '../src/server.js';
 import { makeAPIRequest } from '../src/utils/api-client.js';
-import { loadOpenAPISpecs, parseEndpoints } from '../src/utils/openapi-parser.js';
+import { loadEndpointMap, wiringForEndpoint } from '../src/utils/catalog.js';
+import { SANDBOX_SAMPLE_API_KEY } from '../src/utils/sandbox-key.js';
 
 // Cache the server instance and endpoints
 let serverInstance: LiteAPIMCPServer | null = null;
@@ -16,24 +17,7 @@ function getServerInstance(): LiteAPIMCPServer {
 
 function getEndpoints(): Map<string, any> {
   if (!endpointsCache) {
-    // In Vercel, use process.cwd() which should point to the project root
-    const projectRoot = process.cwd();
-    const specsDir = `${projectRoot}/openapi-schemas`;
-    const specs = loadOpenAPISpecs(specsDir);
-    endpointsCache = new Map();
-
-    for (const [specName, spec] of specs.entries()) {
-      const endpoints = parseEndpoints(spec);
-      for (const endpoint of endpoints) {
-        let finalToolName = endpoint.operationId;
-        let counter = 1;
-        while (endpointsCache.has(finalToolName)) {
-          finalToolName = `${endpoint.operationId}_${counter}`;
-          counter++;
-        }
-        endpointsCache.set(finalToolName, { ...endpoint, operationId: finalToolName });
-      }
-    }
+    endpointsCache = loadEndpointMap();
   }
   return endpointsCache;
 }
@@ -49,24 +33,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
-    // Extract API key from request (header, query param, or Bearer token) or use env var
-    const apiKey =
-      (req.query.apiKey as string) ||
-      (req.headers['x-api-key'] as string) ||
-      (req.headers['X-API-Key'] as string) ||
-      (req.headers['authorization'] as string)?.replace(/^Bearer\s+/i, '') ||
-      process.env.LITEAPI_API_KEY;
-
-    if (!apiKey) {
-      return res.status(401).json({
-        error: 'API key required',
-        message: 'Please provide your LiteAPI API key via one of these methods:\n' +
-          '1. Header: X-API-Key: your_api_key\n' +
-          '2. Header: Authorization: Bearer your_api_key\n' +
-          '3. Query parameter: ?apiKey=your_api_key\n' +
-          '4. Or set LITEAPI_API_KEY environment variable on the server'
-      });
-    }
+    // Header, then ?apiKey=, then Bearer. None of those → shared sandbox key.
+    const headerKey = req.headers['x-api-key'];
+    const fromHeader = (Array.isArray(headerKey) ? headerKey[0] : headerKey)?.trim();
+    const fromQuery = (req.query.apiKey as string | undefined)?.trim();
+    const authorization = req.headers['authorization'];
+    const authValue = Array.isArray(authorization) ? authorization[0] : authorization;
+    const fromBearer = authValue?.replace(/^Bearer\s+/i, '').trim();
+    const callerKey = fromHeader || fromQuery || fromBearer;
+    const apiKey = callerKey || SANDBOX_SAMPLE_API_KEY;
 
     // List all available endpoints
     if (req.method === 'GET' && (req.url === '/api' || req.url === '/api/' || !req.url || req.url === '/')) {
@@ -80,8 +55,10 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       }));
 
       return res.status(200).json({
+        mode: callerKey ? 'live' : 'sandbox-sample',
         tools,
         count: tools.length,
+        discoveryTools: ['list_endpoints', 'describe_endpoint', 'search_docs', 'fetch_docs_page'],
       });
     }
 
@@ -152,6 +129,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
             body = {};
           }
         }
+      }
+
+      if (!apiKey) {
+        return res.status(200).json({
+          success: true,
+          tool,
+          result: wiringForEndpoint(endpoint),
+        });
       }
 
       // Make the API request
