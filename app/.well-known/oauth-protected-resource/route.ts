@@ -1,12 +1,9 @@
-import {
-  protectedResourceHandler,
-  metadataCorsOptionsRequestHandler,
-} from 'mcp-handler';
+import { corsPreflight, jsonMetadata, protectedResourceMetadata } from '../../../lib/oauth-metadata';
 
-const handler = protectedResourceHandler({
-  authServerUrls: ['https://mcp.liteapi.travel'],
-});
+export function GET() {
+  return jsonMetadata(protectedResourceMetadata());
+}
 
-const corsHandler = metadataCorsOptionsRequestHandler();
-
-export { handler as GET, corsHandler as OPTIONS };
+export function OPTIONS() {
+  return corsPreflight();
+}
