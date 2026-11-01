@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { OpenAPISchema } from './openapi-parser.js';
+import { OpenAPISchema } from './openapi-parser';
 
 /**
  * Converts OpenAPI schema to Zod schema

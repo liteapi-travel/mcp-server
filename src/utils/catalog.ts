@@ -4,7 +4,7 @@ import {
   parseEndpoints,
   type OpenAPISchema,
   type ParsedEndpoint,
-} from './openapi-parser.js';
+} from './openapi-parser';
 
 const DOCS_URL = /https:\/\/docs\.liteapi\.travel\/[^\s)"']+/g;
 

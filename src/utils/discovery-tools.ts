@@ -1,8 +1,8 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
-import { findEndpoint, searchEndpoints, wiringForEndpoint } from './catalog.js';
-import { fetchDocsPage, searchDocs } from './docs.js';
-import type { ParsedEndpoint } from './openapi-parser.js';
+import { findEndpoint, searchEndpoints, wiringForEndpoint } from './catalog';
+import { fetchDocsPage, searchDocs } from './docs';
+import type { ParsedEndpoint } from './openapi-parser';
 
 const readOnly = {
   readOnlyHint: true,
