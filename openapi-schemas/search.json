@@ -21,6 +21,451 @@
         "type": "apiKey",
         "in": "header"
       }
+    },
+    "schemas": {
+      "HotelRoomType": {
+        "type": "object",
+        "properties": {
+          "roomTypeId": {
+            "type": "string",
+            "description": "Unique identifier for the room type"
+          },
+          "name": {
+            "type": "string",
+            "description": "The name of the room type booked, including key attributes."
+          },
+          "offerId": {
+            "type": "string",
+            "description": "The offer ID passed during the prebook call, provided again here for reference."
+          },
+          "supplier": {
+            "type": "string",
+            "description": "The supplier providing the inventory for this booking. By default this will always be Nuitee."
+          },
+          "supplierId": {
+            "type": "integer",
+            "description": "The numerical identifier of the supplier. By default Nuitee's ID is always 2."
+          },
+          "rates": {
+            "type": "array",
+            "description": "An array of objects detailing the pricing and availability of the selected room rates. There will be a number of rates equal to the occupancies request.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "rateId": {
+                  "type": "string",
+                  "description": "The unique identifier for a specific rate within the offer."
+                },
+                "occupancyNumber": {
+                  "type": "integer",
+                  "description": "The number identifying which guest is associated with each room in a multi-room booking."
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The name of the room type booked, including key attributes."
+                },
+                "maxOccupancy": {
+                  "type": "integer",
+                  "description": "The maximum number of guests allowed in this room."
+                },
+                "adultCount": {
+                  "type": "integer",
+                  "description": "The number of adults included in this booking."
+                },
+                "childCount": {
+                  "type": "integer",
+                  "description": "The number of children included in this booking."
+                },
+                "childrenAges": {
+                  "type": "array",
+                  "description": "The ages of children included in this booking for this rate. Empty if no children are booked.",
+                  "items": {
+                    "type": "integer"
+                  }
+                },
+                "boardType": {
+                  "type": "string",
+                  "description": "A short code representing the meal plan included with the booking."
+                },
+                "boardName": {
+                  "type": "string",
+                  "description": "The full name of the meal plan included in the booking."
+                },
+                "remarks": {
+                  "type": "string",
+                  "description": "Any special remarks related to the booking or room type."
+                },
+                "priceType": {
+                  "type": "string",
+                  "description": "The pricing model applied to this rate (e.g., commission)"
+                },
+                "commission": {
+                  "type": "array",
+                  "description": "Defines how pricing is structured. Only commission currently used. It can be set to 0 for net rates. The markup is not going to be applied in case of paymentTypes PROPERTY_PAY.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "amount": {
+                        "type": "number",
+                        "description": "The amount of commission included in the total price."
+                      },
+                      "currency": {
+                        "type": "string",
+                        "description": "The currency the commission is in."
+                      }
+                    }
+                  }
+                },
+                "retailRate": {
+                  "type": "object",
+                  "properties": {
+                    "total": {
+                      "type": "array",
+                      "description": "An array containing the total price due for this room.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "number",
+                            "description": "The total cost amount due to book this room. This is what the end user will pay."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "The currency the total is in."
+                          }
+                        }
+                      }
+                    },
+                    "suggestedSellingPrice": {
+                      "type": "array",
+                      "description": "The suggested (public) selling price for all the rooms combined, used for pricing control. It comes from the supplier, or, for accounts with public price enrichment, from public booking platforms: by default a single entry, the stay total including taxes and fees of the higher of Expedia and Booking.com, or, when neither shows a price with taxes, of another public booking platform (named in `source`).",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "number",
+                            "description": "The minmum amount the room can be sold for publicly."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "The currency the SSP is in."
+                          },
+                          "source": {
+                            "type": "string",
+                            "description": "The source of the SSP if we have it: the supplier, or the public booking platform the price comes from (e.g. Expedia, Booking.com, Hotels.com)."
+                          }
+                        }
+                      }
+                    },
+                    "initialPrice": {
+                      "type": "array",
+                      "description": "This object represents the hotel’s standard listed price for the room. It is always equal to or higher than the total price. If higher, it indicates a hotel discount is applied.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "amount": {
+                            "type": "number",
+                            "description": "The base monetary value of the booking rate, inclusive of taxes and commission fees."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "Currency of the initial price"
+                          }
+                        }
+                      }
+                    },
+                    "taxesAndFees": {
+                      "type": "array",
+                      "description": "Breakdown of applicable taxes and additional charges",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "included": {
+                            "type": "boolean",
+                            "description": "Indicates whether the tax is included in the total price"
+                          },
+                          "description": {
+                            "type": "string",
+                            "description": "Description of the tax or fee"
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "Cost of the tax or fee"
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "Currency of the tax or fee"
+                          }
+                        }
+                      }
+                    },
+                    "promotions": {
+                      "type": "array",
+                      "description": "An array of promotions or special offers associated with this rate. Promotions can include early booking deals, seasonal discounts, and other special offers.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "name": {
+                            "type": "string",
+                            "description": "The name or title of the promotion."
+                          },
+                          "from": {
+                            "type": "string",
+                            "description": "The start date of the promotion in YYYY-MM-DD format (ISO 8601).",
+                            "example": "2025-11-14"
+                          },
+                          "to": {
+                            "type": "string",
+                            "description": "The end date of the promotion in YYYY-MM-DD format (ISO 8601).",
+                            "example": "2025-11-27"
+                          },
+                          "discount": {
+                            "type": "number",
+                            "description": "The discount value applied by this promotion."
+                          },
+                          "discountType": {
+                            "type": "string",
+                            "description": "The type of discount. Common values include 'percentage' for percentage-based discounts.",
+                            "example": "percentage"
+                          },
+                          "promotionCode": {
+                            "type": "string",
+                            "description": "An optional promotion code that can be used to apply this promotion. May be empty if no code is required."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "The currency associated with the promotion discount."
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "cancellationPolicies": {
+                  "type": "object",
+                  "description": "An object containing the cancellation rules and conditions for the booking.",
+                  "properties": {
+                    "cancelPolicyInfos": {
+                      "type": "array",
+                      "description": "An array of objects detailing specific cancellation penalties and deadlines.",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "cancelTime": {
+                            "type": "string",
+                            "description": "The deadline to cancel before incurring a fee (ISO datetime format)."
+                          },
+                          "amount": {
+                            "type": "number",
+                            "description": "The monetary penalty applied if the booking is canceled after the deadline. Can be 0 which means its fully refundable."
+                          },
+                          "currency": {
+                            "type": "string",
+                            "description": "The currency of the cancellation fee."
+                          },
+                          "type": {
+                            "type": "string",
+                            "description": "The type of cancellation penalty (e.g., 'amount' for a fixed fee)."
+                          },
+                          "timezone": {
+                            "type": "string",
+                            "description": "The timezone in which the cancellation policy applies. Always GMT, even if not listed."
+                          }
+                        }
+                      }
+                    },
+                    "hotelRemarks": {
+                      "type": "array",
+                      "description": "An array of additional remarks from the hotel regarding cancellations."
+                    },
+                    "refundableTag": {
+                      "type": "string",
+                      "description": "Indicates whether the booking is refundable, Either 'NRFN' for non-refundable or RFN for refundable."
+                    }
+                  }
+                },
+                "paymentTypes": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "An array of payment types supported for this booking request."
+                },
+                "perks": {
+                  "type": "array",
+                  "description": "An array of perks or benefits associated with this rate. Perks can include amenities like breakfast, room upgrades, property credits, early check-in, late check-out, and other value-added services.",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "perkId": {
+                        "type": "integer",
+                        "description": "Unique identifier for the perk."
+                      },
+                      "name": {
+                        "type": "string",
+                        "description": "The name or description of the perk."
+                      },
+                      "amount": {
+                        "type": "number",
+                        "description": "The monetary value of the perk."
+                      },
+                      "currency": {
+                        "type": "string",
+                        "description": "The currency of the perk amount."
+                      },
+                      "level": {
+                        "type": "string",
+                        "description": "The level or tier of the perk. Possible values: 'HOTEL' for hotel-level perks, or 'ROOM_RATE' for perks aggregated to a rate within a room."
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "offerRetailRate": {
+            "type": "array",
+            "description": "Total offer price derived from summing the final prices (including base rate, taxes, fees, and adjustments) of each rate in the offer.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "type": "number",
+                  "description": "Final price at the offer level"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Currency of the offer price"
+                }
+              }
+            }
+          },
+          "suggestedSellingPrice": {
+            "type": "array",
+            "description": "The suggested (public) selling price for all the rooms combined, used for pricing control. It comes from the supplier, or, for accounts with public price enrichment, from public booking platforms: by default a single entry, the stay total including taxes and fees of the higher of Expedia and Booking.com, or, when neither shows a price with taxes, of another public booking platform (named in `source`).",
+            "items": {
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "type": "number",
+                  "description": "The minmum amount the room can be sold for publicly."
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "The currency the SSP is in."
+                },
+                "source": {
+                  "type": "string",
+                  "description": "The source of the SSP if we have it: the supplier, or the public booking platform the price comes from (e.g. Expedia, Booking.com, Hotels.com)."
+                }
+              }
+            }
+          },
+          "offerInitialPrice": {
+            "type": "array",
+            "description": "Combined original price for the offer, calculated by adding the initial prices (inclusive of taxes and commission) of each rate before any discounts or modifications.",
+            "items": {
+              "type": "object",
+              "properties": {
+                "amount": {
+                  "type": "number",
+                  "description": "Initial price"
+                },
+                "currency": {
+                  "type": "string",
+                  "description": "Currency of the initial price"
+                }
+              }
+            }
+          },
+          "priceType": {
+            "type": "string",
+            "description": "The pricing model applied to this offer (e.g., commission)"
+          },
+          "rateType": {
+            "type": "string",
+            "description": "The rate type, either 'standard' or 'package'"
+          },
+          "loyaltyMembershipIdRequired": {
+            "type": "boolean",
+            "description": "Indicates whether a valid loyalty membership ID must be supplied (via `loyaltyProgramDetails` on the rates request) to book this rate."
+          },
+          "paymentTypes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Payment methods available for this offer. Carries the supplier payment types of the offer's rates, plus `CREDIT_CARD_SCHEDULED` when the offer can be booked now and the guest card charged 24 hours before check-in instead of up front. `CREDIT_CARD_SCHEDULED` appears on any refundable or non-refundable offer (including partially refundable ones) with a check-in within 20 months, and only when the feature is enabled on your API key; pass it as `payment.method` on book with card details sent via the secure payment endpoint (https://pci-book.liteapi.travel). Advisory only — prebook re-checks eligibility and is authoritative.",
+            "example": [
+              "NUITEE_PAY",
+              "CREDIT_CARD_SCHEDULED"
+            ]
+          },
+          "paymentSchedule": {
+            "type": "string",
+            "enum": [
+              "now",
+              "later"
+            ],
+            "description": "`later` when every rate in the offer is refundable or non-refundable (including partially refundable), the check-in is within 20 months, and the account is enabled for scheduled credit card payments; otherwise `now`."
+          }
+        },
+        "description": "A room type offer with nested rates. Same shape as `/hotels/rates` roomTypes."
+      },
+      "ApiError": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Numeric error code representing the type of issue"
+              },
+              "message": {
+                "type": "string",
+                "description": "Message providing context about the error"
+              }
+            }
+          }
+        }
+      },
+      "ApiErrorWithDescription": {
+        "type": "object",
+        "required": [
+          "error"
+        ],
+        "properties": {
+          "error": {
+            "type": "object",
+            "required": [
+              "code",
+              "message"
+            ],
+            "properties": {
+              "code": {
+                "type": "integer",
+                "description": "Numeric error code representing the type of issue"
+              },
+              "message": {
+                "type": "string",
+                "description": "Message providing context about the error"
+              },
+              "description": {
+                "type": "string",
+                "description": "Additional detail about what failed validation or authorization"
+              }
+            }
+          }
+        }
+      }
     }
   },
   "paths": {
@@ -72,7 +517,7 @@
                 "properties": {
                   "hotelIds": {
                     "type": "array",
-                    "description": "An array of hotel IDs to search for availability and pricing. These are usually pulled from https://docs.liteapi.travel/reference/get_data-hotels.",
+                    "description": "An array of hotel IDs to search for availability and pricing. These are usually pulled from https://docs.liteapi.travel/reference/get_data-hotels. Cannot be combined with aiSearch.",
                     "example": [
                       "lp1897"
                     ],
@@ -234,32 +679,32 @@
                   },
                   "countryCode": {
                     "type": "string",
-                    "description": "The country code in ISO 2-letter format (e.g., 'SG' for Singapore). Instead of using hotel IDs, you can search by country/city. This is a valid main query.",
+                    "description": "The country code in ISO 2-letter format (e.g., 'SG' for Singapore). Instead of using hotel IDs, you can search by country/city. With aiSearch, countryCode is forwarded as a hard filter on semantic search (pairs with cityName). This is a valid main query.",
                     "example": "US"
                   },
                   "cityName": {
                     "type": "string",
-                    "description": "The name of the city to search for hotels in. Pairs with countryCode to do a country/city search.",
+                    "description": "The name of the city to search for hotels in. Pairs with countryCode to do a country/city search. With aiSearch, cityName is forwarded as a hard filter on semantic search so brand or vibe queries stay in that city.",
                     "example": "New York"
                   },
                   "latitude": {
                     "type": "number",
-                    "description": "The latitude coordinate for location-based hotel searches.  Instead of using hotel IDs, you can search by lat/long and a radius around that spot. This is a valid main query.",
+                    "description": "The latitude coordinate for location-based hotel searches. Instead of using hotel IDs, you can search by lat/long and a radius around that spot. With aiSearch, latitude, longitude, and radius together constrain semantic search to that area (hard radius). This is a valid main query.",
                     "example": 34.052235
                   },
                   "longitude": {
                     "type": "number",
-                    "description": "The longitude coordinate for location-based hotel searches. Pairs with latitude to do a lat/long search.",
+                    "description": "The longitude coordinate for location-based hotel searches. Pairs with latitude to do a lat/long search. Required with latitude and radius when using aiSearch for area-scoped semantic search.",
                     "example": -118.243683
                   },
                   "radius": {
                     "type": "integer",
-                    "description": "The search radius in meters for location-based searches. Pairs with latitude to do a lat/long search.",
+                    "description": "The search radius in meters for location-based searches. Pairs with latitude and longitude. Required with coordinates when using aiSearch for area-scoped semantic search.",
                     "example": 5000
                   },
                   "iataCode": {
                     "type": "string",
-                    "description": "The IATA code of the search location, typically an airport code. Instead of using hotel IDs, you can search by IATA code. This is a valid main query.",
+                    "description": "The IATA code of the search location, typically an airport code. Instead of using hotel IDs, you can search by IATA code. Cannot be combined with aiSearch. This is a valid main query.",
                     "example": "LAX"
                   },
                   "limit": {
@@ -274,7 +719,7 @@
                   },
                   "aiSearch": {
                     "type": "string",
-                    "description": "AI-powered hotel search based on a natural language query. Uses semantic search to find hotels matching the query intent. Examples: 'Romantic getaway with Italian vibes in London near the London Eye', 'hotels near Paris'. This is a valid main query.",
+                    "description": "AI-powered hotel search based on a natural language query. Uses semantic search to find hotels matching the query intent. You can scope results by passing cityName and/or countryCode (hard filters), or latitude + longitude + radius in meters (hard area filter). Location can also be included in the aiSearch string (e.g. '5 star hotels in Paris'). Cannot be combined with hotelIds, placeId, iataCode, or zip — the request returns 400. For exact brand matching without semantic search, drop aiSearch and use cityName + countryCode + hotelName. This is a valid main query.",
                     "example": "Romantic getaway with Italian vibes in London near the London Eye"
                   },
                   "minReviewsCount": {
@@ -289,12 +734,12 @@
                   },
                   "zip": {
                     "type": "string",
-                    "description": "The zip code of the search location. This is a filter on top of the main query.",
+                    "description": "The zip code of the search location. This is a filter on top of the main query. Cannot be combined with aiSearch.",
                     "example": "10012"
                   },
                   "placeId": {
                     "type": "string",
-                    "description": "The unique Place ID of the search location. Instead of using hotel IDs, pass a Place ID to get all the hotels in the specified region. This is a valid main query.",
+                    "description": "The unique Place ID of the search location. Instead of using hotel IDs, pass a Place ID to get all the hotels in the specified region. Cannot be combined with aiSearch. This is a valid main query.",
                     "example": "ChIJYeZuBI9YwokRjMDs_IEyCwo"
                   },
                   "starRating": {
@@ -570,7 +1015,7 @@
                                           },
                                           "suggestedSellingPrice": {
                                             "type": "array",
-                                            "description": "The minimum public selling price for all the rooms combined. This is used for pricing control.",
+                                            "description": "The suggested (public) selling price for all the rooms combined, used for pricing control. It comes from the supplier, or, for accounts with public price enrichment, from public booking platforms: by default a single entry, the stay total including taxes and fees of the higher of Expedia and Booking.com, or, when neither shows a price with taxes, of another public booking platform (named in `source`).",
                                             "items": {
                                               "type": "object",
                                               "properties": {
@@ -584,7 +1029,7 @@
                                                 },
                                                 "source": {
                                                   "type": "string",
-                                                  "description": "The source of the SSP if we have it. "
+                                                  "description": "The source of the SSP if we have it: the supplier, or the public booking platform the price comes from (e.g. Expedia, Booking.com, Hotels.com)."
                                                 }
                                               }
                                             }
@@ -774,7 +1219,7 @@
                                 },
                                 "suggestedSellingPrice": {
                                   "type": "array",
-                                  "description": "The minimum public selling price for all the rooms combined. This is used for pricing control.",
+                                  "description": "The suggested (public) selling price for all the rooms combined, used for pricing control. It comes from the supplier, or, for accounts with public price enrichment, from public booking platforms: by default a single entry, the stay total including taxes and fees of the higher of Expedia and Booking.com, or, when neither shows a price with taxes, of another public booking platform (named in `source`).",
                                   "items": {
                                     "type": "object",
                                     "properties": {
@@ -788,7 +1233,7 @@
                                       },
                                       "source": {
                                         "type": "string",
-                                        "description": "The source of the SSP if we have it. "
+                                        "description": "The source of the SSP if we have it: the supplier, or the public booking platform the price comes from (e.g. Expedia, Booking.com, Hotels.com)."
                                       }
                                     }
                                   }
@@ -1264,8 +1709,8 @@
         "tags": [
           "Hotel rates"
         ],
-        "summary": "Batch rates by check-in date (enterprise)",
-        "description": "Enterprise-only. Prices every length-of-stay \u00d7 occupancy for one check-in across up to 200 hotels. Streams NDJSON (one hotel object per line). Each stay is trimmed to the cheapest RFN (free-cancel until checkin\u2212N days, default N=5) and cheapest NRFN per mappedRoomId \u00d7 feed. Cells request maxRatesPerHotel rates before trim (default 10). Rate-limit cost = losCount \u00d7 occupancyCount \u00d7 feedCount; returned in `X-RateLimit-Cost`. offerId values are prebookable like /hotels/rates.",
+        "summary": "Batch rates by check-in date",
+        "description": "## Overview\n\nEnterprise-only endpoint that prices every length of stay (LOS) \u00d7 occupancy combination for a single check-in across up to 200 hotels. LOS is the number of nights between check-in and check-out. Returns an NDJSON stream (one hotel object per line) so you can process results as they arrive.\n\n## When to Use\n\n- **Build a LOS matrix** for a check-in date across many hotels without calling `/hotels/rates` repeatedly\n- **Compare occupancy options** (e.g. 2 adults vs 2 adults + child) for the same stay window\n\n## What You Get\n\n- **One NDJSON line per hotel** with every LOS \u00d7 occupancy cell exactly once\n- **Trimmed rates** \u2014 cheapest RFN (free-cancel until checkin\u2212N days, default N=5) and cheapest NRFN per `mappedRoomId` \u00d7 feed\n- **Prebookable `offerId` values** \u2014 same booking flow as `/hotels/rates`\n- **Per-cell status** \u2014 `ok`, `no_availability`, or `error` with a machine-readable code\n\n## Key Features\n\n- **Inclusive LOS range** via `lengthsOfStay.min` / `lengthsOfStay.max` (max 28 nights)\n- **Up to 8 occupancy options** priced independently (not multi-room in one booking)\n- **Multi-feed support** with the same `feed` / `feeds` rules as `/hotels/rates`\n- **Configurable trim depth** via `maxRatesPerHotel` (default 10 rates requested per cell before RFN/NRFN trim)\n- **Refundable deadline control** via `refundableDeadlineDaysBeforeCheckin` (default 5; set 0 to disable)\n\n## Quick Start\n\n**Required fields**: `hotelIds`, `checkin`, `lengthsOfStay`, `occupancies`, `currency`, `guestNationality`\n\n**Tip**: Start with a small LOS range (e.g. min=1, max=2) and one occupancy while integrating. Enable `roomMapping` when you need `mappedRoomId` for room content.\n\n**Rate limit**: Each call costs `losCount \u00d7 occupancyCount \u00d7 feedCount` against your API key quota. Check the `X-RateLimit-Cost` response header.\n",
         "requestBody": {
           "required": true,
           "content": {
@@ -1289,7 +1734,6 @@
                       "type": "string"
                     },
                     "example": [
-                      "lpbda92",
                       "lp1897"
                     ]
                   },
@@ -1301,6 +1745,7 @@
                   },
                   "lengthsOfStay": {
                     "type": "object",
+                    "description": "Inclusive length of stay (LOS) range in nights. Covers every checkout from checkin+min to checkin+max. Max 28.",
                     "required": [
                       "min",
                       "max"
@@ -1310,16 +1755,21 @@
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 28,
+                        "description": "Minimum length of stay in nights (inclusive). Must be less than or equal to max.",
                         "example": 1
                       },
                       "max": {
                         "type": "integer",
                         "minimum": 1,
                         "maximum": 28,
+                        "description": "Maximum length of stay in nights (inclusive). Must be greater than or equal to min.",
                         "example": 14
                       }
                     },
-                    "description": "Inclusive LOS range. Covers every checkout from checkin+min to checkin+max. Max 28."
+                    "example": {
+                      "min": 1,
+                      "max": 2
+                    }
                   },
                   "occupancies": {
                     "type": "array",
@@ -1327,6 +1777,7 @@
                     "description": "Occupancy options priced separately (not rooms in one booking).",
                     "items": {
                       "type": "object",
+                      "description": "A single occupancy option to price. Each entry is priced independently.",
                       "required": [
                         "adults"
                       ],
@@ -1334,27 +1785,46 @@
                         "adults": {
                           "type": "integer",
                           "minimum": 1,
+                          "description": "Number of adults for this occupancy option.",
                           "example": 2
                         },
                         "children": {
                           "type": "array",
+                          "description": "Ages of children for this occupancy option.",
+                          "example": [
+                            5,
+                            2
+                          ],
                           "items": {
-                            "type": "integer"
+                            "type": "integer",
+                            "description": "Child age in years.",
+                            "example": 5
                           }
                         }
                       }
-                    }
+                    },
+                    "example": [
+                      {
+                        "adults": 2,
+                        "children": [
+                          5
+                        ]
+                      }
+                    ]
                   },
                   "currency": {
                     "type": "string",
+                    "description": "The currency in which the prices will be displayed.",
                     "example": "USD"
                   },
                   "guestNationality": {
                     "type": "string",
+                    "description": "The guest's nationality in ISO 2-letter country code format.",
                     "example": "US"
                   },
                   "roomMapping": {
                     "type": "boolean",
+                    "description": "Enable room mapping to retrieve the mappedRoomId for each room. This allows you to link a rate to its specific room by combining it with hotel details, providing access to room images and additional information",
                     "example": true
                   },
                   "feeds": {
@@ -1370,7 +1840,8 @@
                   },
                   "feed": {
                     "type": "string",
-                    "description": "Optional single feed (mutually exclusive with feeds)."
+                    "description": "Optional single feed (mutually exclusive with feeds).",
+                    "example": "airbnbcug"
                   },
                   "timeout": {
                     "type": "number",
@@ -1380,7 +1851,7 @@
                   "maxRatesPerHotel": {
                     "type": "integer",
                     "minimum": 1,
-                    "description": "Optional override for how many rates each LOS\u00d7occupancy cell requests before RFN/NRFN trim. Default 10.",
+                    "description": "Optional override for how many rates each LOS×occupancy cell requests before RFN/NRFN trim. Default 10.",
                     "example": 10
                   },
                   "refundableDeadlineDaysBeforeCheckin": {
@@ -1388,6 +1859,56 @@
                     "minimum": 0,
                     "description": "RFN rates must remain free to cancel until checkin minus this many days. Default 5 (Airbnb sellable refundable window). Set 0 to disable the deadline filter.",
                     "example": 5
+                  }
+                },
+                "example": {
+                  "hotelIds": [
+                    "lp1897"
+                  ],
+                  "checkin": "2026-11-20",
+                  "lengthsOfStay": {
+                    "min": 1,
+                    "max": 2
+                  },
+                  "occupancies": [
+                    {
+                      "adults": 2,
+                      "children": [
+                        5
+                      ]
+                    }
+                  ],
+                  "currency": "USD",
+                  "guestNationality": "US",
+                  "roomMapping": true,
+                  "timeout": 30,
+                  "maxRatesPerHotel": 10,
+                  "refundableDeadlineDaysBeforeCheckin": 5
+                },
+                "x-examples": {
+                  "Batch rates for lp1897": {
+                    "hotelIds": [
+                      "lp1897"
+                    ],
+                    "checkin": "2026-11-20",
+                    "lengthsOfStay": {
+                      "min": 1,
+                      "max": 2
+                    },
+                    "occupancies": [
+                      {
+                        "adults": 2,
+                        "children": [
+                          5
+                        ]
+                      }
+                    ],
+                    "currency": "USD",
+                    "guestNationality": "US",
+                    "roomMapping": true,
+                    "timeout": 30,
+                    "maxRatesPerHotel": 10,
+                    "refundableDeadlineDaysBeforeCheckin": 5
                   }
                 }
               }
@@ -1401,6 +1922,7 @@
               "application/x-ndjson": {
                 "schema": {
                   "type": "object",
+                  "description": "One NDJSON line: rates for a single hotel across all LOS × occupancy cells.",
                   "required": [
                     "hotelId",
                     "checkin",
@@ -1409,20 +1931,27 @@
                   ],
                   "properties": {
                     "hotelId": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Hotel LP ID for this NDJSON line.",
+                      "example": "lp1897"
                     },
                     "checkin": {
                       "type": "string",
-                      "format": "date"
+                      "format": "date",
+                      "description": "Check-in date used for all stays in this hotel object (same as the request).",
+                      "example": "2026-11-20"
                     },
                     "currency": {
-                      "type": "string"
+                      "type": "string",
+                      "description": "Currency of the returned prices (same as the request).",
+                      "example": "USD"
                     },
                     "stays": {
                       "type": "array",
-                      "description": "Every LOS \u00d7 occupancy exactly once.",
+                      "description": "Every LOS × occupancy exactly once.",
                       "items": {
                         "type": "object",
+                        "description": "One priced cell for a specific length of stay and occupancy option.",
                         "required": [
                           "checkout",
                           "lengthOfStay",
@@ -1432,43 +1961,949 @@
                         "properties": {
                           "checkout": {
                             "type": "string",
-                            "format": "date"
+                            "format": "date",
+                            "description": "Check-out date for this stay (checkin + lengthOfStay).",
+                            "example": "2026-11-22"
                           },
                           "lengthOfStay": {
-                            "type": "integer"
+                            "type": "integer",
+                            "description": "Number of nights for this stay.",
+                            "example": 2
                           },
                           "adults": {
-                            "type": "integer"
+                            "type": "integer",
+                            "description": "Adult count from the occupancy option used to price this stay.",
+                            "example": 2
                           },
                           "status": {
                             "type": "string",
+                            "description": "Outcome of pricing this cell. `ok` includes rates; `no_availability` means sold out; `error` means the cell failed (see `error`).",
                             "enum": [
                               "ok",
                               "no_availability",
                               "error"
-                            ]
+                            ],
+                            "example": "ok"
                           },
                           "pricedAt": {
                             "type": "string",
-                            "format": "date-time"
+                            "format": "date-time",
+                            "description": "UTC timestamp when this cell was priced.",
+                            "example": "2026-10-19T14:30:00Z"
                           },
                           "roomTypes": {
                             "type": "array",
+                            "description": "Available room/rate offers for this stay when status is `ok`. Same shape as `/hotels/rates` roomTypes. Empty when `no_availability`; omitted when `error`.",
                             "items": {
-                              "type": "object"
+                              "$ref": "#/components/schemas/HotelRoomType"
                             }
                           },
                           "error": {
                             "type": "object",
+                            "description": "Present only when status is `error`. Describes why this cell failed.",
                             "properties": {
                               "code": {
                                 "type": "string",
+                                "description": "Machine-readable error code for the failed cell (e.g. supplier_timeout, supplier_failed, search_error).",
                                 "example": "supplier_timeout"
                               }
                             }
                           }
                         }
                       }
+                    }
+                  },
+                  "example": {
+                    "hotelId": "lp1897",
+                    "checkin": "2026-11-20",
+                    "currency": "USD",
+                    "stays": [
+                      {
+                        "checkout": "2026-11-21",
+                        "lengthOfStay": 1,
+                        "adults": 2,
+                        "status": "ok",
+                        "pricedAt": "2026-10-19T14:30:00Z",
+                        "roomTypes": [
+                          {
+                            "roomTypeId": "GQ2TOLJWGI4TK7CSIZHHYMRQGI2TAMZTGAYDEMBQPQYXYURRGIYTO7BRGU3TGNY",
+                            "offerId": "GE5ESNBSIZKVMQ2QJJNEERSPKIZEMR2OIRKVOVCTKNFVMRCWKNLUWVKKGVDVMRKWGJEEWRSOIVEVCS2PJNJEEVKPK5FFKS2SI5LFKU2TLBETIMSGKVJEGQSKLJHEMR2SGIZEWUSDIUZFOU2TJM2UOVSFJZJUKSKOIVLFKVJSJBEUMTSFJFJTETSJJJFVKT2RJNNEYQSNKUZFKU2SJE2UKVCFKZBUESS2IJDEGURSJNDVURCVK5GTEVCHGVDFMTKTKNMUYRSMIVLVMQ2RJNFEMVSNKIZFGSKRGJCU6U2TIJFVEQKWINGVUVKJGVCVMVKSINJEUVK2KREVGMSWJRFEIRJSKYZEKS2OJFDEGV2LKVFDKSCFIVKUWSCHKFNEMSKTGJHUWSSNKVHVCSSUJFJEEVJUKEZEUSSSIJDE6U2DJZFEMTSGJ5JDESSHKJFUKV2TJMZEWVSEKZFU2MSUI5FEQRSFKUZESSKVLJDFCV2LKZFU4RCVKVLVEV2JKJBVKMSRKNKESNKLKZJVEQ2IJJLE4RSDKIZEETCKINCUGVCLIVDVERCVJVHFGR2JKZDVKVKVGJEESVK2KZIVOS2OJJFEYRKPJZBTES2SJBKVGTKTKRFESMSGIVLFGRSLJJFFKNSSJNHEYSSDIVBVIS2TJNNEIRSLK5FUKSJVI5CVKVSDJBEUMSKVJFIUWTSLJFNEKT2RJNNESRRWIRBU4USUIZMTGRCNG5BFGR2BLJCEWTCKKFDU2V2UI5GUEQKHIFNEIVKNIJIUQSKZIRATOQ2TJI2HYNRSHE2XYMT4NRYDCOBZG56DELL4KVJUI7CVKN6DEMBSGUWTANBNGAYXYMRQGI2S2MBUFUYDE7D4GQXDAMA",
+                            "supplier": "nuitee",
+                            "supplierId": 2,
+                            "rates": [
+                              {
+                                "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22KRCE2WSSK5GVENSEINEVUU2HIFNEIS2NIJKUOQKZLBMU2USRI5ETEVCBJZBFCR2KGZDUWM2TG5FVMSSYLFLEWVCQKJFVMR2SIQ2EOSSBKRAVCMZUI5EVURCRJUZTIS2VLJDE2V2EKNIFCWKUJ5HEEUKHGQZFIS2OKJMUOQJTIRBU4Q2JJRBFOSCNJFNFOR2JGRKEWSK2KVDVKM2TGJHFEU2IIUZFQWKVKNDUUWRWIRCU2QSTI5KVSRCHJVNFCR2BLJCECTKEGRDUMNSGIVGUUU2HIUZVQWKNJJLEONC2KRHUSMSTJI2FEVSFKJJU6RKNLJCECTKSKZDFKWKEI5GEUVCHIFIUIQKNKIZEOQKZIF6DCNRTFY3DM7BSGAZDKLJQGMWTGMBAGAZDUMBQHIYDA7CSJ4",
+                                "occupancyNumber": 1,
+                                "name": "Standard King Room",
+                                "maxOccupancy": 2,
+                                "adultCount": 2,
+                                "childCount": 1,
+                                "childrenAges": [
+                                  5
+                                ],
+                                "boardType": "RO",
+                                "boardName": "Room Only",
+                                "remarks": "",
+                                "priceType": "commission",
+                                "commission": [
+                                  {
+                                    "amount": 6.28,
+                                    "currency": "USD"
+                                  }
+                                ],
+                                "retailRate": {
+                                  "total": [
+                                    {
+                                      "amount": 163.66,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "suggestedSellingPrice": [
+                                    {
+                                      "amount": 191.52,
+                                      "currency": "USD",
+                                      "source": "booking.com"
+                                    }
+                                  ],
+                                  "initialPrice": [
+                                    {
+                                      "amount": 163.66,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "taxesAndFees": [
+                                    {
+                                      "included": true,
+                                      "description": "NYC Javits Center Fee",
+                                      "amount": 1.62,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NYC Occupancy Tax",
+                                      "amount": 2.16,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NY State Tax",
+                                      "amount": 11.88,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NY City Tax",
+                                      "amount": 7.87,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": false,
+                                      "description": "Facility Fee",
+                                      "amount": 43.61,
+                                      "currency": "USD"
+                                    }
+                                  ]
+                                },
+                                "cancellationPolicies": {
+                                  "cancelPolicyInfos": [
+                                    {
+                                      "cancelTime": "2026-11-15 02:00:00",
+                                      "amount": 0,
+                                      "currency": "USD",
+                                      "type": "amount",
+                                      "timezone": "GMT"
+                                    }
+                                  ],
+                                  "hotelRemarks": [],
+                                  "refundableTag": "RFN"
+                                },
+                                "paymentTypes": [
+                                  "NUITEE_PAY",
+                                  "PROPERTY_PAY"
+                                ],
+                                "mappedRoomId": 42117
+                              },
+                              {
+                                "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22NRFNEXAMPLE",
+                                "occupancyNumber": 1,
+                                "name": "Standard King Room",
+                                "maxOccupancy": 2,
+                                "adultCount": 2,
+                                "childCount": 1,
+                                "childrenAges": [
+                                  5
+                                ],
+                                "boardType": "RO",
+                                "boardName": "Room Only",
+                                "remarks": "",
+                                "priceType": "commission",
+                                "commission": [
+                                  {
+                                    "amount": 4.1,
+                                    "currency": "USD"
+                                  }
+                                ],
+                                "retailRate": {
+                                  "total": [
+                                    {
+                                      "amount": 142.2,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "suggestedSellingPrice": [
+                                    {
+                                      "amount": 170.0,
+                                      "currency": "USD",
+                                      "source": "booking.com"
+                                    }
+                                  ],
+                                  "initialPrice": [
+                                    {
+                                      "amount": 142.2,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "taxesAndFees": [
+                                    {
+                                      "included": true,
+                                      "description": "NY State Tax",
+                                      "amount": 10.2,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": false,
+                                      "description": "Facility Fee",
+                                      "amount": 43.61,
+                                      "currency": "USD"
+                                    }
+                                  ]
+                                },
+                                "cancellationPolicies": {
+                                  "cancelPolicyInfos": [
+                                    {
+                                      "cancelTime": "2026-11-20 02:00:00",
+                                      "amount": 142.2,
+                                      "currency": "USD",
+                                      "type": "amount",
+                                      "timezone": "GMT"
+                                    }
+                                  ],
+                                  "hotelRemarks": [],
+                                  "refundableTag": "NRFN"
+                                },
+                                "paymentTypes": [
+                                  "NUITEE_PAY"
+                                ],
+                                "mappedRoomId": 42117
+                              }
+                            ],
+                            "offerRetailRate": {
+                              "amount": 163.66,
+                              "currency": "USD"
+                            },
+                            "suggestedSellingPrice": {
+                              "amount": 191.52,
+                              "currency": "USD",
+                              "source": "booking.com"
+                            },
+                            "offerInitialPrice": {
+                              "amount": 163.66,
+                              "currency": "USD"
+                            },
+                            "priceType": "commission",
+                            "rateType": "standard",
+                            "paymentTypes": [
+                              "NUITEE_PAY",
+                              "PROPERTY_PAY"
+                            ]
+                          }
+                        ]
+                      },
+                      {
+                        "checkout": "2026-11-22",
+                        "lengthOfStay": 2,
+                        "adults": 2,
+                        "status": "ok",
+                        "pricedAt": "2026-10-19T14:30:01Z",
+                        "roomTypes": [
+                          {
+                            "roomTypeId": "GQ2TOLJWGI4TK7CSIZHHYMRQGI2TAMZTGAYDEMBQPQYXYURRGIYTO7BRGU3TGNY",
+                            "offerId": "GE5ESNBSIZKVMQ2QJJNEERSPKIZEMR2OIRKVOVCTKNFVMRCWKNLUWVKKGVDVMRKWGJEEWRSOIVEVCS2PJNJEEVKPK5FFKS2SI5LFKU2TLBETIMSGKVJEGQSKLJHEMR2SGIZEWUSDIUZFOU2TJM2UOVSFJZJUKSKOIVLFKVJSJBEUMTSFJFJTETSJJJFVKT2RJNNEYQSNKUZFKU2SJE2UKVCFKZBUESS2IJDEGURSJNDVURCVK5GTEVCHGVDFMTKTKNMUYRSMIVLVMQ2RJNFEMVSNKIZFGSKRGJCU6U2TIJFVEQKWINGVUVKJGVCVMVKSINJEUVK2KREVGMSWJRFEIRJSKYZEKS2OJFDEGV2LKVFDKSCFIVKUWSCHKFNEMSKTGJHUWSSNKVHVCSSUJFJEEVJUKEZEUSSSIJDE6U2DJZFEMTSGJ5JDESSHKJFUKV2TJMZEWVSEKZFU2MSUI5FEQRSFKUZESSKVLJDFCV2LKZFU4RCVKVLVEV2JKJBVKMSRKNKESNKLKZJVEQ2IJJLE4RSDKIZEETCKINCUGVCLIVDVERCVJVHFGR2JKZDVKVKVGJEESVK2KZIVOS2OJJFEYRKPJZBTES2SJBKVGTKTKRFESMSGIVLFGRSLJJFFKNSSJNHEYSSDIVBVIS2TJNNEIRSLK5FUKSJVI5CVKVSDJBEUMSKVJFIUWTSLJFNEKT2RJNNESRRWIRBU4USUIZMTGRCNG5BFGR2BLJCEWTCKKFDU2V2UI5GUEQKHIFNEIVKNIJIUQSKZIRATOQ2TJI2HYNRSHE2XYMT4NRYDCOBZG56DELL4KVJUI7CVKN6DEMBSGUWTANBNGAYXYMRQGI2S2MBUFUYDE7D4GQXDAMA",
+                            "supplier": "nuitee",
+                            "supplierId": 2,
+                            "rates": [
+                              {
+                                "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22KRCE2WSSK5GVENSEINEVUU2HIFNEIS2NIJKUOQKZLBMU2USRI5ETEVCBJZBFCR2KGZDUWM2TG5FVMSSYLFLEWVCQKJFVMR2SIQ2EOSSBKRAVCMZUI5EVURCRJUZTIS2VLJDE2V2EKNIFCWKUJ5HEEUKHGQZFIS2OKJMUOQJTIRBU4Q2JJRBFOSCNJFNFOR2JGRKEWSK2KVDVKM2TGJHFEU2IIUZFQWKVKNDUUWRWIRCU2QSTI5KVSRCHJVNFCR2BLJCECTKEGRDUMNSGIVGUUU2HIUZVQWKNJJLEONC2KRHUSMSTJI2FEVSFKJJU6RKNLJCECTKSKZDFKWKEI5GEUVCHIFIUIQKNKIZEOQKZIF6DCNRTFY3DM7BSGAZDKLJQGMWTGMBAGAZDUMBQHIYDA7CSJ4",
+                                "occupancyNumber": 1,
+                                "name": "Standard King Room",
+                                "maxOccupancy": 2,
+                                "adultCount": 2,
+                                "childCount": 1,
+                                "childrenAges": [
+                                  5
+                                ],
+                                "boardType": "RO",
+                                "boardName": "Room Only",
+                                "remarks": "",
+                                "priceType": "commission",
+                                "commission": [
+                                  {
+                                    "amount": 12.5,
+                                    "currency": "USD"
+                                  }
+                                ],
+                                "retailRate": {
+                                  "total": [
+                                    {
+                                      "amount": 312.4,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "suggestedSellingPrice": [
+                                    {
+                                      "amount": 360.0,
+                                      "currency": "USD",
+                                      "source": "booking.com"
+                                    }
+                                  ],
+                                  "initialPrice": [
+                                    {
+                                      "amount": 312.4,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "taxesAndFees": [
+                                    {
+                                      "included": true,
+                                      "description": "NYC Javits Center Fee",
+                                      "amount": 1.62,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NYC Occupancy Tax",
+                                      "amount": 2.16,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NY State Tax",
+                                      "amount": 11.88,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": true,
+                                      "description": "NY City Tax",
+                                      "amount": 7.87,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": false,
+                                      "description": "Facility Fee",
+                                      "amount": 43.61,
+                                      "currency": "USD"
+                                    }
+                                  ]
+                                },
+                                "cancellationPolicies": {
+                                  "cancelPolicyInfos": [
+                                    {
+                                      "cancelTime": "2026-11-15 02:00:00",
+                                      "amount": 0,
+                                      "currency": "USD",
+                                      "type": "amount",
+                                      "timezone": "GMT"
+                                    }
+                                  ],
+                                  "hotelRemarks": [],
+                                  "refundableTag": "RFN"
+                                },
+                                "paymentTypes": [
+                                  "NUITEE_PAY",
+                                  "PROPERTY_PAY"
+                                ],
+                                "mappedRoomId": 42117
+                              },
+                              {
+                                "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22NRFNEXAMPLE",
+                                "occupancyNumber": 1,
+                                "name": "Standard King Room",
+                                "maxOccupancy": 2,
+                                "adultCount": 2,
+                                "childCount": 1,
+                                "childrenAges": [
+                                  5
+                                ],
+                                "boardType": "RO",
+                                "boardName": "Room Only",
+                                "remarks": "",
+                                "priceType": "commission",
+                                "commission": [
+                                  {
+                                    "amount": 8.2,
+                                    "currency": "USD"
+                                  }
+                                ],
+                                "retailRate": {
+                                  "total": [
+                                    {
+                                      "amount": 275.8,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "suggestedSellingPrice": [
+                                    {
+                                      "amount": 320.0,
+                                      "currency": "USD",
+                                      "source": "booking.com"
+                                    }
+                                  ],
+                                  "initialPrice": [
+                                    {
+                                      "amount": 275.8,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "taxesAndFees": [
+                                    {
+                                      "included": true,
+                                      "description": "NY State Tax",
+                                      "amount": 10.2,
+                                      "currency": "USD"
+                                    },
+                                    {
+                                      "included": false,
+                                      "description": "Facility Fee",
+                                      "amount": 43.61,
+                                      "currency": "USD"
+                                    }
+                                  ]
+                                },
+                                "cancellationPolicies": {
+                                  "cancelPolicyInfos": [
+                                    {
+                                      "cancelTime": "2026-11-20 02:00:00",
+                                      "amount": 142.2,
+                                      "currency": "USD",
+                                      "type": "amount",
+                                      "timezone": "GMT"
+                                    }
+                                  ],
+                                  "hotelRemarks": [],
+                                  "refundableTag": "NRFN"
+                                },
+                                "paymentTypes": [
+                                  "NUITEE_PAY"
+                                ],
+                                "mappedRoomId": 42117
+                              }
+                            ],
+                            "offerRetailRate": {
+                              "amount": 312.4,
+                              "currency": "USD"
+                            },
+                            "suggestedSellingPrice": {
+                              "amount": 360.0,
+                              "currency": "USD",
+                              "source": "booking.com"
+                            },
+                            "offerInitialPrice": {
+                              "amount": 312.4,
+                              "currency": "USD"
+                            },
+                            "priceType": "commission",
+                            "rateType": "standard",
+                            "paymentTypes": [
+                              "NUITEE_PAY",
+                              "PROPERTY_PAY"
+                            ]
+                          }
+                        ]
+                      }
+                    ]
+                  }
+                },
+                "examples": {
+                  "Batch response for lp1897": {
+                    "summary": "One NDJSON line for hotel lp1897 with LOS 1 and 2",
+                    "value": {
+                      "hotelId": "lp1897",
+                      "checkin": "2026-11-20",
+                      "currency": "USD",
+                      "stays": [
+                        {
+                          "checkout": "2026-11-21",
+                          "lengthOfStay": 1,
+                          "adults": 2,
+                          "status": "ok",
+                          "pricedAt": "2026-10-19T14:30:00Z",
+                          "roomTypes": [
+                            {
+                              "roomTypeId": "GQ2TOLJWGI4TK7CSIZHHYMRQGI2TAMZTGAYDEMBQPQYXYURRGIYTO7BRGU3TGNY",
+                              "offerId": "GE5ESNBSIZKVMQ2QJJNEERSPKIZEMR2OIRKVOVCTKNFVMRCWKNLUWVKKGVDVMRKWGJEEWRSOIVEVCS2PJNJEEVKPK5FFKS2SI5LFKU2TLBETIMSGKVJEGQSKLJHEMR2SGIZEWUSDIUZFOU2TJM2UOVSFJZJUKSKOIVLFKVJSJBEUMTSFJFJTETSJJJFVKT2RJNNEYQSNKUZFKU2SJE2UKVCFKZBUESS2IJDEGURSJNDVURCVK5GTEVCHGVDFMTKTKNMUYRSMIVLVMQ2RJNFEMVSNKIZFGSKRGJCU6U2TIJFVEQKWINGVUVKJGVCVMVKSINJEUVK2KREVGMSWJRFEIRJSKYZEKS2OJFDEGV2LKVFDKSCFIVKUWSCHKFNEMSKTGJHUWSSNKVHVCSSUJFJEEVJUKEZEUSSSIJDE6U2DJZFEMTSGJ5JDESSHKJFUKV2TJMZEWVSEKZFU2MSUI5FEQRSFKUZESSKVLJDFCV2LKZFU4RCVKVLVEV2JKJBVKMSRKNKESNKLKZJVEQ2IJJLE4RSDKIZEETCKINCUGVCLIVDVERCVJVHFGR2JKZDVKVKVGJEESVK2KZIVOS2OJJFEYRKPJZBTES2SJBKVGTKTKRFESMSGIVLFGRSLJJFFKNSSJNHEYSSDIVBVIS2TJNNEIRSLK5FUKSJVI5CVKVSDJBEUMSKVJFIUWTSLJFNEKT2RJNNESRRWIRBU4USUIZMTGRCNG5BFGR2BLJCEWTCKKFDU2V2UI5GUEQKHIFNEIVKNIJIUQSKZIRATOQ2TJI2HYNRSHE2XYMT4NRYDCOBZG56DELL4KVJUI7CVKN6DEMBSGUWTANBNGAYXYMRQGI2S2MBUFUYDE7D4GQXDAMA",
+                              "supplier": "nuitee",
+                              "supplierId": 2,
+                              "rates": [
+                                {
+                                  "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22KRCE2WSSK5GVENSEINEVUU2HIFNEIS2NIJKUOQKZLBMU2USRI5ETEVCBJZBFCR2KGZDUWM2TG5FVMSSYLFLEWVCQKJFVMR2SIQ2EOSSBKRAVCMZUI5EVURCRJUZTIS2VLJDE2V2EKNIFCWKUJ5HEEUKHGQZFIS2OKJMUOQJTIRBU4Q2JJRBFOSCNJFNFOR2JGRKEWSK2KVDVKM2TGJHFEU2IIUZFQWKVKNDUUWRWIRCU2QSTI5KVSRCHJVNFCR2BLJCECTKEGRDUMNSGIVGUUU2HIUZVQWKNJJLEONC2KRHUSMSTJI2FEVSFKJJU6RKNLJCECTKSKZDFKWKEI5GEUVCHIFIUIQKNKIZEOQKZIF6DCNRTFY3DM7BSGAZDKLJQGMWTGMBAGAZDUMBQHIYDA7CSJ4",
+                                  "occupancyNumber": 1,
+                                  "name": "Standard King Room",
+                                  "maxOccupancy": 2,
+                                  "adultCount": 2,
+                                  "childCount": 1,
+                                  "childrenAges": [
+                                    5
+                                  ],
+                                  "boardType": "RO",
+                                  "boardName": "Room Only",
+                                  "remarks": "",
+                                  "priceType": "commission",
+                                  "commission": [
+                                    {
+                                      "amount": 6.28,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "retailRate": {
+                                    "total": [
+                                      {
+                                        "amount": 163.66,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "suggestedSellingPrice": [
+                                      {
+                                        "amount": 191.52,
+                                        "currency": "USD",
+                                        "source": "booking.com"
+                                      }
+                                    ],
+                                    "initialPrice": [
+                                      {
+                                        "amount": 163.66,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "taxesAndFees": [
+                                      {
+                                        "included": true,
+                                        "description": "NYC Javits Center Fee",
+                                        "amount": 1.62,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": true,
+                                        "description": "NYC Occupancy Tax",
+                                        "amount": 2.16,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": true,
+                                        "description": "NY State Tax",
+                                        "amount": 11.88,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": true,
+                                        "description": "NY City Tax",
+                                        "amount": 7.87,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": false,
+                                        "description": "Facility Fee",
+                                        "amount": 43.61,
+                                        "currency": "USD"
+                                      }
+                                    ]
+                                  },
+                                  "cancellationPolicies": {
+                                    "cancelPolicyInfos": [
+                                      {
+                                        "cancelTime": "2026-11-15 02:00:00",
+                                        "amount": 0,
+                                        "currency": "USD",
+                                        "type": "amount",
+                                        "timezone": "GMT"
+                                      }
+                                    ],
+                                    "hotelRemarks": [],
+                                    "refundableTag": "RFN"
+                                  },
+                                  "paymentTypes": [
+                                    "NUITEE_PAY",
+                                    "PROPERTY_PAY"
+                                  ],
+                                  "mappedRoomId": 42117
+                                },
+                                {
+                                  "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22NRFNEXAMPLE",
+                                  "occupancyNumber": 1,
+                                  "name": "Standard King Room",
+                                  "maxOccupancy": 2,
+                                  "adultCount": 2,
+                                  "childCount": 1,
+                                  "childrenAges": [
+                                    5
+                                  ],
+                                  "boardType": "RO",
+                                  "boardName": "Room Only",
+                                  "remarks": "",
+                                  "priceType": "commission",
+                                  "commission": [
+                                    {
+                                      "amount": 4.1,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "retailRate": {
+                                    "total": [
+                                      {
+                                        "amount": 142.2,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "suggestedSellingPrice": [
+                                      {
+                                        "amount": 170.0,
+                                        "currency": "USD",
+                                        "source": "booking.com"
+                                      }
+                                    ],
+                                    "initialPrice": [
+                                      {
+                                        "amount": 142.2,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "taxesAndFees": [
+                                      {
+                                        "included": true,
+                                        "description": "NY State Tax",
+                                        "amount": 10.2,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": false,
+                                        "description": "Facility Fee",
+                                        "amount": 43.61,
+                                        "currency": "USD"
+                                      }
+                                    ]
+                                  },
+                                  "cancellationPolicies": {
+                                    "cancelPolicyInfos": [
+                                      {
+                                        "cancelTime": "2026-11-20 02:00:00",
+                                        "amount": 142.2,
+                                        "currency": "USD",
+                                        "type": "amount",
+                                        "timezone": "GMT"
+                                      }
+                                    ],
+                                    "hotelRemarks": [],
+                                    "refundableTag": "NRFN"
+                                  },
+                                  "paymentTypes": [
+                                    "NUITEE_PAY"
+                                  ],
+                                  "mappedRoomId": 42117
+                                }
+                              ],
+                              "offerRetailRate": {
+                                "amount": 163.66,
+                                "currency": "USD"
+                              },
+                              "suggestedSellingPrice": {
+                                "amount": 191.52,
+                                "currency": "USD",
+                                "source": "booking.com"
+                              },
+                              "offerInitialPrice": {
+                                "amount": 163.66,
+                                "currency": "USD"
+                              },
+                              "priceType": "commission",
+                              "rateType": "standard",
+                              "paymentTypes": [
+                                "NUITEE_PAY",
+                                "PROPERTY_PAY"
+                              ]
+                            }
+                          ]
+                        },
+                        {
+                          "checkout": "2026-11-22",
+                          "lengthOfStay": 2,
+                          "adults": 2,
+                          "status": "ok",
+                          "pricedAt": "2026-10-19T14:30:01Z",
+                          "roomTypes": [
+                            {
+                              "roomTypeId": "GQ2TOLJWGI4TK7CSIZHHYMRQGI2TAMZTGAYDEMBQPQYXYURRGIYTO7BRGU3TGNY",
+                              "offerId": "GE5ESNBSIZKVMQ2QJJNEERSPKIZEMR2OIRKVOVCTKNFVMRCWKNLUWVKKGVDVMRKWGJEEWRSOIVEVCS2PJNJEEVKPK5FFKS2SI5LFKU2TLBETIMSGKVJEGQSKLJHEMR2SGIZEWUSDIUZFOU2TJM2UOVSFJZJUKSKOIVLFKVJSJBEUMTSFJFJTETSJJJFVKT2RJNNEYQSNKUZFKU2SJE2UKVCFKZBUESS2IJDEGURSJNDVURCVK5GTEVCHGVDFMTKTKNMUYRSMIVLVMQ2RJNFEMVSNKIZFGSKRGJCU6U2TIJFVEQKWINGVUVKJGVCVMVKSINJEUVK2KREVGMSWJRFEIRJSKYZEKS2OJFDEGV2LKVFDKSCFIVKUWSCHKFNEMSKTGJHUWSSNKVHVCSSUJFJEEVJUKEZEUSSSIJDE6U2DJZFEMTSGJ5JDESSHKJFUKV2TJMZEWVSEKZFU2MSUI5FEQRSFKUZESSKVLJDFCV2LKZFU4RCVKVLVEV2JKJBVKMSRKNKESNKLKZJVEQ2IJJLE4RSDKIZEETCKINCUGVCLIVDVERCVJVHFGR2JKZDVKVKVGJEESVK2KZIVOS2OJJFEYRKPJZBTES2SJBKVGTKTKRFESMSGIVLFGRSLJJFFKNSSJNHEYSSDIVBVIS2TJNNEIRSLK5FUKSJVI5CVKVSDJBEUMSKVJFIUWTSLJFNEKT2RJNNESRRWIRBU4USUIZMTGRCNG5BFGR2BLJCEWTCKKFDU2V2UI5GUEQKHIFNEIVKNIJIUQSKZIRATOQ2TJI2HYNRSHE2XYMT4NRYDCOBZG56DELL4KVJUI7CVKN6DEMBSGUWTANBNGAYXYMRQGI2S2MBUFUYDE7D4GQXDAMA",
+                              "supplier": "nuitee",
+                              "supplierId": 2,
+                              "rates": [
+                                {
+                                  "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22KRCE2WSSK5GVENSEINEVUU2HIFNEIS2NIJKUOQKZLBMU2USRI5ETEVCBJZBFCR2KGZDUWM2TG5FVMSSYLFLEWVCQKJFVMR2SIQ2EOSSBKRAVCMZUI5EVURCRJUZTIS2VLJDE2V2EKNIFCWKUJ5HEEUKHGQZFIS2OKJMUOQJTIRBU4Q2JJRBFOSCNJFNFOR2JGRKEWSK2KVDVKM2TGJHFEU2IIUZFQWKVKNDUUWRWIRCU2QSTI5KVSRCHJVNFCR2BLJCECTKEGRDUMNSGIVGUUU2HIUZVQWKNJJLEONC2KRHUSMSTJI2FEVSFKJJU6RKNLJCECTKSKZDFKWKEI5GEUVCHIFIUIQKNKIZEOQKZIF6DCNRTFY3DM7BSGAZDKLJQGMWTGMBAGAZDUMBQHIYDA7CSJ4",
+                                  "occupancyNumber": 1,
+                                  "name": "Standard King Room",
+                                  "maxOccupancy": 2,
+                                  "adultCount": 2,
+                                  "childCount": 1,
+                                  "childrenAges": [
+                                    5
+                                  ],
+                                  "boardType": "RO",
+                                  "boardName": "Room Only",
+                                  "remarks": "",
+                                  "priceType": "commission",
+                                  "commission": [
+                                    {
+                                      "amount": 12.5,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "retailRate": {
+                                    "total": [
+                                      {
+                                        "amount": 312.4,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "suggestedSellingPrice": [
+                                      {
+                                        "amount": 360.0,
+                                        "currency": "USD",
+                                        "source": "booking.com"
+                                      }
+                                    ],
+                                    "initialPrice": [
+                                      {
+                                        "amount": 312.4,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "taxesAndFees": [
+                                      {
+                                        "included": true,
+                                        "description": "NYC Javits Center Fee",
+                                        "amount": 1.62,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": true,
+                                        "description": "NYC Occupancy Tax",
+                                        "amount": 2.16,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": true,
+                                        "description": "NY State Tax",
+                                        "amount": 11.88,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": true,
+                                        "description": "NY City Tax",
+                                        "amount": 7.87,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": false,
+                                        "description": "Facility Fee",
+                                        "amount": 43.61,
+                                        "currency": "USD"
+                                      }
+                                    ]
+                                  },
+                                  "cancellationPolicies": {
+                                    "cancelPolicyInfos": [
+                                      {
+                                        "cancelTime": "2026-11-15 02:00:00",
+                                        "amount": 0,
+                                        "currency": "USD",
+                                        "type": "amount",
+                                        "timezone": "GMT"
+                                      }
+                                    ],
+                                    "hotelRemarks": [],
+                                    "refundableTag": "RFN"
+                                  },
+                                  "paymentTypes": [
+                                    "NUITEE_PAY",
+                                    "PROPERTY_PAY"
+                                  ],
+                                  "mappedRoomId": 42117
+                                },
+                                {
+                                  "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSXI42FURCBJZNFGR22NRFNEXAMPLE",
+                                  "occupancyNumber": 1,
+                                  "name": "Standard King Room",
+                                  "maxOccupancy": 2,
+                                  "adultCount": 2,
+                                  "childCount": 1,
+                                  "childrenAges": [
+                                    5
+                                  ],
+                                  "boardType": "RO",
+                                  "boardName": "Room Only",
+                                  "remarks": "",
+                                  "priceType": "commission",
+                                  "commission": [
+                                    {
+                                      "amount": 8.2,
+                                      "currency": "USD"
+                                    }
+                                  ],
+                                  "retailRate": {
+                                    "total": [
+                                      {
+                                        "amount": 275.8,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "suggestedSellingPrice": [
+                                      {
+                                        "amount": 320.0,
+                                        "currency": "USD",
+                                        "source": "booking.com"
+                                      }
+                                    ],
+                                    "initialPrice": [
+                                      {
+                                        "amount": 275.8,
+                                        "currency": "USD"
+                                      }
+                                    ],
+                                    "taxesAndFees": [
+                                      {
+                                        "included": true,
+                                        "description": "NY State Tax",
+                                        "amount": 10.2,
+                                        "currency": "USD"
+                                      },
+                                      {
+                                        "included": false,
+                                        "description": "Facility Fee",
+                                        "amount": 43.61,
+                                        "currency": "USD"
+                                      }
+                                    ]
+                                  },
+                                  "cancellationPolicies": {
+                                    "cancelPolicyInfos": [
+                                      {
+                                        "cancelTime": "2026-11-20 02:00:00",
+                                        "amount": 142.2,
+                                        "currency": "USD",
+                                        "type": "amount",
+                                        "timezone": "GMT"
+                                      }
+                                    ],
+                                    "hotelRemarks": [],
+                                    "refundableTag": "NRFN"
+                                  },
+                                  "paymentTypes": [
+                                    "NUITEE_PAY"
+                                  ],
+                                  "mappedRoomId": 42117
+                                }
+                              ],
+                              "offerRetailRate": {
+                                "amount": 312.4,
+                                "currency": "USD"
+                              },
+                              "suggestedSellingPrice": {
+                                "amount": 360.0,
+                                "currency": "USD",
+                                "source": "booking.com"
+                              },
+                              "offerInitialPrice": {
+                                "amount": 312.4,
+                                "currency": "USD"
+                              },
+                              "priceType": "commission",
+                              "rateType": "standard",
+                              "paymentTypes": [
+                                "NUITEE_PAY",
+                                "PROPERTY_PAY"
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  },
+                  "Stay cell error (supplier_timeout)": {
+                    "summary": "HTTP 200 NDJSON line where one LOS×occupancy cell failed",
+                    "value": {
+                      "hotelId": "lp1897",
+                      "checkin": "2026-11-20",
+                      "currency": "USD",
+                      "stays": [
+                        {
+                          "checkout": "2026-11-21",
+                          "lengthOfStay": 1,
+                          "adults": 2,
+                          "status": "ok",
+                          "pricedAt": "2026-10-19T14:30:00Z",
+                          "roomTypes": [
+                            {
+                              "roomTypeId": "GQ2TOLJWGI4TK7CSIZHHYMRQGI2TAMZTGAYDEMBQPQYXYURRGIYTO7BRGU3TGNY",
+                              "offerId": "GE5ESNBSIZKVMQ2QJJNEERSPKIZEMR2OIRKVOVCTKNFVMRCWKNLUWVKKGVDVMRKWGJEEWRSOIVEVCS2PJNJEEVKPK5FFKS2SI5LFKU2TLBETIMSGKVJEGQSKLJHEMR2SGIZEWUSDIUZFOU2TJM2UOVSFJZJUKSKOIVLFKVJSJBEUMTSFJFJTETSJJJFVKT2RJNNEYQSNKUZFKU2SJE2UKVCFKZBUESS2IJDEGURSJNDVURCVK5GTEVCHGVDFMTKTKNMUYRSMIVLVMQ2RJNFEMVSNKIZFGSKRGJCU6U2TIJFVEQKWINGVUVKJGVCVMVKSINJEUVK2KREVGMSWJRFEIRJSKYZEKS2OJFDEGV2LKVFDKSCFIVKUWSCHKFNEMSKTGJHUWSSNKVHVCSSUJFJEEVJUKEZEUSSSIJDE6U2DJZFEMTSGJ5JDESSHKJFUKV2TJMZEWVSEKZFU2MSUI5FEQRSFKUZESSKVLJDFCV2LKZFU4RCVKVLVEV2JKJBVKMSRKNKESNKLKZJVEQ2I",
+                              "supplier": "nuitee",
+                              "supplierId": 2,
+                              "rates": [
+                                {
+                                  "rateId": "I42FUVCPJZBFOR2FGNDUWTSSKVDVSWKUJ5GVEV2HKFNEIQKOKRBUOWJUKRGVUSSX",
+                                  "name": "Standard King Room",
+                                  "adultCount": 2,
+                                  "boardType": "RO",
+                                  "boardName": "Room Only",
+                                  "retailRate": {
+                                    "total": [
+                                      {
+                                        "amount": 163.66,
+                                        "currency": "USD"
+                                      }
+                                    ]
+                                  },
+                                  "cancellationPolicies": {
+                                    "refundableTag": "RFN"
+                                  },
+                                  "mappedRoomId": 42117
+                                }
+                              ],
+                              "offerRetailRate": {
+                                "amount": 163.66,
+                                "currency": "USD"
+                              },
+                              "priceType": "commission",
+                              "rateType": "standard"
+                            }
+                          ]
+                        },
+                        {
+                          "checkout": "2026-11-21",
+                          "lengthOfStay": 1,
+                          "adults": 3,
+                          "status": "error",
+                          "pricedAt": "2026-10-19T14:30:01Z",
+                          "error": {
+                            "code": "supplier_timeout"
+                          }
+                        },
+                        {
+                          "checkout": "2026-11-22",
+                          "lengthOfStay": 2,
+                          "adults": 2,
+                          "status": "no_availability",
+                          "pricedAt": "2026-10-19T14:30:02Z",
+                          "roomTypes": []
+                        }
+                      ]
                     }
                   }
                 }
@@ -1480,24 +2915,157 @@
                   "type": "integer",
                   "example": 56
                 },
-                "description": "How many requests this call counted against the API key rate limit (losCount \u00d7 occupancyCount \u00d7 feedCount)."
+                "description": "How many requests this call counted against the API key rate limit (losCount × occupancyCount × feedCount)."
               }
             }
           },
           "400": {
-            "description": "Validation error"
+            "description": "Validation or bad request. Returned by the handler for invalid JSON, ValidateBatchRequest failures, invalid checkin, unknown feed, or unresolved hotel IDs.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorWithDescription"
+                },
+                "examples": {
+                  "hotelIds max exceeded": {
+                    "value": {
+                      "error": {
+                        "code": 4000,
+                        "message": "bad request",
+                        "description": "hotelIds max accepted is 200"
+                      }
+                    }
+                  },
+                  "lengthsOfStay invalid": {
+                    "value": {
+                      "error": {
+                        "code": 4000,
+                        "message": "bad request",
+                        "description": "lengthsOfStay must satisfy 1 <= min <= max <= 28"
+                      }
+                    }
+                  },
+                  "checkin invalid": {
+                    "value": {
+                      "error": {
+                        "code": 4002,
+                        "message": "required request field is missing or wrong input",
+                        "description": "checkin field invalid or missing"
+                      }
+                    }
+                  },
+                  "hotel ids not found": {
+                    "value": {
+                      "error": {
+                        "code": 4000,
+                        "message": "bad request",
+                        "description": "hotel ids not found"
+                      }
+                    }
+                  },
+                  "feed not found": {
+                    "summary": "Requested feed is not available on the API key credentials",
+                    "value": {
+                      "error": {
+                        "code": 40020,
+                        "message": "Feed not found"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "401": {
-            "description": "Authentication required"
+            "description": "Missing or invalid API key (`X-API-Key`). Returned by authentication middleware.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "unauthorized": {
+                    "value": {
+                      "error": {
+                        "code": 401,
+                        "message": "unauthorized"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "403": {
-            "description": "Enterprise accounts only"
+            "description": "Forbidden. Non-enterprise API keys cannot call this endpoint.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorWithDescription"
+                },
+                "examples": {
+                  "enterprise only": {
+                    "value": {
+                      "error": {
+                        "code": 40301,
+                        "message": "user does not have enough permissions to perform this action",
+                        "description": "hotel rates batch is available to enterprise accounts only"
+                      }
+                    }
+                  },
+                  "user suspended": {
+                    "summary": "API key / account is suspended (auth middleware)",
+                    "value": {
+                      "error": {
+                        "code": 40302,
+                        "message": "user is suspended"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "429": {
-            "description": "Rate limit exceeded (cost = los \u00d7 occupancy \u00d7 feeds)"
+            "description": "Rate limit exceeded. Cost of this call is `losCount × occupancyCount × feedCount` (also returned as `X-RateLimit-Cost` on success).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiErrorWithDescription"
+                },
+                "examples": {
+                  "rate limit exceeded": {
+                    "value": {
+                      "error": {
+                        "code": 4290,
+                        "message": "You have exceeded the allowed request limit",
+                        "description": "Too many requests, please try again later"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           },
           "500": {
-            "description": "Internal server error"
+            "description": "Unexpected failure while running the batch (e.g. setup failure before streaming).",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                },
+                "examples": {
+                  "suppliers communication error": {
+                    "value": {
+                      "error": {
+                        "code": 4011,
+                        "message": "suppliers communication error"
+                      }
+                    }
+                  }
+                }
+              }
+            }
           }
         }
       }

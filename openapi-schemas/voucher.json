@@ -3,7 +3,7 @@
   "info": {
     "title": "API: Vouchers",
     "version": "3.0.0",
-    "description": "API for managing vouchers that can be applied to hotel and flight bookings"
+    "description": "API for managing vouchers that can be applied to hotel, flight and experience bookings"
   },
   "servers": [
     {

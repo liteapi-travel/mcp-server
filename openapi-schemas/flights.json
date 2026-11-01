@@ -318,11 +318,15 @@
               },
               "ticketing": {
                 "type": "number",
-                "description": "Ticketing fee: percentage of the net fare with a floor and ceiling, per booking or per passenger depending on the account configuration. Applies to every payment method."
+                "description": "Ticketing fee: percentage of the net fare with a floor and ceiling, per booking or per passenger depending on the account configuration. The rate may depend on the operating airlines. Applies to every payment method."
+              },
+              "ancillary": {
+                "type": "number",
+                "description": "Ancillary fee on attached seats and bags: percentage of each item's net price with a per-item floor and ceiling. Present on prebooks / bookings once services are attached. Applies to every payment method."
               },
               "total": {
                 "type": "number",
-                "description": "merchantOfRecord + ticketing"
+                "description": "merchantOfRecord + ticketing + ancillary"
               }
             }
           },
@@ -523,7 +527,7 @@
               },
               "hasCheckedBag": {
                 "type": "boolean",
-                "description": "Whether checked bag is included"
+                "description": "Whether checked bag is included. Equipment (bagType equipment) does not count as a checked bag"
               },
               "included": {
                 "type": "array",
@@ -535,9 +539,10 @@
                       "type": "string",
                       "enum": [
                         "cabin",
-                        "checked"
+                        "checked",
+                        "equipment"
                       ],
-                      "description": "Type of bag"
+                      "description": "Type of bag: cabin (carry-on), checked, or equipment (sports equipment or musical instrument)"
                     },
                     "description": {
                       "type": "string",
@@ -554,7 +559,8 @@
                     },
                     "pieces": {
                       "type": "integer",
-                      "description": "Number of pieces allowed"
+                      "nullable": true,
+                      "description": "Number of pieces allowed. Null when the provider states no piece limit (weight-only allowance); never means zero bags"
                     },
                     "pricing": {
                       "$ref": "#/components/schemas/FlightItemPricing",
@@ -566,7 +572,8 @@
                     },
                     "weightKg": {
                       "type": "number",
-                      "description": "Weight limit in kg"
+                      "nullable": true,
+                      "description": "Weight limit in kg. Null when the provider states no weight limit"
                     }
                   }
                 }
@@ -955,9 +962,10 @@
             "enum": [
               "cabin",
               "checked",
-              "personal"
+              "personal",
+              "equipment"
             ],
-            "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+            "description": "Type of bag: cabin (carry-on), checked, personal (under-seat / personal item), or equipment (sports equipment or musical instrument)",
             "example": "cabin"
           },
           "description": {
@@ -978,7 +986,8 @@
           },
           "pieces": {
             "type": "integer",
-            "description": "Number of bag pieces for this option",
+            "nullable": true,
+            "description": "Number of bag pieces for this option. Null when the provider states no piece limit (weight-only allowance); never means zero bags",
             "example": 1
           },
           "pricing": {
@@ -1001,7 +1010,8 @@
           },
           "weightKg": {
             "type": "number",
-            "description": "Maximum weight per bag in kilograms",
+            "nullable": true,
+            "description": "Maximum weight per bag in kilograms. Null when the provider states no weight limit",
             "example": 8
           }
         }
@@ -1140,15 +1150,25 @@
                 "properties": {
                   "bagType": {
                     "type": "string",
-                    "description": "Type of bag (e.g. checked, cabin)"
+                    "description": "Type of bag (e.g. checked, cabin, equipment). equipment is sports equipment or a musical instrument (skis, bike, golf bag...), with its own maxQuantity / maxBagsAllowed"
                   },
                   "pieces": {
                     "type": "integer",
-                    "description": "Number of bag pieces booked"
+                    "nullable": true,
+                    "description": "Number of bag pieces. Null for an included allowance with no piece limit (weight-only); never means zero bags"
                   },
                   "weightKg": {
                     "type": "number",
-                    "description": "Weight allowance in kilograms"
+                    "nullable": true,
+                    "description": "Weight allowance in kilograms. Null when the provider states no weight limit"
+                  },
+                  "maxQuantity": {
+                    "type": "integer",
+                    "description": "Maximum quantity of this bag option per passenger per segment. Omitted when unknown."
+                  },
+                  "maxBagsAllowed": {
+                    "type": "integer",
+                    "description": "Highest bag position covered by the bag options of this bagType (e.g. 5 for \"4th to 5th bag\"). A position, not a count of bags to buy: position 1 may be the fare's free bag. Omitted when unknown."
                   }
                 }
               }
@@ -1315,7 +1335,7 @@
               },
               "hasCheckedBag": {
                 "type": "boolean",
-                "description": "True if a checked bag is included in this offer"
+                "description": "True if a checked bag is included in this offer. Equipment (bagType equipment) does not count as a checked bag"
               },
               "included": {
                 "type": "array",
@@ -1326,9 +1346,10 @@
                       "type": "string",
                       "enum": [
                         "cabin",
-                        "checked"
+                        "checked",
+                        "equipment"
                       ],
-                      "description": "Type of bag: cabin (carry-on) or checked"
+                      "description": "Type of bag: cabin (carry-on), checked, or equipment (sports equipment or musical instrument)"
                     },
                     "description": {
                       "type": "string",
@@ -1345,7 +1366,8 @@
                     },
                     "pieces": {
                       "type": "integer",
-                      "description": "Number of bag pieces allowed"
+                      "nullable": true,
+                      "description": "Number of bag pieces allowed. Null when the provider states no piece limit (weight-only allowance); never means zero bags"
                     },
                     "pricing": {
                       "$ref": "#/components/schemas/FlightItemPricing",
@@ -1357,7 +1379,8 @@
                     },
                     "weightKg": {
                       "type": "number",
-                      "description": "Maximum weight per bag in kg"
+                      "nullable": true,
+                      "description": "Maximum weight per bag in kg. Null when the provider states no weight limit"
                     }
                   }
                 },
@@ -1599,7 +1622,7 @@
                   },
                   "hasCheckedBag": {
                     "type": "boolean",
-                    "description": "Whether checked bag is included"
+                    "description": "Whether checked bag is included. Equipment (bagType equipment) does not count as a checked bag"
                   },
                   "included": {
                     "type": "array",
@@ -1613,9 +1636,10 @@
                           "enum": [
                             "cabin",
                             "checked",
-                            "personal"
+                            "personal",
+                            "equipment"
                           ],
-                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "description": "Type of bag: cabin (carry-on), checked, personal (under-seat / personal item), or equipment (sports equipment or musical instrument)",
                           "example": "cabin"
                         },
                         "description": {
@@ -1636,7 +1660,8 @@
                         },
                         "pieces": {
                           "type": "integer",
-                          "description": "Number of bag pieces for this option",
+                          "nullable": true,
+                          "description": "Number of bag pieces for this option. Null when the provider states no piece limit (weight-only allowance); never means zero bags",
                           "example": 1
                         },
                         "pricing": {
@@ -1659,7 +1684,8 @@
                         },
                         "weightKg": {
                           "type": "number",
-                          "description": "Maximum weight per bag in kilograms",
+                          "nullable": true,
+                          "description": "Maximum weight per bag in kilograms. Null when the provider states no weight limit",
                           "example": 8
                         }
                       }
@@ -1677,9 +1703,10 @@
                           "enum": [
                             "cabin",
                             "checked",
-                            "personal"
+                            "personal",
+                            "equipment"
                           ],
-                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "description": "Type of bag: cabin (carry-on), checked, personal (under-seat / personal item), or equipment (sports equipment or musical instrument)",
                           "example": "cabin"
                         },
                         "description": {
@@ -1700,7 +1727,8 @@
                         },
                         "pieces": {
                           "type": "integer",
-                          "description": "Number of bag pieces for this option",
+                          "nullable": true,
+                          "description": "Number of bag pieces for this option. Null when the provider states no piece limit (weight-only allowance); never means zero bags",
                           "example": 1
                         },
                         "pricing": {
@@ -1723,7 +1751,8 @@
                         },
                         "weightKg": {
                           "type": "number",
-                          "description": "Maximum weight per bag in kilograms",
+                          "nullable": true,
+                          "description": "Maximum weight per bag in kilograms. Null when the provider states no weight limit",
                           "example": 8
                         }
                       }
@@ -2161,6 +2190,10 @@
                 "type": "number",
                 "description": "LiteAPI ticketing fee included in totalAmount (percentage of the net fare with a floor and ceiling). Only present when feesIncludedInTotal is true. Applies to every payment method."
               },
+              "ancillaryFee": {
+                "type": "number",
+                "description": "LiteAPI ancillary fee included in totalAmount (percentage of each attached seat / bag net price with a per-item floor and ceiling). Only present when feesIncludedInTotal is true and services are attached. Applies to every payment method."
+              },
               "feesIncludedInTotal": {
                 "type": "boolean",
                 "description": "True when the LiteAPI platform fees are added on top of the price and included in totalAmount. Omitted when the account absorbs the fees (they are then deducted from the account commission and not shown)."
@@ -2186,36 +2219,12 @@
             },
             "description": "Payment amounts captured for this booking"
           },
-          "remarks": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "Remark name or category"
-                },
-                "value": {
-                  "type": "string",
-                  "description": "Remark content"
-                }
-              }
-            },
-            "description": "Reservation remarks or comments from the provider"
-          },
-          "selectedServices": {
-            "type": "array",
-            "items": {
-              "$ref": "#/components/schemas/SelectedService"
-            },
-            "description": "Ancillary services attached to this booking (seats, baggage, etc.)"
-          },
           "bookedServices": {
             "type": "array",
             "items": {
               "$ref": "#/components/schemas/FlightBookedService"
             },
-            "description": "Detailed view of the ancillary services confirmed by the provider for this booking, including pricing and per-passenger / per-segment metadata. Present once /services has been called."
+            "description": "Ancillary services (seats, baggage) on this booking as reported by the provider, with the post-margin price charged and per-passenger / per-segment metadata. Includes services attached on the prebook and services sold after ticketing. Omitted when the booking has no services."
           },
           "ticketData": {
             "type": "object",
@@ -2648,7 +2657,7 @@
                   },
                   "hasCheckedBag": {
                     "type": "boolean",
-                    "description": "Whether checked bag is included"
+                    "description": "Whether checked bag is included. Equipment (bagType equipment) does not count as a checked bag"
                   },
                   "included": {
                     "type": "array",
@@ -2662,9 +2671,10 @@
                           "enum": [
                             "cabin",
                             "checked",
-                            "personal"
+                            "personal",
+                            "equipment"
                           ],
-                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "description": "Type of bag: cabin (carry-on), checked, personal (under-seat / personal item), or equipment (sports equipment or musical instrument)",
                           "example": "cabin"
                         },
                         "description": {
@@ -2685,7 +2695,8 @@
                         },
                         "pieces": {
                           "type": "integer",
-                          "description": "Number of bag pieces for this option",
+                          "nullable": true,
+                          "description": "Number of bag pieces for this option. Null when the provider states no piece limit (weight-only allowance); never means zero bags",
                           "example": 1
                         },
                         "pricing": {
@@ -2708,7 +2719,8 @@
                         },
                         "weightKg": {
                           "type": "number",
-                          "description": "Maximum weight per bag in kilograms",
+                          "nullable": true,
+                          "description": "Maximum weight per bag in kilograms. Null when the provider states no weight limit",
                           "example": 8
                         }
                       }
@@ -2726,9 +2738,10 @@
                           "enum": [
                             "cabin",
                             "checked",
-                            "personal"
+                            "personal",
+                            "equipment"
                           ],
-                          "description": "Type of bag: cabin (carry-on), checked, or personal (under-seat / personal item)",
+                          "description": "Type of bag: cabin (carry-on), checked, personal (under-seat / personal item), or equipment (sports equipment or musical instrument)",
                           "example": "cabin"
                         },
                         "description": {
@@ -2749,7 +2762,8 @@
                         },
                         "pieces": {
                           "type": "integer",
-                          "description": "Number of bag pieces for this option",
+                          "nullable": true,
+                          "description": "Number of bag pieces for this option. Null when the provider states no piece limit (weight-only allowance); never means zero bags",
                           "example": 1
                         },
                         "pricing": {
@@ -2772,7 +2786,8 @@
                         },
                         "weightKg": {
                           "type": "number",
-                          "description": "Maximum weight per bag in kilograms",
+                          "nullable": true,
+                          "description": "Maximum weight per bag in kilograms. Null when the provider states no weight limit",
                           "example": 8
                         }
                       }
@@ -3210,6 +3225,10 @@
                 "type": "number",
                 "description": "LiteAPI ticketing fee included in totalAmount (percentage of the net fare with a floor and ceiling). Only present when feesIncludedInTotal is true. Applies to every payment method."
               },
+              "ancillaryFee": {
+                "type": "number",
+                "description": "LiteAPI ancillary fee included in totalAmount (percentage of each attached seat / bag net price with a per-item floor and ceiling). Only present when feesIncludedInTotal is true and services are attached. Applies to every payment method."
+              },
               "feesIncludedInTotal": {
                 "type": "boolean",
                 "description": "True when the LiteAPI platform fees are added on top of the price and included in totalAmount. Omitted when the account absorbs the fees (they are then deducted from the account commission and not shown)."
@@ -3234,23 +3253,6 @@
               }
             },
             "description": "Payment amounts captured for this booking"
-          },
-          "remarks": {
-            "type": "array",
-            "items": {
-              "type": "object",
-              "properties": {
-                "name": {
-                  "type": "string",
-                  "description": "Remark name or category"
-                },
-                "value": {
-                  "type": "string",
-                  "description": "Remark content"
-                }
-              }
-            },
-            "description": "Reservation remarks or comments from the provider"
           },
           "selectedServices": {
             "type": "array",
@@ -3349,6 +3351,35 @@
           "chargesId": {
             "type": "string",
             "description": "Opaque batch id from precharges; stored when the batch is confirmed"
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CREDIT",
+              "TRANSACTION_ID",
+              "MANUAL"
+            ],
+            "description": "Payment method used for this line. Absent on lines persisted before methods were recorded.",
+            "example": "TRANSACTION_ID"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "awaiting_payment",
+              "paid"
+            ],
+            "description": "`awaiting_payment` for MANUAL lines not yet marked paid; `paid` otherwise. Absent on older lines, which are paid.",
+            "example": "paid"
+          },
+          "paymentReference": {
+            "type": "string",
+            "description": "Reference of a MANUAL payment recorded by support (e.g. CMI transaction id)",
+            "example": "CMI-2026-000123"
+          },
+          "paidAt": {
+            "type": "string",
+            "format": "date-time",
+            "description": "When the line was paid (confirm time for CREDIT / TRANSACTION_ID, time it was marked paid via PUT /extra-charges/charges for MANUAL)"
           }
         },
         "description": "Persisted extra charge line on the booking"
@@ -3369,8 +3400,18 @@
           },
           "usePaymentSdk": {
             "type": "boolean",
-            "description": "Required true for Stripe bookings so a PaymentIntent is created. Ignored for CREDIT bookings.",
+            "description": "Required true when the batch is paid with TRANSACTION_ID so a PaymentIntent is created. Ignored for CREDIT and MANUAL.",
             "example": true
+          },
+          "paymentMethod": {
+            "type": "string",
+            "enum": [
+              "CREDIT",
+              "TRANSACTION_ID",
+              "MANUAL"
+            ],
+            "description": "How this batch is paid, among the methods the booking allows. Credit-line bookings: CREDIT (default) or TRANSACTION_ID (charge the passenger through Stripe). Stripe bookings: TRANSACTION_ID. WL/CMI bookings: MANUAL (system admin / operations only). Omit to use the booking default.",
+            "example": "TRANSACTION_ID"
           }
         },
         "description": "Request body for preparing a pending post-booking extra-charge batch"
@@ -3500,7 +3541,7 @@
                 "CREDIT"
               ]
             },
-            "description": "Allowed payment methods for /charges (locked to booking original payment)"
+            "description": "Single-element list with the payment method chosen for this batch (CREDIT, TRANSACTION_ID or MANUAL); confirm must use it"
           },
           "creditLine": {
             "type": "object",
@@ -3570,6 +3611,43 @@
           }
         },
         "description": "Booking totals after extra charges are confirmed and persisted"
+      },
+      "FlightServicesMetadata": {
+        "type": "object",
+        "description": "Catalog-level rules returned next to the service groups",
+        "properties": {
+          "ancillaryExclusions": {
+            "type": "array",
+            "description": "Provider selection rules over services (today the Travelfusion bag options). A selection breaking a rule is refused with 400 44019 and details.conflicts.",
+            "items": {
+              "type": "object",
+              "required": ["type", "serviceIds"],
+              "properties": {
+                "type": {
+                  "type": "string",
+                  "description": "selectOne: pick at most one of serviceIds; mutuallyExclusive: the services cannot be combined",
+                  "example": "selectOne"
+                },
+                "scope": {
+                  "type": "string",
+                  "description": "What the rule applies to",
+                  "example": "perPassenger"
+                },
+                "reason": {
+                  "type": "string",
+                  "example": "These options are alternatives - select at most one."
+                },
+                "serviceIds": {
+                  "type": "array",
+                  "description": "Encoded serviceIds from groups[].services[] covered by the rule",
+                  "items": {
+                    "type": "string"
+                  }
+                }
+              }
+            }
+          }
+        }
       },
       "FlightTicketedServicesSale": {
         "type": "object",
@@ -3785,6 +3863,27 @@
             "type": "string"
           }
         }
+      },
+      "FlightExtraChargesMarkPaidRequest": {
+        "type": "object",
+        "required": [
+          "chargesId",
+          "reference"
+        ],
+        "properties": {
+          "chargesId": {
+            "type": "string",
+            "description": "Opaque batch id persisted on `extraChargesDetails[].chargesId`",
+            "example": "g6x..."
+          },
+          "reference": {
+            "type": "string",
+            "maxLength": 255,
+            "description": "Manual payment reference (e.g. CMI transaction id or payment link id)",
+            "example": "CMI-2026-000123"
+          }
+        },
+        "description": "Request body for marking a MANUAL extra-charge batch as paid"
       }
     }
   },
@@ -4484,6 +4583,7 @@
                       "includesCheckedBag": false,
                       "changeableOnly": false,
                       "refundableOnly": false,
+                      "preBookingSeatsAllowed": false,
                       "showCheapestOfferOnly": false,
                       "cabinClass": "BUSINESS",
                       "cabinClassMatch": "at_least",
@@ -4664,6 +4764,11 @@
                       "refundableOnly": {
                         "type": "boolean",
                         "description": "When true, only show offers with refundable fares",
+                        "example": false
+                      },
+                      "preBookingSeatsAllowed": {
+                        "type": "boolean",
+                        "description": "When true, only return offers that allow seat selection before booking (pre-book seat assignment)",
                         "example": false
                       },
                       "showCheapestOfferOnly": {
@@ -6059,6 +6164,26 @@
                         "key": "bodyRequest"
                       }
                     }
+                  },
+                  "providerErrorFareBasisChanged": {
+                    "summary": "Fare changed since the search",
+                    "value": {
+                      "error": {
+                        "code": 52020,
+                        "description": "the fare of this offer has changed since your search; search for new flights — do not retry this offerId",
+                        "message": "provider error: fare changed"
+                      }
+                    }
+                  },
+                  "providerErrorOfferPriceChanged": {
+                    "summary": "Price increased since the search",
+                    "value": {
+                      "error": {
+                        "code": 52021,
+                        "description": "the price of this offer has increased since your search; search for new flights — do not retry this offerId",
+                        "message": "provider error: price changed"
+                      }
+                    }
                   }
                 }
               }
@@ -6164,6 +6289,9 @@
                           "servicesAttachable": {
                             "type": "object",
                             "properties": {
+                              "metadata": {
+                                "$ref": "#/components/schemas/FlightServicesMetadata"
+                              },
                               "expiresAt": {
                                 "type": "string",
                                 "description": "Expiry time for attaching services (ISO 8601)"
@@ -6180,7 +6308,7 @@
                                     },
                                     "category": {
                                       "type": "string",
-                                      "description": "Service category (e.g. seat, baggage)"
+                                      "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                     },
                                     "label": {
                                       "type": "string",
@@ -6201,7 +6329,7 @@
                                           },
                                           "category": {
                                             "type": "string",
-                                            "description": "Service category (e.g. seat, baggage)"
+                                            "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                           },
                                           "passengerType": {
                                             "type": "string",
@@ -6255,7 +6383,7 @@
                                                 "properties": {
                                                   "bagType": {
                                                     "type": "string",
-                                                    "description": "Type of bag (e.g. checked, cabin)"
+                                                    "description": "Type of bag (e.g. checked, cabin, equipment). equipment is sports equipment or a musical instrument (skis, bike, golf bag...), with its own maxQuantity / maxBagsAllowed"
                                                   },
                                                   "pieces": {
                                                     "type": "integer",
@@ -6264,6 +6392,14 @@
                                                   "weightKg": {
                                                     "type": "number",
                                                     "description": "Weight allowance in kilograms"
+                                                  },
+                                                  "maxQuantity": {
+                                                    "type": "integer",
+                                                    "description": "Maximum quantity of this bag option per passenger per segment. Omitted when unknown. This is the limit to cap the selection at: Atlas rejects a quantity above it (error 44016); Sabre and Travelport still accept it for now."
+                                                  },
+                                                  "maxBagsAllowed": {
+                                                    "type": "integer",
+                                                    "description": "Highest bag position covered by the bag options of this bagType (e.g. 5 for \"4th to 5th bag\"). A position, not a count of bags to buy: position 1 may be the fare's free bag. Omitted when unknown. Cap the selection by maxQuantity, which never adds up to more than this."
                                                   }
                                                 }
                                               }
@@ -6931,8 +7067,8 @@
         "tags": [
           "Flight Bookings"
         ],
-        "summary": "1.2 Attach services to prebook (Optional)",
-        "description": "## Overview\n\nAdd ancillary services such as seat selection or extra baggage to an existing prebook before confirming the final booking.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Price update** - Required when services change the total booking cost\n- **Voucher discount** - Optional `voucherCode` when attaching services changes the total and you need the discount reflected on the new payment intent\n\n## What You Get\n\n- **Updated prebook** with the selected services attached\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price (after any voucher discount)\n- **Same response format** as `POST /flights/prebooks` for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Updated payment**: Creates a new Stripe payment intent when the prebook used Stripe (`usePaymentSdk: true`). For whitelabel/CMI prebooks (`used_custom_payment_keys`), no new intent is returned — re-charge via WL and submit a fresh JWT at `POST /flights/bookings`\n- **Voucher recalculation**: When a voucher applies, the discount is recomputed against the updated total (journey + ancillaries); invalid or expired vouchers return `400` (same as prebook)\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and `selectedServices` in the request body. Optionally pass `voucherCode` to apply a discount. Use the **new** `transactionId` from this response (not the original prebook `transactionId`) when confirming payment with Stripe and when calling `POST /flights/bookings`.",
+        "summary": "1.2 Attach or detach services on prebook (Optional)",
+        "description": "## Overview\n\nSet the ancillary selection (seats / bags) on an existing prebook before confirming the final booking. Each call **replaces** the prebook's current selection — it is not additive.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Detach / clear services** - Remove previously attached seats or bags before book\n- **Price update** - Required when services change the total booking cost\n- **Voucher discount** - Optional `voucherCode` when attaching services changes the total and you need the discount reflected on the new payment intent\n\n## What You Get\n\n- **Updated prebook** with the selected services attached (or cleared)\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price (after any voucher discount)\n- **Same response format** as `POST /flights/prebooks` for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Full replacement**: Send the complete desired `selectedServices` list every time\n- **Detach**: Omit a service from `selectedServices` to remove it; send `selectedServices: []` to clear all seats/bags and refresh the payment intent to the journey-only total\n- **Updated payment**: Creates a new Stripe payment intent when the prebook used Stripe (`usePaymentSdk: true`). For whitelabel/CMI prebooks (`used_custom_payment_keys`), no new intent is returned — re-charge via WL and submit a fresh JWT at `POST /flights/bookings`\n- **Voucher recalculation**: When a voucher applies, the discount is recomputed against the updated total (journey + ancillaries); invalid or expired vouchers return `400` (same as prebook)\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Changing / removing services\n\nThis endpoint replaces the prebook's ancillary selection. To detach one seat or bag, re-POST without that item. To detach all services:\n\n```json\n{ \"selectedServices\": [] }\n```\n\nThe field must be present (`selectedServices` is required); an empty array clears the selection. Omitting the field entirely is a validation error.\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and `selectedServices` in the request body. Optionally pass `voucherCode` to apply a discount. Use the **new** `transactionId` from this response (not the original prebook `transactionId`) when confirming payment with Stripe and when calling `POST /flights/bookings`.",
         "parameters": [
           {
             "name": "prebookId",
@@ -6960,7 +7096,7 @@
                     "items": {
                       "$ref": "#/components/schemas/SelectedService"
                     },
-                    "description": "Services to attach (from servicesAttachable.groups in prebook response)"
+                    "description": "Full replacement set of ancillaries (from servicesAttachable.groups in the prebook response). An empty array clears all attached seats/bags and updates pricing / payment intent to the journey-only total."
                   },
                   "voucherCode": {
                     "type": "string",
@@ -6968,23 +7104,34 @@
                   }
                 }
               },
-              "example": {
-                "selectedServices": [
-                  {
-                    "passengerIndex": 0,
-                    "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAfB6PXCj1w6Fjo1VTRA==",
-                    "quantity": 1
+              "examples": {
+                "attach": {
+                  "summary": "Attach a seat or bag",
+                  "value": {
+                    "selectedServices": [
+                      {
+                        "passengerIndex": 0,
+                        "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAfB6PXCj1w6Fjo1VTRA==",
+                        "quantity": 1
+                      }
+                    ],
+                    "voucherCode": "createvoucher83"
                   }
-                ],
-                "voucherCode": "createvoucher83"
+                },
+                "clear": {
+                  "summary": "Detach all seats and bags",
+                  "value": {
+                    "selectedServices": []
+                  }
+                }
               }
             }
           },
-          "description": "Selected ancillary services to attach to the prebook"
+          "description": "Full replacement set of ancillary services for the prebook. Send selectedServices: [] to detach all."
         },
         "responses": {
           "200": {
-            "description": "Services attached successfully; returns updated prebook data with new price and transactionId",
+            "description": "Selection updated successfully; returns updated prebook data with new price and transactionId",
             "content": {
               "application/json": {
                 "schema": {
@@ -7006,6 +7153,9 @@
                           "servicesAttachable": {
                             "type": "object",
                             "properties": {
+                              "metadata": {
+                                "$ref": "#/components/schemas/FlightServicesMetadata"
+                              },
                               "expiresAt": {
                                 "type": "string",
                                 "description": "Expiry time for attaching services (ISO 8601)"
@@ -7022,7 +7172,7 @@
                                     },
                                     "category": {
                                       "type": "string",
-                                      "description": "Service category (e.g. seat, baggage)"
+                                      "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                     },
                                     "label": {
                                       "type": "string",
@@ -7043,7 +7193,7 @@
                                           },
                                           "category": {
                                             "type": "string",
-                                            "description": "Service category (e.g. seat, baggage)"
+                                            "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                           },
                                           "passengerType": {
                                             "type": "string",
@@ -7097,7 +7247,7 @@
                                                 "properties": {
                                                   "bagType": {
                                                     "type": "string",
-                                                    "description": "Type of bag (e.g. checked, cabin)"
+                                                    "description": "Type of bag (e.g. checked, cabin, equipment). equipment is sports equipment or a musical instrument (skis, bike, golf bag...), with its own maxQuantity / maxBagsAllowed"
                                                   },
                                                   "pieces": {
                                                     "type": "integer",
@@ -7106,6 +7256,14 @@
                                                   "weightKg": {
                                                     "type": "number",
                                                     "description": "Weight allowance in kilograms"
+                                                  },
+                                                  "maxQuantity": {
+                                                    "type": "integer",
+                                                    "description": "Maximum quantity of this bag option per passenger per segment. Omitted when unknown. This is the limit to cap the selection at: Atlas rejects a quantity above it (error 44016); Sabre and Travelport still accept it for now."
+                                                  },
+                                                  "maxBagsAllowed": {
+                                                    "type": "integer",
+                                                    "description": "Highest bag position covered by the bag options of this bagType (e.g. 5 for \"4th to 5th bag\"). A position, not a count of bags to buy: position 1 may be the fare's free bag. Omitted when unknown. Cap the selection by maxQuantity, which never adds up to more than this."
                                                   }
                                                 }
                                               }
@@ -7598,6 +7756,31 @@
                         "key": "bodyRequest"
                       }
                     }
+                  },
+                  "validationInvalidQuantity": {
+                    "summary": "Validation error: bag quantity over metadata.baggage.maxQuantity",
+                    "value": {
+                      "error": {
+                        "code": 44016,
+                        "description": "the requested quantity exceeds the maximum allowed for this bag; keep each quantity within metadata.baggage.maxQuantity of the bag option, per passenger and segment",
+                        "message": "validation error: invalid quantity",
+                        "key": "bodyRequest"
+                      }
+                    }
+                  },
+                  "validationServiceConflict": {
+                    "summary": "Validation error: the airline refuses the combination (e.g. two bags of the same category for one passenger and segment)",
+                    "value": {
+                      "error": {
+                        "code": 44019,
+                        "description": "Service conflicts detected",
+                        "message": "validation error: service conflict",
+                        "key": "bodyRequest",
+                        "details": {
+                          "conflicts": ["Two checked bags for passenger 0 on segment a1b2c3d4"]
+                        }
+                      }
+                    }
                   }
                 }
               }
@@ -7777,7 +7960,7 @@
           "Flight Bookings"
         ],
         "summary": "Get booking details",
-        "description": "## Overview\n\nRetrieve complete details of a confirmed flight booking using its unique booking ID.\n\n## When to Use\n\n- **Booking confirmation page** - Display full itinerary after booking completes\n- **Booking management** - Retrieve details for an existing reservation\n- **Itinerary display** - Show passengers, segments, and confirmation numbers\n- **Status checks** - Verify booking status for a given booking ID\n\n## What You Get\n\n- **Complete itinerary** with all flight segments and connection details\n- **Passenger manifest** with names, documents, and seat assignments\n- **Booking status** and provider confirmation reference\n- **Pricing breakdown** including taxes and fees paid\n\n## Key Features\n\n- **Full booking record**: Returns all data associated with the confirmed booking\n- **Provider reference**: Includes the provider-side booking confirmation number\n- **Passenger details**: Complete passenger information for all travelers\n\n## Quick Start\n\nProvide the `bookingId` (returned from `POST /flights/bookings`) in the URL path. Returns the complete booking record.",
+        "description": "## Overview\n\nRetrieve complete details of a confirmed flight booking using its unique booking ID.\n\n## When to Use\n\n- **Booking confirmation page** - Display full itinerary after booking completes\n- **Booking management** - Retrieve details for an existing reservation\n- **Itinerary display** - Show passengers, segments, and confirmation numbers\n- **Status checks** - Verify booking status for a given booking ID\n\n## What You Get\n\n- **Complete itinerary** with all flight segments and connection details\n- **Passenger manifest** with names, documents, and seat assignments\n- **Booking status** and provider confirmation reference\n- **Pricing breakdown** including taxes and fees paid\n- **Ancillary services** (seats, baggage) in `booking.bookedServices`, with the post-margin price charged for each; when the live provider omits them, falls back to the attach/book snapshot. Omitted only when the booking has none\n\n## Key Features\n\n- **Full booking record**: Returns all data associated with the confirmed booking\n- **Provider reference**: Includes the provider-side booking confirmation number\n- **Passenger details**: Complete passenger information for all travelers\n\n## Quick Start\n\nProvide the `bookingId` (returned from `POST /flights/bookings`) in the URL path. Returns the complete booking record.",
         "parameters": [
           {
             "name": "bookingId",
@@ -7924,7 +8107,72 @@
                         "contact": {
                           "firstName": "TEST",
                           "email": "test.json@example.com"
-                        }
+                        },
+                        "pricing": {
+                          "subtotal": 287.02,
+                          "servicesAmount": 60,
+                          "seatsAmount": 25,
+                          "baggageAmount": 35,
+                          "totalAmount": 347.02,
+                          "currency": "USD"
+                        },
+                        "bookedServices": [
+                          {
+                            "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZGGhcMtAOQAAAAAAAKFjo1VTRA==",
+                            "name": "Seat 12A",
+                            "category": "seat",
+                            "passengerType": "ADT",
+                            "passengerIndex": 0,
+                            "segmentKey": "c52f4148",
+                            "quantity": 1,
+                            "createdAt": "2026-02-09T14:18:05.120Z",
+                            "phase": "pre_booking",
+                            "status": "confirmed",
+                            "pricing": {
+                              "display": {
+                                "amount": 25,
+                                "currency": "USD"
+                              },
+                              "converted": false
+                            },
+                            "metadata": {
+                              "seat": {
+                                "available": true,
+                                "position": "window",
+                                "seatColumn": "A",
+                                "seatNumber": "12A",
+                                "seatRow": 12,
+                                "seatType": "standard"
+                              }
+                            }
+                          },
+                          {
+                            "serviceId": "g6Rwc2lk2SQwMTlkMDY3NC1hMzQzLTc0OGEtYmYyYS1jMDk4ZmNjMTk2ZTKhcMtAQYAAAAAAAKFjo1VTRA==",
+                            "name": "Checked bag 23kg",
+                            "category": "baggage",
+                            "passengerType": "ADT",
+                            "passengerIndex": 0,
+                            "segmentKey": "c52f4148",
+                            "quantity": 1,
+                            "createdAt": "2026-02-09T14:18:05.120Z",
+                            "phase": "pre_booking",
+                            "status": "confirmed",
+                            "pricing": {
+                              "display": {
+                                "amount": 35,
+                                "currency": "USD"
+                              },
+                              "converted": false
+                            },
+                            "metadata": {
+                              "baggage": {
+                                "bagType": "checked",
+                                "pieces": 1,
+                                "weightKg": 23
+                              }
+                            }
+                          }
+                        ]
                       }
                     }
                   ]
@@ -8104,7 +8352,7 @@
                                 },
                                 "category": {
                                   "type": "string",
-                                  "description": "Service category (e.g. seat, baggage)"
+                                  "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                 },
                                 "label": {
                                   "type": "string",
@@ -8125,7 +8373,7 @@
                                       },
                                       "category": {
                                         "type": "string",
-                                        "description": "Service category (e.g. seat, baggage)"
+                                        "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                       },
                                       "passengerType": {
                                         "type": "string",
@@ -8179,7 +8427,7 @@
                                             "properties": {
                                               "bagType": {
                                                 "type": "string",
-                                                "description": "Type of bag (e.g. checked, cabin)"
+                                                "description": "Type of bag (e.g. checked, cabin, equipment). equipment is sports equipment or a musical instrument (skis, bike, golf bag...), with its own maxQuantity / maxBagsAllowed"
                                               },
                                               "pieces": {
                                                 "type": "integer",
@@ -8188,6 +8436,14 @@
                                               "weightKg": {
                                                 "type": "number",
                                                 "description": "Weight allowance in kilograms"
+                                              },
+                                              "maxQuantity": {
+                                                "type": "integer",
+                                                "description": "Maximum quantity of this bag option per passenger per segment. Omitted when unknown. This is the limit to cap the selection at: Atlas rejects a quantity above it (error 44116); Sabre and Travelport still accept it for now."
+                                              },
+                                              "maxBagsAllowed": {
+                                                "type": "integer",
+                                                "description": "Highest bag position covered by the bag options of this bagType (e.g. 5 for \"4th to 5th bag\"). A position, not a count of bags to buy: position 1 may be the fare's free bag. Omitted when unknown. Cap the selection by maxQuantity, which never adds up to more than this."
                                               }
                                             }
                                           }
@@ -8206,6 +8462,9 @@
                             "items": {
                               "$ref": "#/components/schemas/FlightBookedService"
                             }
+                          },
+                          "metadata": {
+                            "$ref": "#/components/schemas/FlightServicesMetadata"
                           },
                           "canAddServicesAfterTicketing": {
                             "type": "boolean",
@@ -8516,6 +8775,29 @@
                         "code": 44101,
                         "message": "validation error: invalid services request",
                         "description": "the services request is invalid"
+                      }
+                    }
+                  },
+                  "invalidQuantity": {
+                    "summary": "Bag quantity over metadata.baggage.maxQuantity",
+                    "value": {
+                      "error": {
+                        "code": 44116,
+                        "message": "validation error: invalid quantity",
+                        "description": "the requested quantity exceeds the maximum allowed for this bag; keep each quantity within metadata.baggage.maxQuantity of the bag option, per passenger and segment"
+                      }
+                    }
+                  },
+                  "serviceConflict": {
+                    "summary": "The airline refuses the combination (e.g. two bags of the same category for one passenger and segment)",
+                    "value": {
+                      "error": {
+                        "code": 44119,
+                        "message": "validation error: service conflict",
+                        "description": "Service conflicts detected",
+                        "details": {
+                          "conflicts": ["Two checked bags for passenger 0 on segment a1b2c3d4"]
+                        }
                       }
                     }
                   }
@@ -9609,7 +9891,7 @@
         ],
         "summary": "Precharge extra charges on a booking",
         "operationId": "prechargeFlightExtraCharges",
-        "description": "## Overview\n\nCreates a pending post-booking extra-charge batch for an existing flight booking and returns an opaque `chargesId`. For Stripe-paid bookings, also creates a PaymentIntent (`transactionId` + `secretKey`) when `usePaymentSdk` is true.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- Attach fees after confirmation (seat change, baggage, admin adjustment)\n- Obtain a Stripe client secret so the customer can confirm payment before `POST .../extra-charges/charges`\n\n## What You Get\n\n- **`chargesId`** — Opaque token required by `/extra-charges/charges` (do not re-send charge lines)\n- **`paymentTypes`** — Locked to the booking's original payment (`TRANSACTION_ID` or `CREDIT`)\n- **`transactionId` / `secretKey`** — Present for Stripe bookings when `usePaymentSdk` is true\n- Existing extras totals plus pending batch totals\n\n## Constraints\n\n- Booking status must be `CONFIRMED` or `PENDING_CONFIRMATION`\n- All lines in one request must share the same currency\n- Payment method on `/charges` must match the original booking payment",
+        "description": "## Overview\n\nCreates a pending post-booking extra-charge batch for an existing flight booking and returns an opaque `chargesId`. When the batch is paid with `TRANSACTION_ID`, also creates a PaymentIntent (`transactionId` + `secretKey`) when `usePaymentSdk` is true.\n\n## Payment methods\n\n- **Credit-line booking** — `CREDIT` (default) bills the credit line; `TRANSACTION_ID` creates a Stripe PaymentIntent so the passenger pays (requires `usePaymentSdk: true`)\n- **Stripe booking** — `TRANSACTION_ID` (requires `usePaymentSdk: true`)\n- **WL / CMI booking** — `MANUAL` (system admin / operations only): nothing is captured; support collects the payment outside LiteAPI and marks it paid with `PUT /extra-charges/charges`\n\nThe chosen method is returned in `paymentTypes` and recorded in `chargesId`.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- Attach fees after confirmation (seat change, baggage, admin adjustment)\n- Obtain a Stripe client secret so the customer can confirm payment before `POST .../extra-charges/charges`\n\n## What You Get\n\n- **`chargesId`** — Opaque token required by `/extra-charges/charges` (do not re-send charge lines)\n- **`paymentTypes`** — The method chosen for this batch (`CREDIT`, `TRANSACTION_ID` or `MANUAL`)\n- **`transactionId` / `secretKey`** — Present when the batch is paid with `TRANSACTION_ID` and `usePaymentSdk` is true\n- Existing extras totals plus pending batch totals\n\n## Constraints\n\n- Booking status must be `CONFIRMED` or `PENDING_CONFIRMATION`\n- All lines in one request must share the same currency\n- Payment method on `/charges` must match the method chosen here",
         "parameters": [
           {
             "name": "bookingId",
@@ -9655,6 +9937,33 @@
                       }
                     ],
                     "usePaymentSdk": false
+                  }
+                },
+                "creditLinePassengerStripe": {
+                  "summary": "Credit-line booking: charge the passenger through Stripe",
+                  "value": {
+                    "charges": [
+                      {
+                        "description": "Seat change fee",
+                        "amount": 45.0,
+                        "currency": "USD"
+                      }
+                    ],
+                    "usePaymentSdk": true,
+                    "paymentMethod": "TRANSACTION_ID"
+                  }
+                },
+                "manualCmi": {
+                  "summary": "WL / CMI booking: record a manual charge",
+                  "value": {
+                    "charges": [
+                      {
+                        "description": "Name change fee",
+                        "amount": 500.0,
+                        "currency": "MAD"
+                      }
+                    ],
+                    "paymentMethod": "MANUAL"
                   }
                 }
               }
@@ -9852,7 +10161,7 @@
         ],
         "summary": "Confirm extra charges on a booking",
         "operationId": "chargeFlightExtraCharges",
-        "description": "## Overview\n\nConfirms a pending extra-charge batch created by `/extra-charges/precharges`. Captures the Stripe PaymentIntent or bills the credit line, then appends the lines to the booking.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## Idempotency\n\nIdempotent on `chargesId`, mirroring `POST /flights/bookings` prebookId replay:\n\n- **Already confirmed** — HTTP 200 with `data.message` and the persisted extras (no re-capture / no duplicate credit-line billing)\n- **Concurrent confirm** — HTTP 409 / `45035` while another confirm for the same `chargesId` holds the Redis lock; retry after the first completes\n\n## When to Use\n\n- After the customer confirmed the Stripe PaymentIntent (status `requires_capture` / `succeeded`), or immediately for `CREDIT` bookings\n\n## Constraints\n\n- Body only needs `chargesId` + `payment` (charge lines are encoded in `chargesId`)\n- `payment.method` must match the booking's original payment (`TRANSACTION_ID` or `CREDIT`)\n- For Stripe, `payment.transactionId` must be the id returned by precharges",
+        "description": "## Overview\n\nConfirms a pending extra-charge batch created by `/extra-charges/precharges`. Captures the Stripe PaymentIntent, bills the credit line, or (MANUAL) records the lines as `awaiting_payment`, then appends the lines to the booking.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## Idempotency\n\nIdempotent on `chargesId`, mirroring `POST /flights/bookings` prebookId replay:\n\n- **Already confirmed** — HTTP 200 with `data.message` and the persisted extras (no re-capture / no duplicate credit-line billing)\n- **Concurrent confirm** — HTTP 409 / `45035` while another confirm for the same `chargesId` holds the Redis lock; retry after the first completes\n\n## When to Use\n\n- After the customer confirmed the Stripe PaymentIntent (status `requires_capture` / `succeeded`), or immediately for `CREDIT` bookings\n\n## Constraints\n\n- Body only needs `chargesId` + `payment` (charge lines are encoded in `chargesId`)\n- `payment.method` must match the method chosen at precharges (`TRANSACTION_ID`, `CREDIT` or `MANUAL`); ids minted before methods were recorded must use the booking's original payment\n- For Stripe, `payment.transactionId` must be the id returned by precharges",
         "parameters": [
           {
             "name": "bookingId",
@@ -9890,6 +10199,15 @@
                     "chargesId": "g6x...",
                     "payment": {
                       "method": "CREDIT"
+                    }
+                  }
+                },
+                "manual": {
+                  "summary": "Record manual (CMI) extra charge",
+                  "value": {
+                    "chargesId": "g6x...",
+                    "payment": {
+                      "method": "MANUAL"
                     }
                   }
                 }
@@ -9932,7 +10250,10 @@
                         "currency": "USD",
                         "timestamp": "2026-08-17T12:00:00Z",
                         "transactionId": "tr_ct_abc",
-                        "chargesId": "g6x..."
+                        "chargesId": "g6x...",
+                        "paymentMethod": "TRANSACTION_ID",
+                        "status": "paid",
+                        "paidAt": "2026-08-17T12:00:00Z"
                       }
                     ]
                   }
@@ -10033,6 +10354,175 @@
           },
           "409": {
             "description": "Booking status not eligible, or concurrent confirm in progress",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 45035,
+                    "message": "conflict: concurrent operation",
+                    "description": "a concurrent extra-charges confirm is already in progress for this chargesId",
+                    "key": "bodyRequest.chargesId"
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 5000,
+                    "message": "unable to process request",
+                    "description": "unable to process request"
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Flight Bookings"
+        ],
+        "summary": "Mark manual extra charges as paid",
+        "operationId": "markFlightExtraChargesPaid",
+        "description": "## Overview\n\nRecords that a `MANUAL` extra-charge batch (WL / CMI booking) was paid outside LiteAPI. Sets `status: paid`, `paymentReference` and `paidAt` on every `awaiting_payment` line of the batch. `extraChargesTotal` does not change.\n\n## Access\n\nSystem admins and users with the `operations` role only.\n\n## Idempotency\n\nA batch that is already paid returns HTTP 200 with `data.message` and the existing lines (the stored reference is kept).",
+        "parameters": [
+          {
+            "name": "bookingId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid"
+            },
+            "description": "Flight booking identifier",
+            "example": "1297abe4-57c5-4605-b8e7-5caad983c4a7"
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/FlightExtraChargesMarkPaidRequest"
+              },
+              "example": {
+                "chargesId": "g6x...",
+                "reference": "CMI-2026-000123"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Batch marked paid (or already paid)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": [
+                    "data"
+                  ],
+                  "properties": {
+                    "data": {
+                      "allOf": [
+                        {
+                          "$ref": "#/components/schemas/FlightExtraChargesChargeData"
+                        }
+                      ],
+                      "description": "Extra-charges result payload"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "bookingId": "1297abe4-57c5-4605-b8e7-5caad983c4a7",
+                    "sellingPrice": 8200.0,
+                    "sellingCurrency": "MAD",
+                    "extraChargesTotal": 500.0,
+                    "extraChargesCurrency": "MAD",
+                    "extraChargesDetails": [
+                      {
+                        "description": "Name change fee",
+                        "amount": 500.0,
+                        "currency": "MAD",
+                        "timestamp": "2026-10-12T09:00:00Z",
+                        "chargesId": "g6x...",
+                        "paymentMethod": "MANUAL",
+                        "status": "paid",
+                        "paymentReference": "CMI-2026-000123",
+                        "paidAt": "2026-10-12T15:30:00Z"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Invalid body or chargesId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4000,
+                    "message": "bad request",
+                    "description": "invalid flight extra charges: reference is required"
+                  }
+                }
+              }
+            }
+          },
+          "403": {
+            "description": "Caller is not a system admin or operations",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 40301,
+                    "message": "user does not have enough permissions to perform this action",
+                    "description": "Only system admins and operations can mark extra charges as paid"
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Booking not found, or no extra charges with this chargesId",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": {
+                    "code": 4000,
+                    "message": "bad request",
+                    "description": "no extra charges found for this chargesId",
+                    "key": "bodyRequest.chargesId"
+                  }
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Another confirm or mark-paid for the same chargesId is in progress",
             "content": {
               "application/json": {
                 "schema": {
@@ -11569,6 +12059,9 @@
                           "servicesAttachable": {
                             "type": "object",
                             "properties": {
+                              "metadata": {
+                                "$ref": "#/components/schemas/FlightServicesMetadata"
+                              },
                               "expiresAt": {
                                 "type": "string",
                                 "description": "Expiry time for attaching services (ISO 8601)"
@@ -11585,7 +12078,7 @@
                                     },
                                     "category": {
                                       "type": "string",
-                                      "description": "Service category (e.g. seat, baggage)"
+                                      "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                     },
                                     "label": {
                                       "type": "string",
@@ -11606,7 +12099,7 @@
                                           },
                                           "category": {
                                             "type": "string",
-                                            "description": "Service category (e.g. seat, baggage)"
+                                            "description": "Service category: seat, baggage or, when enabled for the provider, meal, lounge, pet, wifi_entertainment, priority, assistance (sold at the provider price, item code in metadata.<category>.subCode)"
                                           },
                                           "passengerType": {
                                             "type": "string",
@@ -11660,7 +12153,7 @@
                                                 "properties": {
                                                   "bagType": {
                                                     "type": "string",
-                                                    "description": "Type of bag (e.g. checked, cabin)"
+                                                    "description": "Type of bag (e.g. checked, cabin, equipment). equipment is sports equipment or a musical instrument (skis, bike, golf bag...), with its own maxQuantity / maxBagsAllowed"
                                                   },
                                                   "pieces": {
                                                     "type": "integer",
@@ -11669,6 +12162,14 @@
                                                   "weightKg": {
                                                     "type": "number",
                                                     "description": "Weight allowance in kilograms"
+                                                  },
+                                                  "maxQuantity": {
+                                                    "type": "integer",
+                                                    "description": "Maximum quantity of this bag option per passenger per segment. Omitted when unknown. This is the limit to cap the selection at: Atlas rejects a quantity above it (error 44016); Sabre and Travelport still accept it for now."
+                                                  },
+                                                  "maxBagsAllowed": {
+                                                    "type": "integer",
+                                                    "description": "Highest bag position covered by the bag options of this bagType (e.g. 5 for \"4th to 5th bag\"). A position, not a count of bags to buy: position 1 may be the fare's free bag. Omitted when unknown. Cap the selection by maxQuantity, which never adds up to more than this."
                                                   }
                                                 }
                                               }
@@ -12225,6 +12726,17 @@
                         "key": "bodyRequest.offerId"
                       }
                     }
+                  },
+                  "passengerRejectedByAirline": {
+                    "summary": "Passenger or contact data rejected when creating the booking",
+                    "value": {
+                      "error": {
+                        "code": 43002,
+                        "description": "Passenger 1: travel document expires 2026-10-31, before the final flight's departure on 2026-11-14. The document must be valid when the airline checks it at check-in.",
+                        "message": "prebook validation error",
+                        "key": "bodyRequest"
+                      }
+                    }
                   }
                 }
               }
@@ -12383,6 +12895,16 @@
                         "description": "Provider error: connection to provider failed",
                         "message": "provider error: connection failed",
                         "key": "bodyRequest"
+                      }
+                    }
+                  },
+                  "providerErrorFareBasisChanged": {
+                    "summary": "Fare changed since the search",
+                    "value": {
+                      "error": {
+                        "code": 53021,
+                        "description": "the fare of this offer has changed since your search; search for new flights — do not retry this offerId",
+                        "message": "provider error: fare changed"
                       }
                     }
                   }

@@ -450,6 +450,185 @@
             }
           }
         }
+      },
+      "RoomBed": {
+        "type": "object",
+        "required": [
+          "type"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Normalised bed type. Labels are canonicalised: 'Extra-large double bed (Super-king size)' becomes extra_large_double, 'Queen bed' becomes queen.",
+            "example": "queen"
+          },
+          "label": {
+            "type": "string",
+            "description": "Bed description as stated by the source.",
+            "example": "Queen bed"
+          },
+          "count": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Number of beds of this type.",
+            "example": 2
+          },
+          "sizeCm": {
+            "type": "string",
+            "description": "Stated width band.",
+            "example": "151-180 cm wide"
+          }
+        }
+      },
+      "RoomAttributes": {
+        "type": "object",
+        "description": "Optional structured evidence about a room. Omitted fields mean the source did not state them, never that the room lacks them. Normalised on submit: enum values are lower-cased and trimmed, m2/m\u00b2 are folded into sqm, and string lists are deduplicated. Unknown structure, bedRelation or size.unit values, negative counts and non-positive sizes return 400. At most 4 KiB per room's attributes and 256 KiB across a list.",
+        "properties": {
+          "structure": {
+            "type": "string",
+            "enum": [
+              "room",
+              "suite",
+              "studio",
+              "apartment",
+              "villa",
+              "penthouse"
+            ],
+            "description": "Room structure as stated by the source. Do not infer it from a marketing room name.",
+            "example": "studio"
+          },
+          "tier": {
+            "type": "string",
+            "description": "Commercial tier stated by the source (standard, premium, deluxe, ...).",
+            "example": "deluxe"
+          },
+          "bedrooms": {
+            "type": "integer",
+            "minimum": 0,
+            "description": "Stated bedroom count for multi-room structures. 0 or omitted means not stated.",
+            "example": 1
+          },
+          "beds": {
+            "type": "array",
+            "description": "Stated bed configuration.",
+            "items": {
+              "$ref": "#/components/schemas/RoomBed"
+            }
+          },
+          "bedRelation": {
+            "type": "string",
+            "enum": [
+              "and",
+              "or",
+              "none"
+            ],
+            "description": "Whether the listed beds are all present (and), alternatives (or), or a single configuration (none).",
+            "example": "none"
+          },
+          "occupancy": {
+            "type": "object",
+            "description": "Stated capacity.",
+            "properties": {
+              "maxAdults": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4
+              },
+              "maxChildren": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 3
+              },
+              "maxOccupancy": {
+                "type": "integer",
+                "minimum": 0,
+                "example": 4
+              }
+            }
+          },
+          "size": {
+            "type": "object",
+            "description": "Stated floor area, normalised to square metres.",
+            "required": [
+              "value",
+              "unit"
+            ],
+            "properties": {
+              "value": {
+                "type": "number",
+                "minimum": 0,
+                "exclusiveMinimum": true,
+                "example": 24
+              },
+              "unit": {
+                "type": "string",
+                "enum": [
+                  "sqm"
+                ],
+                "description": "Square metres. m2 and m\u00b2 are folded into sqm on submit.",
+                "example": "sqm"
+              }
+            }
+          },
+          "views": {
+            "type": "array",
+            "description": "Normalised view labels. 'City View' and 'city' converge on city.",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "city"
+            ]
+          },
+          "accessibility": {
+            "type": "array",
+            "description": "Normalised accessibility features stated by the source (for example mobility_accessible, roll_in_shower). Never inferred from a room name.",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "mobility_accessible",
+              "roll_in_shower"
+            ]
+          },
+          "features": {
+            "type": "object",
+            "description": "Only attributes the source stated as true or false; a missing key means unknown, not false. Informational, never gates a match.",
+            "additionalProperties": {
+              "type": "boolean"
+            },
+            "example": {
+              "non_smoking": true,
+              "television": true
+            }
+          },
+          "amenities": {
+            "type": "array",
+            "description": "Optional amenity list for audit context. Informational; never gates a match.",
+            "items": {
+              "type": "string"
+            },
+            "example": [
+              "desk",
+              "private bathroom"
+            ]
+          },
+          "source": {
+            "type": "object",
+            "description": "Provenance retained for auditability.",
+            "properties": {
+              "roomTitle": {
+                "type": "string"
+              },
+              "officialSiteRoomName": {
+                "type": "string"
+              },
+              "rawSizeUnit": {
+                "type": "string"
+              }
+            }
+          }
+        }
       }
     }
   },
@@ -957,7 +1136,7 @@
         ],
         "summary": "Match supplier rooms to a reference catalog",
         "operationId": "post_rooms-match",
-        "description": "## Overview\n\nMatch supplier room names to your reference catalog. For each supplier room, returns the best matching reference room along with ranked alternatives and confidence scores.\n\n## When to Use\n\n- **Normalize supplier inventory** - Map diverse supplier room names to your canonical catalog\n- **Rate shopping** - Identify equivalent rooms across suppliers for price comparison\n- **Content enrichment** - Link supplier rooms to your reference data for consistent display\n- **Booking flows** - Ensure supplier rooms match expected room types before confirmation\n\n## What You Get\n\n- **Match status** - `mapped` or `not_mapped` for each supplier room\n- **Best match** - Reference room with highest confidence (when above threshold)\n- **Ranked candidates** - Top K alternative matches with scores\n- **Confidence scores** - How confident the match is (0-1)\n\n## Quick Start\n\n**Required fields**: `references` (your catalog rooms), `suppliers` (rooms to map)\n\n**Optional tuning**: Set `threshold` (default 0.5) for match sensitivity, `topK` (default 3) for number of candidates",
+        "description": "## Overview\n\nMatch supplier room names to your reference catalog. For each supplier room, returns the best matching reference room along with ranked alternatives and confidence scores.\n\n## When to Use\n\n- **Normalize supplier inventory** - Map diverse supplier room names to your canonical catalog\n- **Rate shopping** - Identify equivalent rooms across suppliers for price comparison\n- **Content enrichment** - Link supplier rooms to your reference data for consistent display\n- **Booking flows** - Ensure supplier rooms match expected room types before confirmation\n\n## What You Get\n\n- **Match status** - `mapped` or `not_mapped` for each supplier room\n- **Best match** - Reference room with highest confidence (when above threshold)\n- **Ranked candidates** - Top K alternative matches with scores\n- **Confidence scores** - How confident the match is (0-1)\n\n## Quick Start\n\n**Required fields**: `suppliers` (rooms to map). `references` is optional: omit it to let the service resolve the hotel catalog from `room_mapping_catalog:{hotelId}` (dispatcher-owned, read-only here), falling back to the LiteAPI data API. When supplied, the caller's list wins. `hotelId` is required when `references` is omitted.\n\n**Optional tuning**: Set `threshold` (default 0.5) for match sensitivity, `topK` (default 3) for number of candidates",
         "security": [
           {
             "apikeyAuth": []
@@ -970,8 +1149,19 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "references",
                   "suppliers"
+                ],
+                "anyOf": [
+                  {
+                    "required": [
+                      "references"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "hotelId"
+                    ]
+                  }
                 ],
                 "x-examples": {
                   "Example 1": {
@@ -1006,13 +1196,28 @@
                         "name": "1 King Junior Suite"
                       }
                     ]
+                  },
+                  "Example 2 - resolve catalog internally": {
+                    "hotelId": "lp32f8b",
+                    "threshold": 0.5,
+                    "topK": 3,
+                    "suppliers": [
+                      {
+                        "i": 0,
+                        "name": "Deluxe King"
+                      },
+                      {
+                        "i": 1,
+                        "name": "Standard Twin Room"
+                      }
+                    ]
                   }
                 },
                 "properties": {
                   "hotelId": {
                     "type": "string",
                     "nullable": true,
-                    "description": "Correlation ID echoed in the response",
+                    "description": "Hotel ID used to resolve the reference catalog when `references` is omitted. Required in that case; echoed in the response.",
                     "example": "lpfc771"
                   },
                   "chunkKey": {
@@ -1038,8 +1243,7 @@
                   },
                   "references": {
                     "type": "array",
-                    "minItems": 1,
-                    "description": "Canonical reference rooms",
+                    "description": "Optional. Allowed mapping targets (the catalog). Omit or send empty to resolve the hotel catalog from `room_mapping_catalog:{hotelId}` (dispatcher-owned, read-only here), then the LiteAPI data API. Caller-supplied rooms win. Resolved catalogs are capped upstream (default 500) and never truncated; `hotelId` is required when this is omitted.",
                     "items": {
                       "$ref": "#/components/schemas/ReferenceRoom"
                     }
@@ -1219,7 +1423,7 @@
         ],
         "summary": "Submit an async room mapping job",
         "operationId": "post_rooms-match-async",
-        "description": "## Overview\n\nSubmit an async room mapping job for a hotel. The job processes in the background and produces high-quality mappings with detailed reasoning for each decision. Only one job per hotel can run at a time.\n\n**Note:** Internally referred to as a deep-map job.\n\n## When to Use\n\n- **Batch processing** - Map large sets of supplier rooms for a hotel\n- **Initial hotel setup** - Establish canonical mappings when onboarding a property\n- **Periodic refresh** - Re-map rooms when supplier catalogs change\n\n## What You Get\n\n- **Job ID** - Unique identifier to poll for results\n- **Queued status** - Immediate confirmation that processing has started\n- **Background processing** - Results ready in seconds to minutes\n\n## Quick Start\n\n**Required fields**: `hotelId`, `referenceRooms` (your catalog, max 500), `roomNames` (supplier names to map, max 100)\n\n**Poll for results**: Use `GET /rooms/match/async/jobs/:jobId` until status is `completed` or `failed`",
+        "description": "## Overview\n\nSubmit an async room mapping job for a hotel. The job processes in the background and produces high-quality mappings with detailed reasoning for each decision. Only one job per hotel can run at a time.\n\n**Note:** Internally referred to as a deep-map job.\n\n## When to Use\n\n- **Batch processing** - Map large sets of supplier rooms for a hotel\n- **Initial hotel setup** - Establish canonical mappings when onboarding a property\n- **Periodic refresh** - Re-map rooms when supplier catalogs change\n\n## What You Get\n\n- **Job ID** - Unique identifier to poll for results\n- **Queued status** - Immediate confirmation that processing has started\n- **Background processing** - Results ready in seconds to minutes\n\n## Quick Start\n\n**Required fields**: `hotelId` and either `roomNames` (supplier names to map, max 100) or `supplierRooms` (up to 100 `{ name, attributes }` objects; wins when non-empty). `referenceRooms` is optional: omit it to let the service score against our hotel catalog, which it resolves automatically. When supplied, the caller's list wins. Lists are rejected above 500 rooms, and the same limit applies to the catalog resolved on your behalf.\n\n**Attributes**: `supplierRooms[].attributes` and `referenceRooms[].attributes` carry optional structured evidence (beds, occupancy, size, views, accessibility, features). When supplier attributes are sent and the resolved catalog is name-only, the service enriches the references with our own catalog attributes from the LiteAPI data API before auditing. `attributeDetail` controls how much of them reaches the model (default `summary`). Absent fields mean \"not stated\", never \"known absent\"; features and amenities never gate a match, while structure, bed configuration, occupancy, size, views and accessibility are commitments.\n\n**Poll for results**: Use `GET /rooms/match/async/jobs/:jobId` until status is `completed` or `failed`",
         "security": [
           {
             "apikeyAuth": []
@@ -1232,9 +1436,19 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "hotelId",
-                  "referenceRooms",
-                  "roomNames"
+                  "hotelId"
+                ],
+                "anyOf": [
+                  {
+                    "required": [
+                      "roomNames"
+                    ]
+                  },
+                  {
+                    "required": [
+                      "supplierRooms"
+                    ]
+                  }
                 ],
                 "x-examples": {
                   "Example 1": {
@@ -1258,6 +1472,87 @@
                       "Standard Twin Room",
                       "1 King Junior Suite"
                     ]
+                  },
+                  "Example 2 - resolve catalog internally": {
+                    "hotelId": "lp32f8b",
+                    "roomNames": [
+                      "Deluxe King",
+                      "Standard Twin Room"
+                    ]
+                  },
+                  "Example 3 - supplier and reference attributes": {
+                    "hotelId": "lp32f8b",
+                    "attributeDetail": "full",
+                    "supplierRooms": [
+                      {
+                        "name": "Studio, 1 King",
+                        "attributes": {
+                          "beds": [
+                            {
+                              "type": "extra_large_double",
+                              "label": "Extra-large double bed (Super-king size)",
+                              "count": 1,
+                              "sizeCm": "181-210 cm wide"
+                            }
+                          ],
+                          "bedRelation": "none",
+                          "occupancy": {
+                            "maxAdults": 2,
+                            "maxOccupancy": 2
+                          },
+                          "size": {
+                            "value": 22,
+                            "unit": "sqm"
+                          },
+                          "features": {
+                            "non_smoking": true
+                          }
+                        }
+                      },
+                      {
+                        "name": "Studio, 2 Queen",
+                        "attributes": {
+                          "beds": [
+                            {
+                              "type": "queen",
+                              "label": "Queen bed",
+                              "count": 2,
+                              "sizeCm": "151-180 cm wide"
+                            }
+                          ],
+                          "occupancy": {
+                            "maxAdults": 4,
+                            "maxOccupancy": 4
+                          },
+                          "size": {
+                            "value": 24,
+                            "unit": "sqm"
+                          }
+                        }
+                      }
+                    ],
+                    "referenceRooms": [
+                      {
+                        "id": 4534415,
+                        "name": "Studio, 1 King",
+                        "attributes": {
+                          "beds": [
+                            {
+                              "type": "extra_large_double",
+                              "count": 1
+                            }
+                          ],
+                          "occupancy": {
+                            "maxAdults": 2,
+                            "maxOccupancy": 2
+                          },
+                          "size": {
+                            "value": 22,
+                            "unit": "sqm"
+                          }
+                        }
+                      }
+                    ]
                   }
                 },
                 "properties": {
@@ -1268,9 +1563,8 @@
                   },
                   "referenceRooms": {
                     "type": "array",
-                    "minItems": 1,
                     "maxItems": 500,
-                    "description": "Allowed mapping targets (the catalog). Max 500.",
+                    "description": "Optional. Allowed mapping targets (the catalog). Omit or send empty to score against our hotel catalog, which the service resolves automatically. When supplied, the caller's list wins. Rejected above 500 rooms; the same limit applies to the catalog resolved on your behalf. Attributes are optional per room.",
                     "items": {
                       "type": "object",
                       "required": [
@@ -1287,6 +1581,9 @@
                           "type": "string",
                           "description": "Reference room title",
                           "example": "King Room"
+                        },
+                        "attributes": {
+                          "$ref": "#/components/schemas/RoomAttributes"
                         }
                       }
                     }
@@ -1295,7 +1592,7 @@
                     "type": "array",
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "Supplier room names to map. Blank entries are dropped and normalized duplicates are removed. Max 100 after deduplication.",
+                    "description": "Supplier room names to map. Blank entries are dropped and normalized duplicates are removed. Max 100 after deduplication. Ignored when `supplierRooms` is non-empty.",
                     "items": {
                       "type": "string"
                     },
@@ -1304,6 +1601,38 @@
                       "Standard Twin Room",
                       "1 King Junior Suite"
                     ]
+                  },
+                  "supplierRooms": {
+                    "type": "array",
+                    "minItems": 1,
+                    "maxItems": 100,
+                    "description": "Attribute-bearing supplier rooms. When non-empty it replaces `roomNames`. Blank names are dropped and normalized duplicates removed; max 100 after deduplication. Sending attributes lets the audit treat our own catalog attributes as evidence on both sides.",
+                    "items": {
+                      "type": "object",
+                      "required": [
+                        "name"
+                      ],
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Supplier room name.",
+                          "example": "Studio, 2 Queen"
+                        },
+                        "attributes": {
+                          "$ref": "#/components/schemas/RoomAttributes"
+                        }
+                      }
+                    }
+                  },
+                  "attributeDetail": {
+                    "type": "string",
+                    "enum": [
+                      "none",
+                      "summary",
+                      "full"
+                    ],
+                    "default": "summary",
+                    "description": "How much attribute context the audit receives. `none` sends names only; `summary` (default) sends structure, tier, bedrooms, beds, bedRelation, occupancy, size, views and accessibility; `full` adds features, amenities and source. Applies to both supplier and reference attributes. The full request is always stored on the job."
                   }
                 }
               }
@@ -1353,14 +1682,33 @@
             }
           },
           "400": {
-            "description": "Bad Request - malformed JSON or validation failure",
+            "description": "Bad Request - malformed JSON or validation failure. Also returned when `hotelId` is missing, when neither `roomNames` nor a non-empty `supplierRooms` is supplied, when `referenceRooms` is omitted and no catalog can be resolved for the hotel, when a room attribute is invalid (unknown `structure`, `bedRelation` or `size.unit`, negative counts, non-positive sizes, an empty `beds[].type`), when attributes exceed 4 KiB per room or 256 KiB per list, when `attributeDetail` is unknown, or when the supplied or automatically resolved catalog exceeds 500 rooms.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": "deep-map validation error: hotelId is required"
+                "examples": {
+                  "missingHotelId": {
+                    "value": {
+                      "error": "deep-map validation error: hotelId is required"
+                    }
+                  },
+                  "noCatalogForOmittedReferenceRooms": {
+                    "value": {
+                      "error": "deep-map validation error: referenceRooms was not provided and the hotel catalog could not be resolved; provide referenceRooms or retry later"
+                    }
+                  },
+                  "invalidRoomAttributes": {
+                    "value": {
+                      "error": "deep-map validation error: supplierRooms[0].attributes: structure \"loft\" is not one of: room, suite, studio, apartment, villa, penthouse"
+                    }
+                  },
+                  "catalogTooLarge": {
+                    "value": {
+                      "error": "deep-map validation error: fetched catalog exceeds max of 500"
+                    }
+                  }
                 }
               }
             }
@@ -1382,11 +1730,14 @@
             }
           },
           "500": {
-            "description": "Internal Server Error",
+            "description": "Internal Server Error. Also returned as `failed to resolve reference rooms` when `referenceRooms` was omitted and the hotel data API could not be reached.",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "failed to resolve reference rooms"
                 }
               }
             }
@@ -1463,6 +1814,9 @@
                               },
                               "name": {
                                 "type": "string"
+                              },
+                              "attributes": {
+                                "$ref": "#/components/schemas/RoomAttributes"
                               }
                             }
                           }
@@ -1488,6 +1842,30 @@
                           "type": "string",
                           "format": "date-time",
                           "example": "2026-07-17T15:30:12Z"
+                        },
+                        "supplierRooms": {
+                          "type": "array",
+                          "description": "Supplier rooms as stored on the job, including attributes when they were supplied.",
+                          "items": {
+                            "type": "object",
+                            "properties": {
+                              "name": {
+                                "type": "string"
+                              },
+                              "attributes": {
+                                "$ref": "#/components/schemas/RoomAttributes"
+                              }
+                            }
+                          }
+                        },
+                        "attributeDetail": {
+                          "type": "string",
+                          "enum": [
+                            "none",
+                            "summary",
+                            "full"
+                          ],
+                          "description": "Detail level used for the audit. Defaults to summary."
                         }
                       }
                     }

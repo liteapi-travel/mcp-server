@@ -15,7 +15,7 @@
         ],
         "operationId": "getHotelTaxSchema",
         "summary": "Get the normalized tax schema of a hotel",
-        "description": "## Overview\n\nReturns the tax schema of a hotel as normalized static data, independent of the supply provider the rules were learned from. Each entry describes one tax or fee: whether it is already included in the room rate, whether it is a percentage of the rate or a fixed amount, and how fixed amounts scale (per adult and/or per night).\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Excluded taxes are typically collected at the hotel\n- **Tax auditing** - Compare supplier-declared taxes against the reference schema\n\n## Notes\n\n- Fixed amounts are expressed in USD\n- Percentage rates apply to the room rate (e.g. 14.62 means 14.62%)\n- The schema is learned by an offline pipeline; hotels without learned data return 404\n- Enterprise accounts also receive `category`, `chargeType`, and `payAtProperty` on each tax. `payAtProperty` is always the opposite of `included`. When the hotel declared the rule, an enterprise response may also include `appliedPer`, `appliedOn`, `validFrom`, and `validTo`",
+        "description": "## Overview\n\nReturns the taxes and fees of a hotel as normalized static data. Each entry describes one tax or fee: whether it is settled with the booking or paid at the property, whether it is a percentage of the room rate or a fixed amount, how fixed amounts scale (per adult and/or per night), and its category.\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Charges with `payAtProperty` = true are collected at the hotel\n- **Tax auditing** - Compare a supplier's rate breakdown against the reference schema\n\n## Notes\n\n- Every listed tax or fee applies on top of the room rate\n- `included` and `payAtProperty` are always opposites: `included` = true means the charge is settled with the booking, `payAtProperty` = true means the guest pays it at the property\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- Fixed amounts are expressed in USD unless `currency` says otherwise\n- `appliedPer`, `appliedOn`, `validFrom` and `validTo` are present when that detail is known for the charge; an entry without them is complete\n- Tax data is refreshed periodically; use `lastUpdated` to detect changes. Hotels without tax data return 404",
         "security": [
           {
             "apikeyAuth": []
@@ -69,8 +69,8 @@
                         },
                         "lastUpdated": {
                           "type": "string",
-                          "description": "When the tax schema was last refreshed by the tax pipeline.",
-                          "example": "2026-10-06T22:57:05Z"
+                          "description": "When the tax data of this hotel was last refreshed.",
+                          "example": "2026-07-01T10:15:00Z"
                         },
                         "taxes": {
                           "type": "array",
@@ -85,13 +85,13 @@
                             "properties": {
                   "name": {
                     "type": "string",
-                    "description": "Public-facing display name of the tax or fee.",
-                    "example": "Resort Fee"
+                    "description": "Display name of the tax or fee.",
+                    "example": "City Tax"
                   },
                               "included": {
                                 "type": "boolean",
-                                "description": "Whether the charge is settled with the booking (true) or paid by the guest at the property (false). On an enterprise response this is always the opposite of payAtProperty.",
-                                "example": true
+                                "description": "Whether the charge is settled with the booking (true) or paid by the guest at the property (false). Every listed tax or fee applies on top of the room rate. Always the opposite of payAtProperty.",
+                                "example": false
                               },
                               "type": {
                                 "type": "string",
@@ -99,22 +99,22 @@
                                   "percentage",
                                   "fixed"
                                 ],
-                                "description": "'fixed' when a fixed amount is known for this tax (the authoritative form), 'percentage' otherwise.",
+                                "description": "'fixed' when a fixed amount is known for this tax, 'percentage' otherwise.",
                                 "example": "fixed"
                               },
                               "percentageRate": {
                                 "type": "number",
-                                "description": "Highest percentage of the room rate observed for this tax, rounded to two decimals (e.g. 14.62 means 14.62%). Present when type is 'percentage'. May also be present alongside fixedAmount when the tax was observed in both forms.",
-                                "example": 14.62
+                                "description": "Percentage of the room rate, rounded to two decimals (e.g. 13.5 means 13.5%). May be present alongside fixedAmount when the tax is known in both forms.",
+                                "example": 13.5
                               },
                               "fixedAmount": {
                                 "type": "number",
-                                "description": "Highest flat amount per unit (see perAdult/perNight) observed for this tax. Only present when type is 'fixed'.",
-                                "example": 22
+                                "description": "Flat amount per unit (see perAdult/perNight). Only present when type is 'fixed'.",
+                                "example": 5
                               },
                               "currency": {
                                 "type": "string",
-                                "description": "Currency of fixedAmount. 'USD' for learned rules and for hotel-declared rules once converted from the hotel's currency; the hotel's own currency when no exchange rate was available. Always present on a fixed amount: a hotel-declared amount whose currency cannot be determined is not returned.",
+                                "description": "Currency of fixedAmount, normally 'USD'; the hotel's currency when no USD conversion was available. Always present on a fixed amount.",
                                 "example": "USD"
                               },
                               "perAdult": {
@@ -130,41 +130,41 @@
                               "category": {
                                 "type": "string",
                                 "enum": ["Value Added Tax (VAT)", "Goods and services tax (GST)", "City tax", "City hotel fee", "County tax", "State tax", "Federal tax", "Country tax", "National government tax", "Sales tax", "Occupancy tax", "Lodging tax", "Room tax", "Bed tax", "Total tax", "Tourism tax", "Convention tax", "Convention / Tourism fee", "Destination marketing fee", "Tourism marketing fee", "Assessment/license tax", "Energy tax", "Service charge", "Resort fee", "Destination amenity fee", "Maintenance fee", "Local amenity usage/maintenance fee", "Local Government fee", "Local fee", "Local ordinance surcharge", "Surcharge", "Total surcharges", "Sustainability fee", "Charity support fee", "Hotel development Fee", "State cost recovery fee", "Extra person charge", "Extra child charge", "Crib fee", "Rollaway fee", "Miscellaneous", "Miscellaneous fee"],
-                                "description": "Category of the tax or fee, one of the OpenTravel Fee Tax Type names. 'Total tax' is used when the hotel reports one combined rate without a breakdown. Assigned from a reviewed name table; absent when the name is not in the table. Enterprise accounts only.",
+                                "description": "Category of the tax or fee, one of the OpenTravel Fee Tax Type names. 'Total tax' is used when the hotel reports one combined rate without a breakdown. Absent when the name could not be classified.",
                                 "example": "Resort fee"
                               },
                               "chargeType": {
                                 "type": "string",
                                 "enum": ["tax", "fee", "charge"],
-                                "description": "tax (government-imposed), fee (property-imposed) or charge (extra person). Derived from the category when the name is in the category table, otherwise from the hotel's own declaration. Enterprise accounts only.",
+                                "description": "tax (government-imposed), fee (property-imposed) or charge (extra person).",
                                 "example": "fee"
                               },
                               "appliedPer": {
                                 "type": "string",
-                                "description": "Unit the charge applies to as declared by the hotel, e.g. 'per_room_per_night', 'per_person_per_night', 'per_room_per_stay'. Enterprise accounts only, and only when the hotel declared it.",
+                                "description": "Unit the charge applies to: 'per_room_per_night', 'per_person_per_night', 'per_room_per_stay' or 'per_person_per_stay'. Present when known.",
                                 "example": "per_person_per_night"
                               },
                               "appliedOn": {
                                 "type": "string",
                                 "enum": ["net", "net_vat"],
-                                "description": "Base a percentage applies to: 'net' (room rate) or 'net_vat' (room rate plus VAT, i.e. compounded). Enterprise accounts only, and only when the hotel declared it.",
+                                "description": "Base a percentage applies to: 'net' (room rate) or 'net_vat' (room rate plus VAT, i.e. compounded). Present when known.",
                                 "example": "net"
                               },
                               "payAtProperty": {
                                 "type": "boolean",
-                                "description": "true when the guest pays the charge at the property, false when it is settled with the booking. Always the opposite of included. Enterprise accounts only.",
+                                "description": "true when the guest pays the charge at the property, false when it is settled with the booking. Always the opposite of included.",
                                 "example": false
                               },
                               "validFrom": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "First stay date the rule applies to, when it does not apply year-round. Enterprise accounts only, and only when the hotel declared a date range.",
+                                "description": "First stay date the charge applies to, when it does not apply year-round.",
                                 "example": "2014-01-01"
                               },
                               "validTo": {
                                 "type": "string",
                                 "format": "date",
-                                "description": "Last stay date the rule applies to, when it does not apply year-round. Enterprise accounts only, and only when the hotel declared a date range.",
+                                "description": "Last stay date the charge applies to, when it does not apply year-round.",
                                 "example": "2050-12-31"
                               }
                             }
@@ -3682,9 +3682,10 @@
                               },
                               "ranking": {
                                 "type": "integer",
+                                "nullable": true,
                                 "minimum": 1,
                                 "maximum": 5,
-                                "description": "Popularity rank of the room, from 1 (low) to 5 (high).",
+                                "description": "Popularity rank of the room, from 1 (low) to 5 (high). null when the room isn't ranked.",
                                 "example": 3
                               },
                               "bedTypes": {
@@ -6130,6 +6131,307 @@
                       "error": {
                         "code": 401,
                         "message": "Unauthorized"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/data/hotel/{hotelId}/registration": {
+      "get": {
+        "tags": ["Hotels"],
+        "operationId": "getHotelRegistration",
+        "summary": "Get the registration details of a hotel",
+        "description": "## Overview\n\nRetrieve the business registration details of a hotel: the legal entity (trader) operating the property, its registration number, the trade register it is listed in, and its published contact details.\n\n## When to Use\n\n- **Legal disclosure** - Show guests who they are contracting with, as required by consumer-protection rules such as the EU Digital Services Act\n- **Compliance checks** - Verify the legal entity and registration number behind a property\n- **Supplier vetting** - Confirm a hotel is operated by a registered business before listing it\n\n## What You Get\n\n- **Registration number** - The business registration or tax number published by the hotel\n- **Trade register** - The register the business is listed in\n- **Trader** - Legal name, verification flag, email, telephone, and address of the operating entity\n\n## Quick Start\n\nProvide the `hotelId` as a path parameter. Returns the registration details for that hotel, or 404 when none are known.",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "description": "Unique identifier of the hotel, in 'lp' format or numeric.",
+            "required": true,
+            "example": "lp5bf79"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "The registration details of the hotel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "type": "object",
+                      "required": ["hotelId", "status"],
+                      "properties": {
+                        "hotelId": {
+                          "type": "string",
+                          "description": "Unique ID of the hotel",
+                          "example": "lp5bf79"
+                        },
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the hotel",
+                          "example": "Grand Smokies Resort Lodge Pigeon Forge"
+                        },
+                        "status": {
+                          "type": "string",
+                          "description": "Outcome of the lookup",
+                          "example": "found"
+                        },
+                        "registrationNumber": {
+                          "type": "string",
+                          "description": "Business registration or tax number of the hotel",
+                          "example": "80-0523983"
+                        },
+                        "tradeRegister": {
+                          "type": "string",
+                          "description": "Trade register the business is listed in",
+                          "example": "Spirit of the Smokies Condo Lodge, LLC"
+                        },
+                        "trader": {
+                          "type": "object",
+                          "description": "Legal entity operating the hotel",
+                          "properties": {
+                            "name": {
+                              "type": "string",
+                              "description": "Legal name of the trader",
+                              "example": "Spirit of the Smokies Condo Lodge, LLC"
+                            },
+                            "registrationNumber": {
+                              "type": "string",
+                              "description": "Business registration or tax number of the trader",
+                              "example": "80-0523983"
+                            },
+                            "tradeRegister": {
+                              "type": "string",
+                              "description": "Trade register the trader is listed in",
+                              "example": "Spirit of the Smokies Condo Lodge, LLC"
+                            },
+                            "verified": {
+                              "type": "boolean",
+                              "description": "Whether the trader details are verified",
+                              "example": true
+                            },
+                            "email": {
+                              "type": "string",
+                              "format": "email",
+                              "description": "Contact email of the trader",
+                              "example": "generalmanagergsrl@gmail.com"
+                            },
+                            "telephone": {
+                              "type": "string",
+                              "description": "Contact telephone of the trader",
+                              "example": "+18654534106"
+                            },
+                            "address": {
+                              "type": "string",
+                              "description": "Postal address of the trader",
+                              "example": "2385 Parkway, 37863, Pigeon Forge, US"
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Registration details of lp5bf79": {
+                    "value": {
+                      "data": {
+                        "hotelId": "lp5bf79",
+                        "name": "Grand Smokies Resort Lodge Pigeon Forge",
+                        "status": "found",
+                        "registrationNumber": "80-0523983",
+                        "tradeRegister": "Spirit of the Smokies Condo Lodge, LLC",
+                        "trader": {
+                          "name": "Spirit of the Smokies Condo Lodge, LLC",
+                          "registrationNumber": "80-0523983",
+                          "tradeRegister": "Spirit of the Smokies Condo Lodge, LLC",
+                          "verified": true,
+                          "email": "generalmanagergsrl@gmail.com",
+                          "telephone": "+18654534106",
+                          "address": "2385 Parkway, 37863, Pigeon Forge, US"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad Request",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "hotelId is invalid": {
+                    "value": {
+                      "error": {
+                        "code": 4003,
+                        "description": "invalid hotelId, expected an lp id such as lp5bf79 or a numeric id",
+                        "message": "request field is invalid or wrong"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Unauthorized": {
+                    "value": {
+                      "error": {
+                        "code": 401,
+                        "message": "Unauthorized"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "No registration details found for this hotel",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "No registration details": {
+                    "value": {
+                      "error": {
+                        "code": 4014,
+                        "description": "no registration details found for this hotel",
+                        "message": "Hotel not found"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "Rate limit exceeded",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Upstream failure": {
+                    "value": {
+                      "error": {
+                        "code": 5000,
+                        "description": "failed to fetch hotel registration",
+                        "message": "unable to process request"
                       }
                     }
                   }

@@ -1975,6 +1975,17 @@
                           "type": "string",
                           "description": "The current status of the booking. At this point it will be CONFIRMED, the other option for this field is CANCELED."
                         },
+                        "bookout": {
+                          "type": "object",
+                          "description": "Present only when the booking was made at a different hotel than the one prebooked (a relocation offered to accounts that opted in; contact your account manager to enable it). The `hotel` block already describes the hotel actually booked; this block says where the guest was moved from. Absent (not null) for every other booking, including on later reads of the booking.",
+                          "properties": {
+                            "fromHotelId": { "type": "string", "description": "LiteAPI id of the hotel the client prebooked (the ghost's hotel).", "example": "lp33d78" },
+                            "hotelId": { "type": "string", "description": "LiteAPI id of the hotel actually booked (same as hotel.hotelId).", "example": "lp44a01" },
+                            "hotelName": { "type": "string", "description": "Name of the hotel actually booked.", "example": "Hotel Next Door" },
+                            "distanceM": { "type": "number", "description": "Distance in metres between the two hotels, from the book-out candidate table.", "example": 180 }
+                          },
+                          "required": ["fromHotelId", "hotelId"]
+                        },
                         "hotelConfirmationCode": {
                           "type": "string",
                           "description": "The confirmation code issued by the hotel for the booking. Not available at booking time. Nuitee performs a manual process to to contact the hotel and get the confirmation number."
@@ -3034,6 +3045,37 @@
               }
             }
           },
+          "409": {
+            "description": "Conflict. Another request is already booking this prebook; do not retry and do not refund, poll the booking by prebook id for its result.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "description": { "type": "string" },
+                        "message": { "type": "string" }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Prebook already being booked": {
+                    "value": {
+                      "error": {
+                        "code": 2001,
+                        "description": "this prebook is already being booked by another request, please wait for its result",
+                        "message": "unable to process request"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
           "410": {
             "description": "Gone. The provider did not confirm the booking because the room is no longer available or the rate expired.",
             "content": {
@@ -3068,6 +3110,37 @@
                         "code": 4012,
                         "description": "booking not confirmed",
                         "message": "booking is not confirmed. The room(s) may no longer be available or the rate expired"
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "503": {
+            "description": "Service unavailable. The booking could not be processed right now; retry with the same prebook id.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "error": {
+                      "type": "object",
+                      "properties": {
+                        "code": { "type": "integer" },
+                        "description": { "type": "string" },
+                        "message": { "type": "string" }
+                      }
+                    }
+                  }
+                },
+                "examples": {
+                  "Retry later": {
+                    "value": {
+                      "error": {
+                        "code": 2001,
+                        "description": "unable to process the booking right now, please retry",
+                        "message": "unable to process request"
                       }
                     }
                   }
@@ -3744,6 +3817,17 @@
                           "status": {
                             "type": "string",
                             "description": "The current status of the booking. At this point it will be CONFIRMED, the other options for this field are CANCELED or CANCELLED_WITH_CHARGES."
+                          },
+                          "bookout": {
+                            "type": "object",
+                            "description": "Present only when the booking was made at a different hotel than the one prebooked (a relocation offered to accounts that opted in; contact your account manager to enable it). The `hotel` block already describes the hotel actually booked; this block says where the guest was moved from. Absent (not null) for every other booking, including on later reads of the booking.",
+                            "properties": {
+                              "fromHotelId": { "type": "string", "description": "LiteAPI id of the hotel the client prebooked (the ghost's hotel).", "example": "lp33d78" },
+                              "hotelId": { "type": "string", "description": "LiteAPI id of the hotel actually booked (same as hotel.hotelId).", "example": "lp44a01" },
+                              "hotelName": { "type": "string", "description": "Name of the hotel actually booked.", "example": "Hotel Next Door" },
+                              "distanceM": { "type": "number", "description": "Distance in metres between the two hotels, from the book-out candidate table.", "example": 180 }
+                            },
+                            "required": ["fromHotelId", "hotelId"]
                           },
                           "hotelConfirmationCode": {
                             "type": "string",
@@ -4632,6 +4716,17 @@
                         "status": {
                           "type": "string",
                           "description": "The current status of the booking. At this point it will be CONFIRMED, the other option for this field is CANCELED."
+                        },
+                        "bookout": {
+                          "type": "object",
+                          "description": "Present only when the booking was made at a different hotel than the one prebooked (a relocation offered to accounts that opted in; contact your account manager to enable it). The `hotel` block already describes the hotel actually booked; this block says where the guest was moved from. Absent (not null) for every other booking, including on later reads of the booking.",
+                          "properties": {
+                            "fromHotelId": { "type": "string", "description": "LiteAPI id of the hotel the client prebooked (the ghost's hotel).", "example": "lp33d78" },
+                            "hotelId": { "type": "string", "description": "LiteAPI id of the hotel actually booked (same as hotel.hotelId).", "example": "lp44a01" },
+                            "hotelName": { "type": "string", "description": "Name of the hotel actually booked.", "example": "Hotel Next Door" },
+                            "distanceM": { "type": "number", "description": "Distance in metres between the two hotels, from the book-out candidate table.", "example": 180 }
+                          },
+                          "required": ["fromHotelId", "hotelId"]
                         },
                         "hotelConfirmationCode": {
                           "type": "string",
