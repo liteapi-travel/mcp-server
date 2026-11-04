@@ -501,21 +501,10 @@
             },
             "description": "Booking terms and conditions for this offer"
           },
-          "provider": {
-            "type": "object",
-            "description": "Flight provider information",
-            "properties": {
-              "code": {
-                "type": "string",
-                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)",
-                "example": "SABRE"
-              },
-              "logo": {
-                "type": "string",
-                "description": "URL to provider logo",
-                "example": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
-              }
-            }
+          "loyaltyProgramsSupported": {
+            "type": "boolean",
+            "description": "Whether the supplier of this offer forwards `passengers[].loyaltyPrograms` (prebook) to the airline. `true`: frequent flyer numbers are sent with the booking, but the airline or fare may still not credit them. `false`: numbers are accepted and ignored. Omitted when unknown. Sending `loyaltyPrograms` never fails a booking.",
+            "example": true
           },
           "baggage": {
             "type": "object",
@@ -1307,19 +1296,9 @@
             "type": "string",
             "description": "When the journey was generated (ISO 8601)"
           },
-          "provider": {
-            "type": "object",
-            "description": "Flight provider information",
-            "properties": {
-              "code": {
-                "type": "string",
-                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)"
-              },
-              "logo": {
-                "type": "string",
-                "description": "URL to provider logo"
-              }
-            }
+          "loyaltyProgramsSupported": {
+            "type": "boolean",
+            "description": "Whether the supplier of this offer forwards `passengers[].loyaltyPrograms` (prebook) to the airline. `true`: frequent flyer numbers are sent with the booking, but the airline or fare may still not credit them. `false`: numbers are accepted and ignored. Omitted when unknown. Sending `loyaltyPrograms` never fails a booking."
           },
           "pricing": {
             "$ref": "#/components/schemas/FlightFullOfferPricing",
@@ -5011,10 +4990,7 @@
                                 },
                                 "converted": false
                               },
-                              "provider": {
-                                "code": "SABRE",
-                                "logo": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
-                              },
+                              "loyaltyProgramsSupported": true,
                               "fare": {
                                 "family": "Economy",
                                 "mixedCabin": false,
@@ -5715,10 +5691,7 @@
                         "journeyKey": "26b2fa3085dc22b2",
                         "expiration": "2026-03-19T13:15:09.485Z",
                         "timestamp": "2026-03-19T12:45:07.715Z",
-                        "provider": {
-                          "code": "SABRE",
-                          "logo": "https://production.nuitee.flights/static/providers/sabre.svg"
-                        },
+                        "loyaltyProgramsSupported": true,
                         "pricing": {
                           "display": {
                             "total": 1423.42,
@@ -8927,7 +8900,7 @@
           "Flight Bookings"
         ],
         "summary": "Get cancellation quote",
-        "description": "## Overview\n\nReturns refund eligibility, estimated refund amounts, and penalty details for a booking **without actually cancelling it**. Use this before calling `POST /flights/bookings/{bookingId}/cancellations` to understand the financial impact of cancellation.\n\n## When to Use\n\n- **Pre-cancellation review** — Show the customer the potential maximum refund (not guaranteed) before they confirm cancellation\n- **Refund estimation** — Display potential maximum refund and penalty amounts in the booking management UI (refund is not granted until cancel completes)\n- **Eligibility check** — Determine whether the booking is within the void window (`isVoidable`) or eligible for a partial refund (`isRefundable`)\n\n## What You Get\n\n- **`confidence`** — How reliable the quote is (`confirmed`, `estimated`, `heuristic`, `unknown`)\n- **`isRefundable` / `isVoidable`** — Quick eligibility flags\n- **`refund` / `penalty`** — Aggregate amounts with margin applied. `refund` is the potential maximum the airline may refund — not a granted/guaranteed amount\n- **`penalties[]`** — Itemised penalty breakdown when available\n- **`tickets[]`** — Per-ticket detail when available\n- **`destination`** — Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** — Airline travel vouchers / credit-shells when `destination` is `voucher`; omitted when absent. Distinct from LiteAPI discount `voucherCode` on prebook\n\n## Concurrent cancellation\n\nIf a cancellation was already submitted and is still awaiting provider confirmation, this endpoint returns **HTTP 409** with code `49007` (`CONCURRENT_OPERATION`). A new quote is not available until that cancellation completes or fails.\n\n## Refund amount caveat\n\nThe `refund` amount on a cancellation quote is the **potential maximum** the airline may refund if cancellation proceeds under the quoted conditions. It is an estimate for decision-making only and is **not granted** — the final refund (if any) is determined when cancellation completes and may be lower or zero. The refund may arrive asynchronously once the airline determines the final amount.\n\n## Key Features\n\n- **Non-destructive** — Does not cancel the booking; safe to call before user confirmation\n- **Margin-applied pricing** — All amounts (including voucher `pricing.display`) reflect the same margin applied at booking time\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. Every call hits the upstream provider — do not place this on a hot polling loop.",
+        "description": "## Overview\n\nReturns refund eligibility, estimated refund amounts, and penalty details for a booking **without actually cancelling it**. Use this before calling `POST /flights/bookings/{bookingId}/cancellations` to understand the financial impact of cancellation.\n\n## When to Use\n\n- **Pre-cancellation review** — Show the customer the potential maximum refund (not guaranteed) before they confirm cancellation\n- **Refund estimation** — Display potential maximum refund and penalty amounts in the booking management UI (refund is not granted until cancel completes)\n- **Eligibility check** — Determine whether the booking is within the void window (`isVoidable`) or eligible for a partial refund (`isRefundable`)\n\n## What You Get\n\n- **`confidence`** — How reliable the quote is (`confirmed`, `estimated`, `heuristic`, `unknown`)\n- **`isRefundable` / `isVoidable`** — Quick eligibility flags\n- **`refund` / `penalty`** — Aggregate amounts with margin applied. `refund` is the potential maximum the airline may refund — not a granted/guaranteed amount\n- **`penalties[]`** — Itemised penalty breakdown when available\n- **`tickets[]`** — Per-ticket detail when available\n- **`destination`** — Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** — Airline travel vouchers / credit-shells when `destination` is `voucher`; omitted when absent. Distinct from LiteAPI discount `voucherCode` on prebook\n\n## Concurrent cancellation\n\nIf a cancellation was already submitted and is still awaiting provider confirmation, this endpoint returns **HTTP 409** with code `49007` (`CONCURRENT_OPERATION`). A new quote is not available until that cancellation completes or fails.\n\n## Refund amount caveat\n\nThe `refund` amount on a cancellation quote is the **potential maximum** the airline may refund if cancellation proceeds under the quoted conditions. It is an estimate for decision-making only and is **not granted** — the final refund (if any) is determined when cancellation completes and may be lower or zero. The refund may arrive asynchronously once the airline determines the final amount.\n\n## Key Features\n\n- **Non-destructive** — Does not cancel the booking; safe to call before user confirmation\n- **Margin-applied pricing** — All amounts (including voucher `pricing.display`) reflect the same margin applied at booking time\n- **Booking currency** — Every amount, including `tickets[]` and `penalties[]` lines, is returned in the booking currency. Amounts the airline quotes in another currency are converted at the rate implied by the quote itself, or at the current exchange rate when the quote does not price them in the booking currency\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. Every call hits the upstream provider — do not place this on a hot polling loop.",
         "parameters": [
           {
             "name": "bookingId",
@@ -11961,7 +11934,7 @@
                         },
                         "loyaltyPrograms": {
                           "type": "array",
-                          "description": "Frequent flyer / loyalty programs for this passenger (Sabre and Travelport only; ignored for Atlas).",
+                          "description": "Frequent flyer / loyalty programs for this passenger. Forwarded to the airline only when the selected offer has `loyaltyProgramsSupported: true`; otherwise ignored without failing the booking. The airline or fare can still decline to credit the number, and the booking response does not confirm that it was applied.",
                           "items": {
                             "type": "object",
                             "required": [
