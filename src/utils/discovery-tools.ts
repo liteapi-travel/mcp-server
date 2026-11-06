@@ -1,6 +1,7 @@
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { findEndpoint, searchEndpoints, wiringForEndpoint } from './catalog';
+import { fetchDashboardFeature, searchDashboardKb } from './dashboard-kb';
 import { fetchDocsPage, searchDocs } from './docs';
 import type { ParsedEndpoint } from './openapi-parser';
 
@@ -89,6 +90,43 @@ export function registerDiscoveryTools(server: McpServer, endpoints: Map<string,
       try {
         const page = await fetchDocsPage(url);
         return text({ url, text: page });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return text({ error: message }, true);
+      }
+    }
+  );
+
+  server.tool(
+    'search_dashboard_kb',
+    'Search Nuitee Connect product guides (dashboard UI: bookings, payments, Whitelabel settings, Direct Connections, etc.). Works without an API key. Follow a result with fetch_dashboard_feature. For public API docs use search_docs instead.',
+    {
+      query: z.string().describe('Search words, such as "property mapping" or "credit line".'),
+      limit: z.number().int().optional().describe('Max results. Default 8, max 20.'),
+    },
+    readOnly,
+    async ({ query, limit }) => {
+      try {
+        const result = await searchDashboardKb(query, limit ?? 8);
+        return text({ mode: 'dashboard_kb', ...result });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return text({ error: message }, true);
+      }
+    }
+  );
+
+  server.tool(
+    'fetch_dashboard_feature',
+    'Read one Nuitee Connect product guide by slug from search_dashboard_kb. Works without an API key. Public guides only.',
+    {
+      slug: z.string().describe('Guide slug from search_dashboard_kb, such as getting-started or direct-connections.'),
+    },
+    readOnly,
+    async ({ slug }) => {
+      try {
+        const feature = await fetchDashboardFeature(slug);
+        return text({ mode: 'dashboard_kb', ...feature });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return text({ error: message }, true);

@@ -32,7 +32,7 @@ Send the key on the `X-API-Key` header. The URL stays free of the secret:
 
 For the local stdio server, set `LITEAPI_API_KEY` instead. There is no HTTP header on stdio.
 
-With no key, sample calls use the shared sandbox key `sand_ca230deb-5a6b-42e7-bb72-869facd8892b`. That key only hits sandbox. Send `X-API-Key` to use your own key. `list_endpoints`, `describe_endpoint`, `search_docs`, and `fetch_docs_page` stay available either way.
+With no key, sample calls use the shared sandbox key `sand_ca230deb-5a6b-42e7-bb72-869facd8892b`. That key only hits sandbox. Send `X-API-Key` to use your own key. `list_endpoints`, `describe_endpoint`, `search_docs`, `fetch_docs_page`, `search_dashboard_kb`, and `fetch_dashboard_feature` stay available either way. Dashboard-kb tools call `DASHBOARD_API_URL` (default `https://da.liteapi.travel`) for public Connect product guides.
 
 OAuth is the path for Lovable, Claude, ChatGPT, and Cursor. The client uses this URL and leaves the client id empty. The browser approves the connection on the Nuitée Connect dashboard session. The resolve secret is built in and matches the dashboard API. Set `MCP_OAUTH_SERVICE_TOKEN` on both hosts only to replace that default. `DASHBOARD_API_URL` defaults to `https://da.liteapi.travel`.
 
