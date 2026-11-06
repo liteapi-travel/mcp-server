@@ -2,6 +2,7 @@ import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { z } from 'zod';
 import { findEndpoint, searchEndpoints, wiringForEndpoint } from './catalog';
 import { fetchDashboardFeature, searchDashboardKb } from './dashboard-kb';
+import { DOCUMENTATION_KEYS, fetchDocumentation } from './documentation';
 import { fetchDocsPage, searchDocs } from './docs';
 import type { ParsedEndpoint } from './openapi-parser';
 
@@ -90,6 +91,26 @@ export function registerDiscoveryTools(server: McpServer, endpoints: Map<string,
       try {
         const page = await fetchDocsPage(url);
         return text({ url, text: page });
+      } catch (error) {
+        const message = error instanceof Error ? error.message : String(error);
+        return text({ error: message }, true);
+      }
+    }
+  );
+
+  server.tool(
+    'fetch_documentation',
+    'Fetch a curated Nuitee Connect / LiteAPI OpenAPI spec or docs overview by key (searchApi, bookingApi, flightsIndexApi, …). Works without an API key. Prefer this for endpoint schemas; use search_docs + fetch_docs_page for guides.',
+    {
+      key: z
+        .enum(DOCUMENTATION_KEYS as unknown as [string, ...string[]])
+        .describe('Documentation key: mainDocs, overview, searchApi, bookingApi, hotelDataApi, loyaltyApi, voucherApi, analyticsApi, priceIndexApi, flightsIndexApi.'),
+    },
+    readOnly,
+    async ({ key }) => {
+      try {
+        const doc = await fetchDocumentation(key);
+        return text({ mode: 'documentation', ...doc });
       } catch (error) {
         const message = error instanceof Error ? error.message : String(error);
         return text({ error: message }, true);
