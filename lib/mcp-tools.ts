@@ -16,7 +16,7 @@ const READ_ONLY_POST_OPS = new Set([
   'post_analytics_markets',
   'post_analytics_hotels',
   'post_commissions_report',
-  'searchBookings',
+  'search_bookings',
   'post_flights_rates',
   'post_flights_verify',
 ]);
