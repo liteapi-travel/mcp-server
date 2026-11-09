@@ -7,6 +7,7 @@ import { makeAPIRequest } from './utils/api-client.js';
 import { wiringForEndpoint } from './utils/catalog.js';
 import { registerDiscoveryTools } from './utils/discovery-tools.js';
 import { SANDBOX_SAMPLE_API_KEY } from './utils/sandbox-key.js';
+import { createToolInputShape } from './utils/schema-converter.js';
 
 const API_KEY_ENV = 'LITEAPI_API_KEY';
 
@@ -18,7 +19,7 @@ const READ_ONLY_POST_OPS = new Set([
   'post_analytics_markets',
   'post_analytics_hotels',
   'post_commissions_report',
-  'searchBookings',
+  'search_bookings',
   'post_flights_rates',
   'post_flights_verify',
 ]);
@@ -68,7 +69,7 @@ export class LiteAPIMCPServer {
 
   private registerTools() {
     for (const endpoint of this.endpoints.values()) {
-      const inputSchema = this.createZodShape(endpoint);
+      const inputSchema = createToolInputShape(endpoint);
       const annotations = getToolAnnotations(endpoint.method, endpoint.operationId);
       
       this.server.tool(
@@ -169,87 +170,6 @@ export class LiteAPIMCPServer {
       );
     }
     registerDiscoveryTools(this.server, this.endpoints);
-  }
-
-  private createZodShape(endpoint: ParsedEndpoint): Record<string, z.ZodTypeAny> {
-    const shape: Record<string, z.ZodTypeAny> = {};
-
-    // Add path parameters
-    for (const param of endpoint.parameters.filter((p) => p.in === 'path')) {
-      const zodSchema = param.schema
-        ? this.openAPIToZod(param.schema)
-        : z.string();
-      shape[param.name] = zodSchema.describe(param.description || '');
-    }
-
-    // Add query parameters
-    for (const param of endpoint.parameters.filter((p) => p.in === 'query')) {
-      const zodSchema = param.schema
-        ? this.openAPIToZod(param.schema)
-        : z.string();
-      shape[param.name] = param.required
-        ? zodSchema.describe(param.description || '')
-        : zodSchema.optional().describe(param.description || '');
-    }
-
-    // Add request body properties if present
-    if (endpoint.requestBody && endpoint.requestBody.properties) {
-      for (const [key, propSchema] of Object.entries(endpoint.requestBody.properties)) {
-        const zodSchema = this.openAPIToZod(propSchema);
-        const isRequired = endpoint.requestBody.required?.includes(key);
-        shape[key] = isRequired
-          ? zodSchema.describe(propSchema.description || '')
-          : zodSchema.optional().describe(propSchema.description || '');
-      }
-    }
-
-    return shape;
-  }
-
-  private openAPIToZod(schema: any): z.ZodTypeAny {
-    if (!schema || typeof schema !== 'object') {
-      return z.string();
-    }
-
-    if (schema.enum && schema.enum.length > 0) {
-      return z.enum(schema.enum as [string, ...string[]]);
-    }
-
-    switch (schema.type) {
-      case 'string':
-        if (schema.format === 'date') {
-          return z.string().describe(schema.description || 'Date in YYYY-MM-DD format');
-        }
-        if (schema.format === 'date-time') {
-          return z.string().datetime().describe(schema.description || 'ISO 8601 datetime');
-        }
-        return z.string().describe(schema.description || '');
-      case 'number':
-      case 'integer':
-        return schema.type === 'integer'
-          ? z.number().int().describe(schema.description || '')
-          : z.number().describe(schema.description || '');
-      case 'boolean':
-        return z.boolean().describe(schema.description || '');
-      case 'array':
-        if (schema.items) {
-          return z.array(this.openAPIToZod(schema.items)).describe(schema.description || '');
-        }
-        return z.array(z.any()).describe(schema.description || '');
-      case 'object':
-        if (schema.properties) {
-          const shape: Record<string, z.ZodTypeAny> = {};
-          for (const [key, propSchema] of Object.entries(schema.properties)) {
-            const zodSchema = this.openAPIToZod(propSchema as any);
-            const isRequired = schema.required?.includes(key);
-            shape[key] = isRequired ? zodSchema : zodSchema.optional();
-          }
-          return z.object(shape).describe(schema.description || '');
-        }
-        return z.record(z.any()).describe(schema.description || '');
-      default:
-        return z.any().describe(schema.description || '');
-    }
   }
 
   private createJSONSchema(endpoint: ParsedEndpoint): Record<string, any> {

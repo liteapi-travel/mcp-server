@@ -144,19 +144,21 @@ export function resolveRefs(
 }
 
 /**
- * Sanitizes a tool name to conform to MCP naming conventions.
- * Allowed characters: A-Z, a-z, 0-9, underscore (_), dash (-), and dot (.)
+ * Sanitizes a tool name to MCP snake_case.
+ * All tools use lowercase letters, digits, and underscores only
+ * (camelCase / PascalCase / hyphens / spaces → underscores).
  */
-function sanitizeOperationId(operationId: string): string {
-  // Replace spaces and invalid characters with underscores
-  // Keep only: letters, numbers, underscore, dash, and dot
+export function sanitizeOperationId(operationId: string): string {
   let sanitized = operationId
-    .replace(/\s+/g, '_') // Replace spaces with underscore
-    .replace(/[^a-zA-Z0-9_.-]/g, '_') // Replace invalid chars with underscore
-    .replace(/_{2,}/g, '_') // Replace multiple underscores with single
-    .replace(/^_+|_+$/g, ''); // Remove leading/trailing underscores
+    // Insert underscore at camelCase / PascalCase boundaries (aB → a_B).
+    // Skip acronym splitting (HTTPResponse) so product tokens like ESimply stay intact.
+    .replace(/([a-z0-9])([A-Z])/g, '$1_$2')
+    .replace(/[\s.-]+/g, '_') // spaces, dots, hyphens → underscore
+    .replace(/[^a-zA-Z0-9_]/g, '_') // drop any other invalid chars
+    .replace(/_{2,}/g, '_')
+    .replace(/^_+|_+$/g, '')
+    .toLowerCase();
 
-  // Ensure it starts with a letter or underscore
   if (sanitized.length === 0 || /^[0-9]/.test(sanitized)) {
     sanitized = `tool_${sanitized}`;
   }
