@@ -2,11 +2,11 @@
  * MCP tools registration - shared logic for OpenAPI-based tools
  */
 import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
-import { z } from 'zod';
 import { ToolAnnotations } from '@modelcontextprotocol/sdk/types.js';
 import { makeAPIRequest } from '../src/utils/api-client';
 import { loadEndpointMap, wiringForEndpoint } from '../src/utils/catalog';
 import { registerDiscoveryTools } from '../src/utils/discovery-tools';
+import { createToolInputShape } from '../src/utils/schema-converter';
 
 const READ_ONLY_POST_OPS = new Set([
   'post_hotels_rates',
@@ -39,63 +39,6 @@ function getToolAnnotations(method: string, operationId: string): ToolAnnotation
   };
 }
 
-function openAPIToZod(schema: any): z.ZodTypeAny {
-  if (!schema || typeof schema !== 'object') {
-    return z.string();
-  }
-  if (schema.enum && schema.enum.length > 0) {
-    return z.enum(schema.enum as [string, ...string[]]);
-  }
-  switch (schema.type) {
-    case 'string':
-      if (schema.format === 'date') return z.string().describe(schema.description || 'Date in YYYY-MM-DD format');
-      if (schema.format === 'date-time') return z.string().datetime().describe(schema.description || 'ISO 8601 datetime');
-      return z.string().describe(schema.description || '');
-    case 'number':
-    case 'integer':
-      return schema.type === 'integer'
-        ? z.number().int().describe(schema.description || '')
-        : z.number().describe(schema.description || '');
-    case 'boolean':
-      return z.boolean().describe(schema.description || '');
-    case 'array':
-      if (schema.items) return z.array(openAPIToZod(schema.items)).describe(schema.description || '');
-      return z.array(z.any()).describe(schema.description || '');
-    case 'object':
-      if (schema.properties) {
-        const shape: Record<string, z.ZodTypeAny> = {};
-        for (const [key, propSchema] of Object.entries(schema.properties)) {
-          const zodSchema = openAPIToZod(propSchema as any);
-          shape[key] = schema.required?.includes(key) ? zodSchema : zodSchema.optional();
-        }
-        return z.object(shape).describe(schema.description || '');
-      }
-      return z.record(z.any()).describe(schema.description || '');
-    default:
-      return z.any().describe(schema.description || '');
-  }
-}
-
-function createZodShape(endpoint: any): Record<string, z.ZodTypeAny> {
-  const shape: Record<string, z.ZodTypeAny> = {};
-  for (const param of endpoint.parameters.filter((p: any) => p.in === 'path')) {
-    shape[param.name] = (param.schema ? openAPIToZod(param.schema) : z.string()).describe(param.description || '');
-  }
-  for (const param of endpoint.parameters.filter((p: any) => p.in === 'query')) {
-    const zodSchema = param.schema ? openAPIToZod(param.schema) : z.string();
-    shape[param.name] = param.required ? zodSchema.describe(param.description || '') : zodSchema.optional().describe(param.description || '');
-  }
-  if (endpoint.requestBody?.properties) {
-    for (const [key, propSchema] of Object.entries(endpoint.requestBody.properties)) {
-      const zodSchema = openAPIToZod(propSchema);
-      shape[key] = endpoint.requestBody.required?.includes(key)
-        ? zodSchema.describe((propSchema as any).description || '')
-        : zodSchema.optional().describe((propSchema as any).description || '');
-    }
-  }
-  return shape;
-}
-
 export type ApiKeyGetter = (extra?: { authInfo?: { extra?: { apiKey?: string } } }) => string | undefined;
 
 export function registerLiteApiTools(server: McpServer, apiKeyOrGetter: string | ApiKeyGetter) {
@@ -107,7 +50,7 @@ export function registerLiteApiTools(server: McpServer, apiKeyOrGetter: string |
   registerDiscoveryTools(server, endpoints);
 
   for (const endpoint of endpoints.values()) {
-    const inputSchema = createZodShape(endpoint);
+    const inputSchema = createToolInputShape(endpoint);
     const annotations = getToolAnnotations(endpoint.method, endpoint.operationId);
     server.tool(
       endpoint.operationId,
