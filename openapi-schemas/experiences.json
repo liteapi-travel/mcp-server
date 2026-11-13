@@ -3,7 +3,7 @@
   "info": {
     "title": "API: Experiences",
     "version": "3.0.0",
-    "description": "The Experiences API lets you search tours and activities, check availability, reviews, and booking options. Access must be enabled on your account.\n\n## Errors\n\nErrors use `{\"error\":{\"code\":72001,\"message\":\"selection price mismatch\"}}`. `error.code` is a Dispatcher-owned integer, not a provider code or an HTTP status. `message` is safe human-readable context; branch on the numeric code, not message text. Optional `description` is a string or structured validation details; optional `key` identifies a request field.\n\n| Operation | Product error block |\n| --- | --- |\n| Search, tour details, reviews, availability, booking-options | 710xx |\n| Prebook | 720xx |\n| Confirm booking | 730xx |\n| Get booking | 740xx |\n| Cancellation preview | 750xx |\n| Cancel booking | 751xx |\n\nEach endpoint lists its codes below. `...99` is its generic fallback, not a retry instruction. Shared authentication, access and rate-limit middleware retain common codes such as `401`, `40301`, `4290` and `4291`; not every error on an Experiences URL starts with `7`. HTTP status and error code are separate: prebook validation may also arrive with HTTP 409 or 422.\n\n### Price changes\n\nPrice mismatch uses numeric `72001`; its optional price-detail code, when present, is string `\"72001\"`. `requested` is the submitted customer SELL total and `expected` is the new customer SELL total in `currency`. For example, a submitted EUR 120 may become EUR 132. These totals already include pricing adjustments; do not apply markup or FX again. Details can have different codes for different causes, and preserve field identifiers and nullable participant indexes.\n\nA timeout or 5xx response alone does not prove whether a mutating request was applied. Do not automatically repeat prebook, booking or cancellation solely because of that error."
+    "description": "Search tours and activities, check availability, reviews, and booking options. Access must be enabled on your account.\n\n## Errors\n\nErrors use `{\"error\":{\"code\":72001,\"message\":\"selection price mismatch\"}}`. `error.code` is a numeric API error code, not an HTTP status. `message` is safe human-readable context; branch on the numeric code, not message text. Optional `description` is a string or structured validation details; optional `key` identifies a request field.\n\n| Operation | Product error block |\n| --- | --- |\n| Search, tour details, reviews, availability, booking-options | 710xx |\n| Prebook | 720xx |\n| Confirm booking | 730xx |\n| Get booking | 740xx |\n| Cancellation preview | 750xx |\n| Cancel booking | 751xx |\n\nEach endpoint lists its codes below. `...99` is its generic fallback, not a retry instruction. Authentication, access and rate-limit errors use common codes such as `401`, `40301`, `4290` and `4291`; not every error on an Experiences URL starts with `7`. HTTP status and error code are separate: prebook validation may also arrive with HTTP 409 or 422.\n\n### Price changes\n\nPrice mismatch uses numeric `72001`; its optional price-detail code, when present, is string `\"72001\"`. `requested` is the submitted customer SELL total and `expected` is the new customer SELL total in `currency`. For example, a submitted EUR 120 may become EUR 132. These totals already include pricing adjustments; do not apply markup or FX again. Details can have different codes for different causes, and preserve field identifiers and nullable participant indexes.\n\nA timeout or 5xx response alone does not prove whether a mutating request was applied. Do not automatically repeat prebook, booking or cancellation solely because of that error."
   },
   "servers": [
     {
@@ -38,9 +38,9 @@
         "name": "language",
         "in": "query",
         "required": true,
-        "description": "ISO language code for localized content",
+        "description": "Preferred language for tour content. See ContentLanguage for accepted codes. Query validation is case-insensitive.",
         "schema": {
-          "type": "string"
+          "$ref": "#/components/schemas/ContentLanguage"
         },
         "example": "en"
       },
@@ -48,7 +48,7 @@
         "name": "currency",
         "in": "query",
         "required": true,
-        "description": "ISO 4217 currency code for prices",
+        "description": "ISO 4217 currency code for prices. See GET /data/currencies for the list of currently supported codes.",
         "schema": {
           "type": "string"
         },
@@ -66,6 +66,50 @@
       }
     },
     "schemas": {
+      "ContentLanguage": {
+        "type": "string",
+        "description": "Preferred language for tour titles, descriptions, and other text. Content is returned in the requested language when available; otherwise another available language may be used. This does not affect the language in which the activity is conducted.",
+        "enum": [
+          "ar",
+          "bg",
+          "ca",
+          "cs",
+          "da",
+          "de",
+          "el",
+          "en",
+          "es",
+          "et",
+          "fi",
+          "fr",
+          "he",
+          "hr",
+          "hu",
+          "id",
+          "it",
+          "ja",
+          "ko",
+          "lt",
+          "lv",
+          "ms",
+          "nb",
+          "nl",
+          "no",
+          "pl",
+          "pt",
+          "ro",
+          "ru",
+          "sk",
+          "sl",
+          "sv",
+          "th",
+          "tr",
+          "uk",
+          "zh",
+          "zh-hant"
+        ],
+        "example": "en"
+      },
       "BookingQuestionOptionResponse": {
         "type": "object",
         "required": [
@@ -145,7 +189,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "UI-only pickup area identity; not a provider ID and not submitted with booking answers."
+            "description": "UI-only pickup area identity; not submitted with booking answers."
           },
           "label": {
             "type": "string"
@@ -173,7 +217,7 @@
         "properties": {
           "id": {
             "type": "string",
-            "description": "UI-only canonical pickup choice identity; not a provider ID and not submitted with booking answers."
+            "description": "UI-only canonical pickup choice identity; not submitted with booking answers."
           },
           "label": {
             "type": "string"
@@ -194,7 +238,7 @@
           "areas",
           "choices"
         ],
-        "description": "Provider-neutral pickup UI metadata. Booking answers remain address/latitude/longitude and never submit area/choice IDs.",
+        "description": "Pickup UI metadata. Booking answers contain address/latitude/longitude, not area or choice IDs.",
         "properties": {
           "mode": {
             "type": "string",
@@ -245,7 +289,7 @@
         "properties": {
           "fieldId": {
             "type": "string",
-            "description": "Stable provider-neutral canonical field ID."
+            "description": "Stable canonical field ID."
           },
           "scope": {
             "type": "string",
@@ -360,7 +404,7 @@
           },
           "services": {
             "type": "object",
-            "description": "Provider-sourced service flags; exact upstream semantics aren't formally published. Based on the `flags` filter values used elsewhere, `prt`/`stl`/`wlc` likely correspond to private/skip-the-line/wheelchair-accessible respectively — treat as indicative, not guaranteed.",
+            "description": "Additional service indicators. These flags are informational and do not guarantee that a particular service is available.",
             "properties": {
               "prt": {
                 "type": "boolean"
@@ -384,7 +428,7 @@
           "coordinatePrecision": {
             "type": "string",
             "nullable": true,
-            "description": "Precision/confidence of `coordinates`, when the provider supplies it."
+            "description": "Precision/confidence of `coordinates`, when available."
           },
           "unlimitedAvailability": {
             "type": "boolean"
@@ -487,8 +531,10 @@
               "PENDING_CONFIRMATION",
               "CONFIRMED",
               "FAILED",
-              "CANCELLED"
+              "CANCELLED",
+              "CANCELLED_WITH_CHARGES"
             ],
+            "description": "`CANCELLED_WITH_CHARGES` applies only to credit line bookings: the booking was cancelled but a non-zero cancellation fee was billed to the credit line instead of refunded.",
             "example": "PENDING_CONFIRMATION"
           },
           "providerStatus": {
@@ -498,15 +544,15 @@
           },
           "cartId": {
             "type": "string",
-            "description": "Shopping cart identifier from the provider checkout session."
+            "description": "Reservation session identifier."
           },
           "experienceBookingId": {
             "type": "string",
-            "description": "Internal booking identifier from the provider checkout session."
+            "description": "Reservation identifier."
           },
           "providerBookingId": {
             "type": "string",
-            "description": "Provider-side booking reference hash."
+            "description": "Reservation reference."
           },
           "providerBookingReference": {
             "type": "string",
@@ -514,7 +560,7 @@
           },
           "tourId": {
             "type": "integer",
-            "description": "Provider tour identifier.",
+            "description": "Tour identifier.",
             "example": 903304
           },
           "optionId": {
@@ -608,7 +654,7 @@
           "voucher": {
             "type": "object",
             "nullable": true,
-            "description": "Provider voucher payload available after the booking is confirmed. Structure varies by provider; known fields for the current provider are listed below, but treat this object as provider-dependent.",
+            "description": "Ticket and voucher details available after booking confirmation. Available fields can vary by booking.",
             "additionalProperties": true,
             "properties": {
               "bookingReference": {
@@ -630,7 +676,7 @@
               },
               "supplierBookingCodes": {
                 "type": "array",
-                "description": "One entry per ticket, when the provider issues per-ticket codes.",
+                "description": "One entry per ticket, when separate ticket codes are available.",
                 "items": {
                   "type": "object",
                   "properties": {
@@ -658,7 +704,7 @@
             "type": "object",
             "nullable": true,
             "additionalProperties": true,
-            "description": "Versioned, provider-neutral snapshot of the tour/booking as it looked at booking time, for rendering post-booking pages (confirmation, manage-booking) without re-fetching the tour. `version: 2` is the active schema below. Deprecated `version: 1` top-level fields (`title`, `rating`, `media`, `startingLocation`, `schedule`, `guide`, `payment`, `cancellationPolicy`) may still appear on bookings made before the V2 migration — read them for old data, don't rely on them for new integrations.",
+            "description": "Versioned snapshot of the tour/booking as it looked at booking time, for rendering post-booking pages (confirmation, manage-booking) without re-fetching the tour. `version: 2` is the active schema below. Deprecated `version: 1` top-level fields (`title`, `rating`, `media`, `startingLocation`, `schedule`, `guide`, `payment`, `cancellationPolicy`) may still appear on bookings made before the V2 migration — read them for old data, don't rely on them for new integrations.",
             "properties": {
               "version": {
                 "type": "integer",
@@ -1012,7 +1058,7 @@
           },
           "questions": {
             "type": "object",
-            "description": "Provider-neutral canonical answers for bookingQuestionSchema.",
+            "description": "Canonical answers for bookingQuestionSchema.",
             "properties": {
               "answers": {
                 "type": "array",
@@ -1096,7 +1142,7 @@
                 },
                 "code": {
                   "type": "string",
-                  "description": "Optional Dispatcher detail code encoded as a string, for example \"72001\". Binding details may omit it; mixed causes can use different detail codes.",
+                  "description": "Optional API detail code encoded as a string, for example \"72001\". Validation details may omit it; different causes can use different detail codes.",
                   "example": "72001"
                 },
                 "reason": {
@@ -1143,13 +1189,13 @@
             "$ref": "#/components/schemas/ExperienceSelection"
           },
           "language": {
-            "type": "string",
-            "description": "ISO language code used for validate and downstream book cart.",
+            "allOf": [{ "$ref": "#/components/schemas/ContentLanguage" }],
+            "description": "Preferred language for prebook and booking content.",
             "example": "en"
           },
           "currency": {
             "type": "string",
-            "description": "ISO 4217 currency code used for validate and downstream book cart.",
+            "description": "ISO 4217 currency code for the prebook and booking. See GET /data/currencies for the list of currently supported codes.",
             "example": "EUR"
           },
           "clientReferenceId": {
@@ -1194,7 +1240,7 @@
           },
           "tourId": {
             "type": "integer",
-            "description": "Provider tour id (from the path parameter).",
+            "description": "Tour identifier from the path parameter.",
             "example": 903304
           },
           "optionId": {
@@ -1209,8 +1255,8 @@
             "example": "2026-07-18T07:00:00"
           },
           "language": {
-            "type": "string",
-            "description": "Language sent on validate.",
+            "allOf": [{ "$ref": "#/components/schemas/ContentLanguage" }],
+            "description": "Content-language preference supplied when creating the prebook.",
             "example": "en"
           },
           "clientReferenceId": {
@@ -1247,22 +1293,22 @@
           },
           "cartId": {
             "type": "string",
-            "description": "Shopping cart id from the provider checkout session.",
+            "description": "Reservation session identifier.",
             "example": "S82SPCWONTFLXI77Z4D66BZKI8S6ROZC"
           },
           "experienceBookingId": {
             "type": "string",
-            "description": "Internal booking identifier from the provider checkout session.",
+            "description": "Reservation identifier.",
             "example": "444fe833-a84e-49b4-ae9f-b032c8619419"
           },
           "providerBookingId": {
             "type": "string",
-            "description": "Provider booking hash from validate (`bookingId` upstream).",
+            "description": "Reservation reference returned by prebook.",
             "example": "GC0915TB2VJT9CVM643S9OLYBEDDYBOL"
           },
           "status": {
             "type": "string",
-            "description": "Validate hold status from the provider (typically `temp`).",
+            "description": "Reservation hold status (typically `temp`).",
             "example": "temp"
           },
           "transactionId": {
@@ -1303,16 +1349,35 @@
           },
           "paymentTypes": {
             "type": "array",
-            "description": "Supported payment methods for book. Phase 1: `TRANSACTION_ID` only.",
+            "description": "Supported payment methods for book. `TRANSACTION_ID` when a Stripe PaymentIntent was created. `CREDIT` is included when the account has an enabled credit line with payment bypass and the remaining credit covers this prebook. Both can be present together.",
             "items": {
               "type": "string",
               "enum": [
-                "TRANSACTION_ID"
+                "TRANSACTION_ID",
+                "CREDIT"
               ]
             },
             "example": [
-              "TRANSACTION_ID"
+              "TRANSACTION_ID",
+              "CREDIT"
             ]
+          },
+          "creditLine": {
+            "type": "object",
+            "description": "Remaining credit the checkout can offer. Present when `CREDIT` is in `paymentTypes`. Same shape as hotel and flight prebook. `usePaymentSdk` can still be true.",
+            "properties": {
+              "remainingCredit": {
+                "type": "number",
+                "format": "float",
+                "description": "Remaining credit available for this booking, in USD.",
+                "example": 1500.0
+              },
+              "currency": {
+                "type": "string",
+                "description": "Always USD.",
+                "example": "USD"
+              }
+            }
           }
         }
       },
@@ -1396,15 +1461,57 @@
           "method": {
             "type": "string",
             "enum": [
-              "TRANSACTION_ID"
+              "TRANSACTION_ID",
+              "CREDIT"
             ],
-            "description": "Phase 1 supports Stripe capture via `TRANSACTION_ID` only."
+            "description": "`TRANSACTION_ID` captures the Stripe payment created at prebook. `CREDIT` bills the booking to your account's credit line instead of Stripe — only usable when the account has an enabled credit line with payment bypass; otherwise the request is rejected. `NONE` is accepted as a legacy synonym for `CREDIT`."
           },
           "transactionId": {
             "type": "string",
             "description": "Stripe transaction id from prebook. Omit to use the id stored on the prebook session.",
             "example": "tr_cts_test"
           }
+        }
+      },
+      "CreditLineOverLimit": {
+        "type": "object",
+        "description": "Returned on HTTP 402 when a credit line booking would exceed the account's billing-period or total-risk limit.",
+        "properties": {
+          "limit": {
+            "type": "string",
+            "enum": [
+              "total_risk",
+              "billing_period"
+            ],
+            "description": "Which limit was exceeded."
+          },
+          "currentUsage": {
+            "type": "number",
+            "description": "Current usage against this limit, in USD."
+          },
+          "remaining": {
+            "type": "number",
+            "description": "Remaining headroom against this limit, in USD. Floored at 0."
+          },
+          "billingPeriodStart": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Present only when `limit` is `billing_period`."
+          },
+          "billingPeriodEnd": {
+            "type": "string",
+            "format": "date",
+            "nullable": true,
+            "description": "Present only when `limit` is `billing_period`."
+          }
+        },
+        "example": {
+          "limit": "billing_period",
+          "currentUsage": 980.0,
+          "remaining": 0,
+          "billingPeriodStart": "2026-11-01",
+          "billingPeriodEnd": "2026-11-30"
         }
       },
       "ExperienceBookingRequest": {
@@ -1453,7 +1560,7 @@
             "properties": {
               "code": {
                 "type": "integer",
-                "description": "Dispatcher-owned numeric error code. Product-operation errors use 710xx, 720xx, 730xx, 740xx, 750xx or 751xx as listed on the endpoint. Shared middleware can return other numeric codes. This is not an HTTP status."
+                "description": "Numeric API error code. Product-operation errors use 710xx, 720xx, 730xx, 740xx, 750xx or 751xx as listed on the endpoint. Authentication, access and rate-limit errors can use other numeric codes. This is not an HTTP status."
               },
               "message": {
                 "type": "string",
@@ -1705,7 +1812,7 @@
           "unavailabilityReason": {
             "type": "string",
             "nullable": true,
-            "description": "Why the slot is unavailable when isAvailable is false. Official provider groups: no_availability, not_enough_spots, invalid_request, others. Legacy responses may also include sold_out.",
+            "description": "Why the slot is unavailable when isAvailable is false. Possible groups: no_availability, not_enough_spots, invalid_request, others. Older responses may also include sold_out.",
             "example": "not_enough_spots"
           },
           "minParticipants": {
@@ -1733,13 +1840,13 @@
         ],
         "properties": {
           "language": {
-            "type": "string",
-            "description": "ISO language code for localized content.",
+            "allOf": [{ "$ref": "#/components/schemas/ContentLanguage" }],
+            "description": "Preferred language for tour content. See ContentLanguage for accepted codes.",
             "example": "en"
           },
           "currency": {
             "type": "string",
-            "description": "ISO 4217 currency code for prices.",
+            "description": "ISO 4217 currency code for prices. See GET /data/currencies for the list of currently supported codes.",
             "example": "EUR"
           },
           "date": {
@@ -2061,7 +2168,7 @@
       },
       "TourItineraryResponse": {
         "type": "object",
-        "description": "One day (or the only day) of a structured itinerary. Empty `itineraries` on the tour means the provider has no structured itinerary data.",
+        "description": "One day (or the only day) of a structured itinerary. Empty `itineraries` means no structured itinerary is available.",
         "properties": {
           "dayNumber": {
             "type": "integer",
@@ -2242,7 +2349,7 @@
           "sourceUrl": {
             "type": "string",
             "format": "uri",
-            "example": "https://provider.example.com/tour/903304"
+            "example": "https://activities.example.com/tour/903304"
           },
           "durations": {
             "type": "array",
@@ -2272,7 +2379,7 @@
             "properties": {
               "notSuitableFor": {
                 "type": "string",
-                "description": "First suitability restriction from the provider, collapsed to a single string by the list mapper.",
+                "description": "First suitability restriction, returned as a single string.",
                 "example": "Guests with mobility impairments"
               }
             }
@@ -2293,7 +2400,7 @@
                 "items": {
                   "type": "string"
                 },
-                "description": "Individual suitability restrictions from the provider.",
+                "description": "Individual suitability restrictions.",
                 "example": [
                   "Guests with mobility impairments",
                   "Pregnant travelers"
@@ -2301,7 +2408,7 @@
               },
               "itineraries": {
                 "type": "array",
-                "description": "Ordered structured itinerary. Empty when the provider has no structured itinerary data.",
+                "description": "Ordered structured itinerary. Empty when no structured itinerary is available.",
                 "items": {
                   "$ref": "#/components/schemas/TourItineraryResponse"
                 }
@@ -2738,7 +2845,7 @@
               "error": {
                 "code": 40301,
                 "message": "user does not have enough permissions to perform this action",
-                "description": "Experiences API access is not enabled for this account. Please contact support to get access"
+                "description": "Access to tours and activities is not enabled for this account. Please contact support to get access."
               }
             }
           }
@@ -2808,7 +2915,7 @@
         }
       },
       "BookingConfirmBadRequest": {
-        "description": "Invalid booking input, expired hold, unconfirmed payment, mismatched transaction or a confirmed business rejection.",
+        "description": "Invalid booking input, expired hold, unconfirmed payment, mismatched transaction, a voucher that can no longer be redeemed or a confirmed business rejection.",
         "content": {
           "application/json": {
             "schema": {
@@ -2834,6 +2941,56 @@
                     "message": "reservation hold has expired; please create a new prebook",
                     "description": "reservation hold has expired; please create a new prebook",
                     "key": "bodyRequest.prebookId"
+                  }
+                }
+              },
+              "voucherInactive": {
+                "summary": "Voucher no longer active",
+                "value": {
+                  "error": {
+                    "code": 73015,
+                    "message": "voucher no longer active",
+                    "description": "the voucher applied at prebook is no longer active"
+                  }
+                }
+              },
+              "voucherExpired": {
+                "summary": "Voucher outside its validity period",
+                "value": {
+                  "error": {
+                    "code": 73016,
+                    "message": "voucher outside its validity period",
+                    "description": "the voucher applied at prebook is outside its validity period"
+                  }
+                }
+              },
+              "voucherChanged": {
+                "summary": "Voucher changed since prebook",
+                "value": {
+                  "error": {
+                    "code": 73017,
+                    "message": "voucher changed since prebook",
+                    "description": "the voucher applied at prebook has changed and no longer gives the discount applied at prebook"
+                  }
+                }
+              },
+              "voucherUsageLimitReached": {
+                "summary": "Voucher usage limit reached",
+                "value": {
+                  "error": {
+                    "code": 73018,
+                    "message": "voucher usage limit reached",
+                    "description": "the voucher applied at prebook has reached its usage limit"
+                  }
+                }
+              },
+              "voucherBudgetExhausted": {
+                "summary": "Voucher budget exhausted",
+                "value": {
+                  "error": {
+                    "code": 73019,
+                    "message": "voucher budget exhausted",
+                    "description": "the voucher's remaining budget no longer covers the discount applied at prebook"
                   }
                 }
               }
@@ -2916,7 +3073,7 @@
         }
       },
       "TooManyRequests": {
-        "description": "Shared Dispatcher request limit exceeded. Code 4290; this is not an Experiences operation code.",
+        "description": "API request limit exceeded. Code 4290 applies across API operations.",
         "content": {
           "application/json": {
             "schema": {
@@ -2965,7 +3122,7 @@
       "get": {
         "operationId": "searchExperienceTours",
         "summary": "Search tours",
-        "description": "## Overview\n\nSearch available tours and activities with localized content and prices in your chosen currency. Supports free-text or geo search, plus filtering by date, language, price, category, rating, duration, and tour flags.\n\n## When to Use\n\n- **Search results** - Populate a tours listing or map view\n- **Destination pages** - Show activities available in a city or region\n- **Category browsing** - Filter tours by type, duration, or rating\n\n## What You Get\n\n- **Tour listings** - Titles, descriptions, images, and ratings\n- **Localized content** - Names and descriptions in the requested language\n- **Prices** - Amounts in the requested currency\n\n## Quick Start\n\n**Required:** `language`, `currency`\n\n**Search (pick one):** `textSearch`, or `location[latitude]`/`location[longitude]`/`location[radiusKm]`\n\n**Filters:** `dateRange[from]`/`dateRange[to]`, `languages`, `price[min]`/`price[max]`, `categories`, `rating[min]`/`rating[max]`, `duration[min]`/`duration[max]`, `flags`\n\n**Sort:** `sort[field]`/`sort[direction]`\n\n**Pagination:** `pagination[limit]`/`pagination[offset]`\n\nReturns a paginated list of matching tours.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experiences provider request failed |\n| 71004 | experiences provider request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences service is temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
+        "description": "## Overview\n\nSearch available tours and activities with localized content and prices in your chosen currency. Supports free-text or geo search, plus filtering by date, language, price, category, rating, duration, and tour flags.\n\n## When to Use\n\n- **Search results** - Populate a tours listing or map view\n- **Destination pages** - Show activities available in a city or region\n- **Category browsing** - Filter tours by type, duration, or rating\n\n## What You Get\n\n- **Tour listings** - Titles, descriptions, images, and ratings\n- **Localized content** - Names and descriptions in the requested language when available\n- **Prices** - Amounts in the requested currency\n\n## Quick Start\n\n**Required:** `language`, `currency`\n\n**Search (pick one):** `textSearch`, or `location[latitude]`/`location[longitude]`/`location[radiusKm]`\n\n**Filters:** `dateRange[from]`/`dateRange[to]`, `languages`, `price[min]`/`price[max]`, `categories`, `rating[min]`/`rating[max]`, `duration[min]`/`duration[max]`, `flags`\n\n**Sort:** `sort[field]`/`sort[direction]`\n\n**Pagination:** `pagination[limit]`/`pagination[offset]`\n\nReturns a paginated list of matching tours.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experience request failed |\n| 71004 | experience request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences are temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
         "tags": [
           "Tours"
         ],
@@ -3153,7 +3310,7 @@
             "in": "query",
             "required": false,
             "allowReserved": true,
-            "description": "Field to sort results by. `popularity` returns an internal recommended ranking and ignores `sort[direction]`.",
+            "description": "Field to sort results by. `popularity` returns the recommended ranking and ignores `sort[direction]`.",
             "schema": {
               "type": "string",
               "enum": [
@@ -3290,7 +3447,7 @@
                         "activityType": "tour",
                         "partnerBusinessCategory": "attraction",
                         "priceDescription": "per person",
-                        "sourceUrl": "https://provider.example.com/tour/903304",
+                        "sourceUrl": "https://activities.example.com/tour/903304",
                         "durations": [
                           {
                             "value": 2,
@@ -3353,7 +3510,7 @@
       "get": {
         "operationId": "getExperienceTour",
         "summary": "Get tour details",
-        "description": "## Overview\n\nRetrieve full details for a specific tour, including description, media, inclusions, pricing context, and structured itineraries when available.\n\n## When to Use\n\n- **Product pages** - Display a tour detail view before the user selects dates\n- **Comparison** - Show full metadata when comparing activities\n- **Content enrichment** - Fetch descriptions and images for marketing surfaces\n\n## What You Get\n\n- **Complete tour profile** - Title, description, duration, and highlights\n- **Media** - Images and cover assets\n- **Practical info** - Meeting points, cancellation policy, and inclusions\n- **Structured itineraries** - Ordered days/items (`itineraries`) when the provider supplies them. `locations` are importance-ordered tags, not itinerary order.\n- **Localized pricing** - Prices in the requested currency\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experiences provider request failed |\n| 71004 | experiences provider request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences service is temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
+        "description": "## Overview\n\nRetrieve full details for a specific tour, including description, media, inclusions, pricing context, and structured itineraries when available.\n\n## When to Use\n\n- **Product pages** - Display a tour detail view before the user selects dates\n- **Comparison** - Show full metadata when comparing activities\n- **Content enrichment** - Fetch descriptions and images for marketing surfaces\n\n## What You Get\n\n- **Complete tour profile** - Title, description, duration, and highlights\n- **Media** - Images and cover assets\n- **Practical info** - Meeting points, cancellation policy, and inclusions\n- **Structured itineraries** - Ordered days/items (`itineraries`) when available. `locations` are importance-ordered tags, not itinerary order.\n- **Localized pricing** - Prices in the requested currency\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experience request failed |\n| 71004 | experience request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences are temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
         "tags": [
           "Tours"
         ],
@@ -3455,7 +3612,7 @@
                     "activityType": "tour",
                     "partnerBusinessCategory": "attraction",
                     "priceDescription": "per person",
-                    "sourceUrl": "https://provider.example.com/tour/903304",
+                    "sourceUrl": "https://activities.example.com/tour/903304",
                     "durations": [
                       {
                         "value": 2,
@@ -3546,7 +3703,7 @@
       "get": {
         "operationId": "getExperienceTourAvailability",
         "summary": "Get tour availability",
-        "description": "## Overview\n\nRetrieve available dates and time slots for a specific tour so users can pick when to attend.\n\n## When to Use\n\n- **Date pickers** - Populate a calendar or slot selector on the tour page\n- **Availability checks** - Confirm a tour runs on the user's travel dates\n- **Booking flow** - Gate the checkout path until a valid slot is selected\n\n## What You Get\n\n- **Available dates** - Days the tour can be booked\n- **Time slots** - Start times per date where applicable\n- **Capacity hints** - Whether slots are still bookable\n\n## Quick Start\n\nProvide the tour `id` in the URL path and the required `language` query parameter.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experiences provider request failed |\n| 71004 | experiences provider request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences service is temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
+        "description": "## Overview\n\nRetrieve available dates and time slots for a specific tour so users can pick when to attend.\n\n## When to Use\n\n- **Date pickers** - Populate a calendar or slot selector on the tour page\n- **Availability checks** - Confirm a tour runs on the user's travel dates\n- **Booking flow** - Gate the checkout path until a valid slot is selected\n\n## What You Get\n\n- **Available dates** - Days the tour can be booked\n- **Time slots** - Start times per date where applicable\n- **Capacity hints** - Whether slots are still bookable\n\n## Quick Start\n\nProvide the tour `id` in the URL path and the required `language` query parameter.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experience request failed |\n| 71004 | experience request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences are temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
         "tags": [
           "Tours"
         ],
@@ -3650,7 +3807,7 @@
       "get": {
         "operationId": "getExperienceTourReviews",
         "summary": "Get tour reviews",
-        "description": "## Overview\n\nRetrieve normalized guest reviews and ratings for a specific tour.\n\n## When to Use\n\n- **Review sections** - Display guest feedback on tour detail pages\n- **Trust building** - Show authentic ratings before booking\n- **Decision support** - Help users evaluate tours before selecting dates\n\n## What You Get\n\n- **Guest reviews** - Review text, ratings, and dates\n- **Pagination** - `limit` and `offset` query parameters\n- **Sorting** - `sortBy` (`date` or `rating`) with `sortDirection`\n- **Localized content** - Reviews in the requested language where available\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters. Optionally page through results with `limit`/`offset`, and sort with `sortBy`/`sortDirection`.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experiences provider request failed |\n| 71004 | experiences provider request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences service is temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
+        "description": "## Overview\n\nRetrieve guest reviews and ratings for a specific tour.\n\n## When to Use\n\n- **Review sections** - Display guest feedback on tour detail pages\n- **Trust building** - Show authentic ratings before booking\n- **Decision support** - Help users evaluate tours before selecting dates\n\n## What You Get\n\n- **Guest reviews** - Review text, ratings, and dates\n- **Pagination** - `limit` and `offset` query parameters\n- **Sorting** - `sortBy` (`date` or `rating`) with `sortDirection`\n- **Localized content** - Reviews in the requested language where available\n\n## Quick Start\n\nProvide the tour `id` in the URL path plus required `language` and `currency` query parameters. Optionally page through results with `limit`/`offset`, and sort with `sortBy`/`sortDirection`.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experience request failed |\n| 71004 | experience request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences are temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
         "tags": [
           "Tours"
         ],
@@ -3791,7 +3948,7 @@
       "post": {
         "operationId": "getExperienceTourBookingOptions",
         "summary": "Get booking options",
-        "description": "## Overview\n\nResolve priced booking options, time slots, and required guest inputs for a selected tour date and participant mix.\n\n## When to Use\n\n- **Option/slot pickers** - Show available variants and start times for a date\n- **Live pricing** - Display slot totals (`pricing.totals.net` / `priceSummary.netPrice`)\n- **Checkout forms** - Collect `bookingQuestionSchema` before proceeding to payment\n\n## What You Get\n\n- **Booking options** - `optionId`, title, and `bookingQuestionSchema`\n- **Time slots** - `dateTime`, `isAvailable`, and slot-level pricing (`unitNet` / `totalNet` / `totals.net` / `priceSummary.netPrice`, plus `totals.commission`)\n- **Participant mapping** - Uses `ticketCategory` keys from availability (e.g. `adult`, `child`)\n\n## Quick Start\n\nPOST a body with `language`, `currency`, `date` (`YYYY-MM-DD`), and `participants` to `/experiences/tours/{id}/booking-options`. Use slot `pricing.totals.net` as `selection.price.amount` on prebook, and for checkout handoff.\n\n## Option-level `price`\n\n`options[].price.amount` reflects the lowest available slot price for the requested mix. Checkout uses the chosen slot's `pricing.totals.net`.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experiences provider request failed |\n| 71004 | experiences provider request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences service is temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
+        "description": "## Overview\n\nResolve priced booking options, time slots, and required guest inputs for a selected tour date and participant mix.\n\n## When to Use\n\n- **Option/slot pickers** - Show available variants and start times for a date\n- **Live pricing** - Display slot totals (`pricing.totals.net` / `priceSummary.netPrice`)\n- **Checkout forms** - Collect `bookingQuestionSchema` before proceeding to payment\n\n## What You Get\n\n- **Booking options** - `optionId`, title, and `bookingQuestionSchema`\n- **Time slots** - `dateTime`, `isAvailable`, and slot-level pricing (`unitNet` / `totalNet` / `totals.net` / `priceSummary.netPrice`, plus `totals.commission`)\n- **Participant mapping** - Uses `ticketCategory` keys from availability (e.g. `adult`, `child`)\n\n## Quick Start\n\nPOST a body with `language`, `currency`, `date` (`YYYY-MM-DD`), and `participants` to `/experiences/tours/{id}/booking-options`. Use slot `pricing.totals.net` as `selection.price.amount` on prebook, and for checkout handoff.\n\n## Option-level `price`\n\n`options[].price.amount` reflects the lowest available slot price for the requested mix. Checkout uses the chosen slot's `pricing.totals.net`.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 71001 | invalid experience request |\n| 71002 | experience not found |\n| 71003 | experience request failed |\n| 71004 | experience request timed out |\n| 71005 | experience request is unauthorized |\n| 71006 | experience request is forbidden |\n| 71007 | experiences are temporarily unavailable |\n| 71099 | failed to retrieve experiences |",
         "tags": [
           "Tours"
         ],
@@ -3938,7 +4095,7 @@
       "post": {
         "operationId": "prebookExperienceTour",
         "summary": "1. Create an experience checkout session (PREBOOK)",
-        "description": "## Overview\n\nCreate a temporary hold on the selected tour slot and a Stripe PaymentIntent for checkout.\n\n## When to Use\n\n- **Checkout start** — After the user picks option, slot, and participants from booking-options\n- **Payment setup** — Obtain `transactionId` and `secretKey` for Stripe SDK confirmation\n- **Hold window** — Reserve inventory for ~10 minutes before book\n\n## What You Get\n\n- **Checkout context** — `tourId`, `optionId`, `dateTime`, `language`, `participants`, and pricing echoed back\n- **Provider refs** — `cartId`, `experienceBookingId`, `providerBookingId`, `status`, `reservationExpiresAt`\n- **Stripe fields** — `transactionId`, `secretKey`, `paymentTypes: [\"TRANSACTION_ID\"]`\n\n## Quick Start\n\nPOST the same `selection` used for display pricing from booking-options with `usePaymentSdk: true`. Confirm payment with Stripe, then call `POST /experiences/bookings`.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 72001 | selection price mismatch |\n| 72002 | invalid experience selection |\n| 72003 | prebook resource not found |\n| 72004 | experience selection rejected by provider |\n| 72005 | experience prebook conflicts with the current state |\n| 72006 | prebook provider request failed |\n| 72007 | prebook provider request timed out |\n| 72008 | prebook request is unauthorized |\n| 72009 | prebook request is forbidden |\n| 72010 | prebook service is temporarily unavailable |\n| 72011 | booking currency is not accepted for this selection |\n| 72099 | failed to create prebook |\n\nFor 72001, requested/expected are customer SELL totals; do not apply markup or FX again. Inspect the code on HTTP 400, 409 and 422. A generic no-money error must not open price-change consent.",
+        "description": "## Overview\n\nCreate a temporary hold on the selected tour slot and a Stripe PaymentIntent for checkout. If your account has an enabled credit line with payment bypass, you can instead pass `usePaymentSdk: false` to skip Stripe entirely and hold the slot for a credit-line booking.\n\n## When to Use\n\n- **Checkout start** — After the user picks option, slot, and participants from booking-options\n- **Payment setup** — Obtain `transactionId` and `secretKey` for Stripe SDK confirmation\n- **Hold window** — Reserve inventory for ~10 minutes before book\n\n## What You Get\n\n- **Checkout context** — `tourId`, `optionId`, `dateTime`, `language`, `participants`, and pricing echoed back\n- **Reservation references** — `cartId`, `experienceBookingId`, `providerBookingId`, `status`, `reservationExpiresAt`\n- **Stripe fields** — `transactionId`, `secretKey`, and `paymentTypes` including `TRANSACTION_ID` when `usePaymentSdk` is true\n- **Credit line (alongside Stripe)** — `creditLine.remainingCredit` and `CREDIT` in `paymentTypes` when `usePaymentSdk` is true, the account has an enabled credit line with payment bypass, and the remaining credit covers this prebook. The Stripe intent is still created; book with either method\n- **Credit line (no Stripe)** — Pass `usePaymentSdk: false` instead to skip Stripe entirely. This requires an enabled credit line with payment bypass on the account, otherwise the request is rejected with 400. Stripe fields are omitted and `paymentTypes` returns `[\"CREDIT\"]` only\n\n## Quick Start\n\nPOST the same `selection` used for display pricing from booking-options with `usePaymentSdk: true`. Confirm payment with Stripe, then call `POST /experiences/bookings` with `payment.method: TRANSACTION_ID`. If the response includes `CREDIT` in `paymentTypes`, you may instead call book with `payment.method: CREDIT` and skip Stripe confirmation.\n\nIf your account has an enabled credit line and you'd rather skip Stripe from the start, POST with `usePaymentSdk: false` and call book with `payment.method: CREDIT`.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 72001 | selection price mismatch |\n| 72002 | invalid experience selection |\n| 72003 | prebook resource not found |\n| 72004 | experience selection rejected |\n| 72005 | experience prebook conflicts with the current state |\n| 72006 | prebook request failed |\n| 72007 | prebook request timed out |\n| 72008 | prebook request is unauthorized |\n| 72009 | prebook request is forbidden |\n| 72010 | prebook is temporarily unavailable |\n| 72011 | booking currency is not accepted for this selection |\n| 72099 | failed to create prebook |\n\nFor 72001, requested/expected are customer SELL totals; do not apply markup or FX again. Inspect the code on HTTP 400, 409 and 422. A generic no-money error must not open price-change consent.",
         "tags": [
           "Bookings"
         ],
@@ -4134,7 +4291,7 @@
                 "example": {
                   "error": {
                     "code": 72006,
-                    "message": "prebook provider request failed"
+                    "message": "prebook request failed"
                   }
                 }
               }
@@ -4167,7 +4324,7 @@
       "post": {
         "operationId": "createExperienceBooking",
         "summary": "2. Confirm an experience booking",
-        "description": "## Overview\n\nConfirm the booking after the guest completes payment, using the `prebookId` and `transactionId` from the prebook step.\n\n## When to Use\n\n- **Final booking step** - After the guest confirms payment via the Stripe SDK using the prebook's `secretKey`\n\n## What You Get\n\n- **`status`** - `PENDING_CONFIRMATION` right away; final `CONFIRMED` status arrives via webhook\n- **`price`** / **`commission`** / **`clientCommission`** - Your price and earnings for this booking\n\n## Quick Start\n\nPOST with `prebookId`, `billing`, `traveler`, and `payment.method: TRANSACTION_ID`. An `ERROR` status on the underlying cart returns HTTP 502.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 73001 | invalid booking request |\n| 73002 | reservation hold has expired; please create a new prebook |\n| 73003 | a booking already exists for this prebookId |\n| 73004 | payment has not been confirmed yet; complete the Stripe payment before booking |\n| 73005 | booking resource not found |\n| 73006 | experience booking rejected by provider |\n| 73007 | transactionId does not match the prebook payment intent |\n| 73008 | booking provider request failed |\n| 73009 | booking provider request timed out |\n| 73010 | booking request is unauthorized |\n| 73011 | booking request is forbidden |\n| 73012 | booking service is temporarily unavailable |\n| 73013 | booking could not be confirmed in the selected currency |\n| 73014 | booking could not be confirmed because the price changed |\n| 73099 | failed to create booking |",
+        "description": "## Overview\n\nConfirm the booking after the guest completes payment, using the `prebookId` and `transactionId` from the prebook step. If the account has an enabled credit line and the prebook response included `CREDIT` in `paymentTypes`, confirm instead with `payment.method: CREDIT` — no `transactionId` is required in that case.\n\n## When to Use\n\n- **Final booking step** - After the guest confirms payment via the Stripe SDK using the prebook's `secretKey`\n- **Credit line booking** - When the prebook response included `CREDIT` in `paymentTypes`\n\n## What You Get\n\n- **`status`** - `PENDING_CONFIRMATION` right away; final `CONFIRMED` status arrives via webhook\n- **`price`** / **`commission`** / **`clientCommission`** - Your price and earnings for this booking\n\n## Quick Start\n\nPOST with `prebookId`, `billing`, `traveler`, and `payment.method: TRANSACTION_ID`. An `ERROR` status during booking confirmation returns HTTP 502.\n\nFor credit line accounts, POST the same body with `payment.method: CREDIT` and no `transactionId`. The booking is billed to the credit line instead of captured via Stripe; it fails with 402 if it would exceed the account's billing-period or total-risk limit, or 403 if the account has no enabled credit line.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 73001 | invalid booking request |\n| 73002 | reservation hold has expired; please create a new prebook |\n| 73003 | a booking already exists for this prebookId |\n| 73004 | payment has not been confirmed yet; complete the Stripe payment before booking |\n| 73005 | booking resource not found |\n| 73006 | experience booking rejected |\n| 73007 | transactionId does not match the prebook payment intent |\n| 73008 | booking request failed |\n| 73009 | booking request timed out |\n| 73010 | booking request is unauthorized |\n| 73011 | booking request is forbidden |\n| 73012 | booking is temporarily unavailable |\n| 73013 | booking could not be confirmed in the selected currency |\n| 73014 | booking could not be confirmed because the price changed |\n| 73015 | voucher no longer active |\n| 73016 | voucher outside its validity period |\n| 73017 | voucher changed since prebook |\n| 73018 | voucher usage limit reached |\n| 73019 | voucher budget exhausted |\n| 73099 | failed to create booking |\n\nA voucher applied at prebook is checked again before anything is charged or booked: the booking is refused with HTTP 400 (`73015`–`73019`), and nothing is charged, when since the prebook the voucher was deactivated or deleted, its validity period no longer includes the booking time, its discount was changed so that it no longer gives the amount applied at prebook (or its minimum spend was raised above the price), its usage limit was reached by other bookings, or its remaining budget no longer covers the amount applied. The amount is never changed at book: prebook again to apply the voucher as it is now.\n\nCredit line bookings can additionally return HTTP 402 (billing-period or total-risk limit exceeded — see `CreditLineOverLimit`) or HTTP 403 (no enabled credit line on the account, or credit line suspended).",
         "tags": [
           "Bookings"
         ],
@@ -4217,6 +4374,16 @@
           },
           "401": {
             "$ref": "#/components/responses/Unauthorized"
+          },
+          "402": {
+            "description": "Credit line booking would exceed the account's billing-period or total-risk limit.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CreditLineOverLimit"
+                }
+              }
+            }
           },
           "403": {
             "$ref": "#/components/responses/Forbidden"
@@ -4308,7 +4475,7 @@
       "get": {
         "operationId": "getExperienceBooking",
         "summary": "Get experience booking details",
-        "description": "## Overview\n\nRetrieve the current state of an experience booking by its booking ID, including status, pricing, and voucher details once available.\n\n## When to Use\n\n- **Poll for confirmation** - Check whether a booking has moved from `PENDING_CONFIRMATION` to `CONFIRMED`\n- **Booking details page** - Display status, price, and voucher to the guest\n- **Support queries** - Look up a booking's current state\n\n## What You Get\n\n- **`status`** - Current booking status (`PENDING_CONFIRMATION`, `CONFIRMED`, `FAILED`, `CANCELLED`)\n- **`voucher`** - Ticket/reference details, once available\n- **`price`** / **`commission`** / **`clientCommission`** - Your price and earnings for this booking\n- **Cancellation details** - `refund`, `cancellationRequestedAt`, `cancelledAt`, `refundProcessedAt`, when applicable\n\n## Quick Start\n\nGET with the `bookingId` from `POST /experiences/bookings`. Poll until `status` is `CONFIRMED` (or use webhooks), or retrieve the voucher once available.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 74001 | booking not found |\n| 74002 | invalid booking retrieval request |\n| 74003 | booking retrieval request is unauthorized |\n| 74099 | failed to retrieve booking |",
+        "description": "## Overview\n\nRetrieve the current state of an experience booking by its booking ID, including status, pricing, and voucher details once available.\n\n## When to Use\n\n- **Poll for confirmation** - Check whether a booking has moved from `PENDING_CONFIRMATION` to `CONFIRMED`\n- **Booking details page** - Display status, price, and voucher to the guest\n- **Support queries** - Look up a booking's current state\n\n## What You Get\n\n- **`status`** - Current booking status (`PENDING_CONFIRMATION`, `CONFIRMED`, `FAILED`, `CANCELLED`)\n- **`voucher`** - Ticket/reference details, once available\n- **`price`** / **`commission`** / **`clientCommission`** - Your price and earnings for this booking\n- **Cancellation details** - `refund`, `cancellationRequestedAt`, `cancelledAt`, `refundProcessedAt`, when applicable\n\n## Quick Start\n\nGET with the `bookingId` from `POST /experiences/bookings`. Poll until `status` is `CONFIRMED` (or use webhooks), or retrieve the voucher once available.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 74001 | booking not found |\n| 74002 | invalid booking retrieval request |\n| 74003 | booking retrieval request is unauthorized |\n| 74099 | failed to retrieve booking |",
         "tags": [
           "Bookings"
         ],
@@ -4380,7 +4547,7 @@
       "get": {
         "operationId": "getExperienceBookingCancelPreview",
         "summary": "Get experience cancellation quote",
-        "description": "## Overview\n\nPreview the refund amount and cancellation fee for a booking before committing to cancel it.\n\n## When to Use\n\n- **Cancellation confirmation screens** - Show the guest exactly what they'll be refunded\n- **Support tooling** - Check whether a booking is still cancellable before offering a refund\n\n## What You Get\n\n- **`cancellable`** - Whether the booking can currently be cancelled\n- **`policy`** - `cancellationFee`, `refundAmount`, `refundType`, `estimateConfidence`, `currency`, `sellingPrice`\n\n## Quick Start\n\nGET this endpoint with the `bookingId` from `POST /experiences/bookings`. This does not cancel the booking - call `POST /experiences/bookings/{bookingId}/cancel` to actually cancel.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 75001 | booking not found |\n| 75002 | this booking has already been cancelled |\n| 75003 | cancellation is not allowed for this booking |\n| 75004 | the activity has already started |\n| 75005 | invalid cancellation preview request |\n| 75006 | cancellation preview provider request failed |\n| 75007 | cancellation preview provider request timed out |\n| 75008 | cancellation preview request is unauthorized |\n| 75009 | cancellation preview request is forbidden |\n| 75010 | cancellation preview service is temporarily unavailable |\n| 75099 | failed to retrieve cancellation preview |",
+        "description": "## Overview\n\nPreview the refund amount and cancellation fee for a booking before committing to cancel it.\n\n## When to Use\n\n- **Cancellation confirmation screens** - Show the guest exactly what they'll be refunded\n- **Support tooling** - Check whether a booking is still cancellable before offering a refund\n\n## What You Get\n\n- **`cancellable`** - Whether the booking can currently be cancelled\n- **`policy`** - `cancellationFee`, `refundAmount`, `refundType`, `estimateConfidence`, `currency`, `sellingPrice`\n\n## Quick Start\n\nGET this endpoint with the `bookingId` from `POST /experiences/bookings`. This does not cancel the booking - call `POST /experiences/bookings/{bookingId}/cancel` to actually cancel.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 75001 | booking not found |\n| 75002 | this booking has already been cancelled |\n| 75003 | cancellation is not allowed for this booking |\n| 75004 | the activity has already started |\n| 75005 | invalid cancellation preview request |\n| 75006 | cancellation preview request failed |\n| 75007 | cancellation preview request timed out |\n| 75008 | cancellation preview request is unauthorized |\n| 75009 | cancellation preview request is forbidden |\n| 75010 | cancellation preview is temporarily unavailable |\n| 75099 | failed to retrieve cancellation preview |",
         "tags": [
           "Bookings"
         ],
@@ -4489,7 +4656,7 @@
       "post": {
         "operationId": "cancelExperienceBooking",
         "summary": "Cancel experience booking",
-        "description": "## Overview\n\nCancel a confirmed experience booking and trigger any applicable refund.\n\n## When to Use\n\n- **Guest-initiated cancellation** - After the guest confirms via the cancel-preview screen\n\n## What You Get\n\n- **`status`** - Booking status after cancellation\n- **`providerStatus`** - Raw upstream provider status, when available\n- **`refund`** - Present when a refund was calculated; `refundPending` indicates it hasn't settled yet\n\n## Quick Start\n\nPOST with the `bookingId` from `POST /experiences/bookings`. Call `GET /experiences/bookings/{bookingId}/cancel-preview` first to show the guest the refund amount.\n\n## Error codes\n\nProduct-operation codes are listed below. Shared authentication/access/rate-limit middleware can return common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 75101 | booking not found |\n| 75102 | this booking has already been cancelled |\n| 75103 | cancellation is not allowed for this booking |\n| 75104 | the activity has already started |\n| 75105 | invalid cancellation request |\n| 75106 | cancellation provider request failed |\n| 75107 | cancellation provider request timed out |\n| 75108 | cancellation request is unauthorized |\n| 75109 | cancellation request is forbidden |\n| 75110 | cancellation service is temporarily unavailable |\n| 75199 | failed to process cancellation |",
+        "description": "## Overview\n\nCancel a confirmed experience booking and trigger any applicable refund. For credit line bookings, a non-zero cancellation fee is billed to the credit line instead of refunded.\n\n## When to Use\n\n- **Guest-initiated cancellation** - After the guest confirms via the cancel-preview screen\n\n## What You Get\n\n- **`status`** - Booking status after cancellation. Credit line bookings with a cancellation fee settle as `CANCELLED_WITH_CHARGES` instead of `CANCELLED`; treat both as terminal cancelled states\n- **`providerStatus`** - Additional reservation status, when available\n- **`refund`** - Present when a refund was calculated; `refundPending` indicates it hasn't settled yet\n\n## Quick Start\n\nPOST with the `bookingId` from `POST /experiences/bookings`. Call `GET /experiences/bookings/{bookingId}/cancel-preview` first to show the guest the refund amount.\n\n## Error codes\n\nProduct-operation codes are listed below. Authentication, access and rate-limit errors can use common codes such as 401, 40301 or 4290. HTTP status and error code are separate; do not parse message text.\n\n| Code | Meaning |\n| --- | --- |\n| 75101 | booking not found |\n| 75102 | this booking has already been cancelled |\n| 75103 | cancellation is not allowed for this booking |\n| 75104 | the activity has already started |\n| 75105 | invalid cancellation request |\n| 75106 | cancellation request failed |\n| 75107 | cancellation request timed out |\n| 75108 | cancellation request is unauthorized |\n| 75109 | cancellation request is forbidden |\n| 75110 | cancellation is temporarily unavailable |\n| 75199 | failed to process cancellation |",
         "tags": [
           "Bookings"
         ],

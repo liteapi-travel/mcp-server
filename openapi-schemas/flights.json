@@ -276,7 +276,7 @@
         "description": "An en-route (technical) stop within a single segment. Unlike a connection between segments, passengers stay on the same flight number: no plane change and no bag re-check.",
         "example": {
           "airportCode": "GIG",
-          "airportName": "Rio Galeão – Tom Jobim International Airport",
+          "airportName": "Rio Gale\u00e3o \u2013 Tom Jobim International Airport",
           "arrivalTime": "2026-10-17T18:35:00",
           "departureTime": "2026-10-17T19:25:00",
           "duration": {
@@ -450,6 +450,13 @@
               "seatsRemaining": {
                 "type": "integer",
                 "description": "Number of seats remaining at this fare"
+              },
+              "features": {
+                "type": "array",
+                "description": "Perks that come with the fare brand (priority boarding, fast track, lounge, ...). A feature is sent only when the airline states it for every flight; no entry means unknown, not unavailable. After verify, features are kept only if the fare does not change. Travelfusion fares carry them at search only: the verified offer and the booking have none. Omitted when there are no features.",
+                "items": {
+                  "$ref": "#/components/schemas/FlightFareFeature"
+                }
               }
             },
             "description": "Fare class information"
@@ -492,30 +499,19 @@
               },
               "hasChangeFee": {
                 "type": "boolean",
-                "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
+                "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
               },
               "hasRefundFee": {
                 "type": "boolean",
-                "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
+                "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
               }
             },
             "description": "Booking terms and conditions for this offer"
           },
-          "provider": {
-            "type": "object",
-            "description": "Flight provider information",
-            "properties": {
-              "code": {
-                "type": "string",
-                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)",
-                "example": "SABRE"
-              },
-              "logo": {
-                "type": "string",
-                "description": "URL to provider logo",
-                "example": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
-              }
-            }
+          "loyaltyProgramsSupported": {
+            "type": "boolean",
+            "description": "Whether the supplier of this offer forwards `passengers[].loyaltyPrograms` (prebook) to the airline. `true`: frequent flyer numbers are sent with the booking, but the airline or fare may still not credit them. `false`: numbers are accepted and ignored. Omitted when unknown. Sending `loyaltyPrograms` never fails a booking.",
+            "example": true
           },
           "baggage": {
             "type": "object",
@@ -619,6 +615,11 @@
             "items": {
               "$ref": "#/components/schemas/FlightSegmentAmenities"
             }
+          },
+          "searchId": {
+            "type": "string",
+            "description": "Search correlation id: the id of the search this offer came from. Stamped on every offer at rates time and carried through verify, prebook and book in the offerId. Omitted when the search has no id (for example, offers issued before the id existed).",
+            "example": "0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"
           }
         },
         "description": "A bookable offer for a journey, including pricing, baggage policy, fare details, and booking terms"
@@ -1016,6 +1017,69 @@
           }
         }
       },
+      "FlightFareFeature": {
+        "type": "object",
+        "description": "A perk that comes with the fare brand. New `type` values may be added; skip any you don't know.",
+        "required": [
+          "type",
+          "status"
+        ],
+        "properties": {
+          "type": {
+            "type": "string",
+            "description": "Feature type. Known values: `priority_boarding`, `priority_security` (fast track), `priority_check_in`, `priority_baggage`, `lounge`, `mileage_accrual`, `chauffeur`. Open set.",
+            "example": "priority_boarding"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "included",
+              "chargeable",
+              "not-offered"
+            ],
+            "description": "Status for the whole trip",
+            "example": "included"
+          },
+          "description": {
+            "type": "string",
+            "description": "Human-readable description",
+            "example": "Priority boarding included"
+          },
+          "segments": {
+            "type": "array",
+            "description": "Per-flight status, linked by `segmentKey`",
+            "items": {
+              "type": "object",
+              "required": [
+                "segmentKey",
+                "status"
+              ],
+              "properties": {
+                "segmentKey": {
+                  "type": "string",
+                  "description": "Links to segment (matches segment.segmentKey)",
+                  "example": "a3f2b1c9"
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "included",
+                    "chargeable",
+                    "not-offered"
+                  ],
+                  "description": "Status on this flight",
+                  "example": "included"
+                },
+                "name": {
+                  "type": "string",
+                  "description": "The airline's own wording, when it gives one",
+                  "example": "PRIORITY BOARDING GROUP 2"
+                }
+              }
+            }
+          }
+        }
+      },
       "FlightFee": {
         "type": "object",
         "nullable": true,
@@ -1116,7 +1180,7 @@
             "properties": {
               "seat": {
                 "type": "object",
-                "description": "Seat details — present only when category is 'seat'",
+                "description": "Seat details \u2014 present only when category is 'seat'",
                 "properties": {
                   "available": {
                     "type": "boolean",
@@ -1146,7 +1210,7 @@
               },
               "baggage": {
                 "type": "object",
-                "description": "Baggage details — present only when category is 'baggage'",
+                "description": "Baggage details \u2014 present only when category is 'baggage'",
                 "properties": {
                   "bagType": {
                     "type": "string",
@@ -1307,19 +1371,9 @@
             "type": "string",
             "description": "When the journey was generated (ISO 8601)"
           },
-          "provider": {
-            "type": "object",
-            "description": "Flight provider information",
-            "properties": {
-              "code": {
-                "type": "string",
-                "description": "Provider code (e.g. SABRE, TRAVELPORT, ATLAS, FLIGHTHUB)"
-              },
-              "logo": {
-                "type": "string",
-                "description": "URL to provider logo"
-              }
-            }
+          "loyaltyProgramsSupported": {
+            "type": "boolean",
+            "description": "Whether the supplier of this offer forwards `passengers[].loyaltyPrograms` (prebook) to the airline. `true`: frequent flyer numbers are sent with the booking, but the airline or fare may still not credit them. `false`: numbers are accepted and ignored. Omitted when unknown. Sending `loyaltyPrograms` never fails a booking."
           },
           "pricing": {
             "$ref": "#/components/schemas/FlightFullOfferPricing",
@@ -1406,6 +1460,13 @@
               "seatsRemaining": {
                 "type": "integer",
                 "description": "Number of seats remaining at this fare"
+              },
+              "features": {
+                "type": "array",
+                "description": "Perks that come with the fare brand (priority boarding, fast track, lounge, ...). A feature is sent only when the airline states it for every flight; no entry means unknown, not unavailable. After verify, features are kept only if the fare does not change. Travelfusion fares carry them at search only: the verified offer and the booking have none. Omitted when there are no features.",
+                "items": {
+                  "$ref": "#/components/schemas/FlightFareFeature"
+                }
               }
             },
             "description": "Fare class information"
@@ -1506,11 +1567,11 @@
               },
               "hasChangeFee": {
                 "type": "boolean",
-                "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no change fee is known to apply."
+                "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no change fee is known to apply."
               },
               "hasRefundFee": {
                 "type": "boolean",
-                "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
+                "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
               }
             },
             "description": "Booking terms and conditions for this offer"
@@ -1559,6 +1620,50 @@
             "format": "date-time",
             "nullable": true,
             "description": "Set when a cancellation was requested and is awaiting airline confirmation (or retained after finalize as evidence). Present on `GET /flights/bookings/{bookingId}` while cancellation is in progress. Omitted when null. Not applicable to prebook endpoints."
+          },
+          "cancellation": {
+            "type": "object",
+            "description": "Cancellation fee and refund of a cancelled booking. Present on `GET /flights/bookings/{bookingId}` and `GET /flights/bookings` when `status` is `CANCELLED` or `CANCELLED_WITH_CHARGES` and the cancellation amounts are recorded; omitted otherwise. The amounts are the same as in the `POST /flights/bookings/{bookingId}/cancellations` response. While the airline is still deciding the refund, both amounts are 0 and are updated once it is settled.",
+            "required": [
+              "cancellation_fee",
+              "refund_amount",
+              "currency"
+            ],
+            "properties": {
+              "cancellation_fee": {
+                "type": "number",
+                "description": "Total cancellation penalty with margin applied"
+              },
+              "refund_amount": {
+                "type": "number",
+                "description": "Amount refunded or to be refunded with margin applied"
+              },
+              "currency": {
+                "type": "string",
+                "description": "Currency of `cancellation_fee` and `refund_amount`"
+              },
+              "refund_type": {
+                "type": "string",
+                "description": "Refund kind.",
+                "enum": [
+                  "full",
+                  "partial",
+                  "none"
+                ]
+              },
+              "cancelledAt": {
+                "type": "string",
+                "format": "date-time",
+                "description": "When the booking was cancelled (UTC)"
+              }
+            },
+            "example": {
+              "cancellation_fee": 4.4,
+              "refund_amount": 229.24,
+              "currency": "USD",
+              "refund_type": "partial",
+              "cancelledAt": "2026-11-12T16:57:16Z"
+            }
           },
           "timestamp": {
             "type": "string",
@@ -1895,11 +2000,11 @@
                   },
                   "hasChangeFee": {
                     "type": "boolean",
-                    "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
+                    "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
                   },
                   "hasRefundFee": {
                     "type": "boolean",
-                    "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
+                    "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
                   }
                 },
                 "description": "Booking terms from the provider (change/refund rules and published fees)",
@@ -1935,6 +2040,13 @@
                   "seatsRemaining": {
                     "type": "integer",
                     "description": "Number of seats remaining at this fare"
+                  },
+                  "features": {
+                    "type": "array",
+                    "description": "Perks that come with the fare brand (priority boarding, fast track, lounge, ...). A feature is sent only when the airline states it for every flight; no entry means unknown, not unavailable. After verify, features are kept only if the fare does not change. Travelfusion fares carry them at search only: the verified offer and the booking have none. Omitted when there are no features.",
+                    "items": {
+                      "$ref": "#/components/schemas/FlightFareFeature"
+                    }
                   }
                 },
                 "description": "Fare class information"
@@ -2307,6 +2419,16 @@
               "$ref": "#/components/schemas/FlightTicketedServicesSale"
             },
             "description": "Seats / bags sales on the ticketed booking. Sold services also appear in pricing.servicesAmount and bookedServices."
+          },
+          "searchId": {
+            "type": "string",
+            "description": "Search correlation id: the id of the search this offer came from. Stamped on every offer at rates time and carried through verify, prebook and book in the offerId. Omitted when the search has no id (for example, offers issued before the id existed).",
+            "example": "0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+            "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
           }
         }
       },
@@ -2539,6 +2661,11 @@
               "utm_source": "bing",
               "utm_campaign": "spring_2026"
             }
+          },
+          "sessionId": {
+            "type": "string",
+            "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+            "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
           }
         },
         "description": "Request body to complete a flight booking"
@@ -2930,11 +3057,11 @@
                   },
                   "hasChangeFee": {
                     "type": "boolean",
-                    "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
+                    "description": "True when the provider signalled that a change fee applies to the fare, even when the actual amount is not published in `changeFee`. Lets clients render a \"change fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed (common for LCC content distributed via GDS, e.g. U2 / easyJet via Sabre). When `false` or absent, no change fee is known to apply."
                   },
                   "hasRefundFee": {
                     "type": "boolean",
-                    "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies — amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
+                    "description": "True when the provider signalled that a refund/cancellation fee applies to the fare, even when the actual amount is not published in `refundFee`. Lets clients render a \"cancellation fee applies \u2014 amount on request\" remark for fares where the rule is known but the monetary amount is not exposed. When `false` or absent, no refund fee is known to apply."
                   }
                 },
                 "description": "Booking terms from the provider (change/refund rules and published fees)",
@@ -2970,6 +3097,13 @@
                   "seatsRemaining": {
                     "type": "integer",
                     "description": "Number of seats remaining at this fare"
+                  },
+                  "features": {
+                    "type": "array",
+                    "description": "Perks that come with the fare brand (priority boarding, fast track, lounge, ...). A feature is sent only when the airline states it for every flight; no entry means unknown, not unavailable. After verify, features are kept only if the fare does not change. Travelfusion fares carry them at search only: the verified offer and the booking have none. Omitted when there are no features.",
+                    "items": {
+                      "$ref": "#/components/schemas/FlightFareFeature"
+                    }
                   }
                 },
                 "description": "Fare class information"
@@ -3346,7 +3480,7 @@
           },
           "transactionId": {
             "type": "string",
-            "description": "Stripe transaction id when paid with TRANSACTION_ID"
+            "description": "Stripe transaction id when paid with TRANSACTION_ID or ACC_CREDIT_CARD (absent for ACC_CREDIT_CARD in sandbox)"
           },
           "chargesId": {
             "type": "string",
@@ -3357,6 +3491,7 @@
             "enum": [
               "CREDIT",
               "TRANSACTION_ID",
+              "ACC_CREDIT_CARD",
               "MANUAL"
             ],
             "description": "Payment method used for this line. Absent on lines persisted before methods were recorded.",
@@ -3379,7 +3514,7 @@
           "paidAt": {
             "type": "string",
             "format": "date-time",
-            "description": "When the line was paid (confirm time for CREDIT / TRANSACTION_ID, time it was marked paid via PUT /extra-charges/charges for MANUAL)"
+            "description": "When the line was paid (confirm time for CREDIT / TRANSACTION_ID / ACC_CREDIT_CARD, time it was marked paid via PUT /extra-charges/charges for MANUAL)"
           }
         },
         "description": "Persisted extra charge line on the booking"
@@ -3400,7 +3535,7 @@
           },
           "usePaymentSdk": {
             "type": "boolean",
-            "description": "Required true when the batch is paid with TRANSACTION_ID so a PaymentIntent is created. Ignored for CREDIT and MANUAL.",
+            "description": "Required true when the batch is paid with TRANSACTION_ID so a PaymentIntent is created. Ignored for CREDIT, ACC_CREDIT_CARD and MANUAL.",
             "example": true
           },
           "paymentMethod": {
@@ -3408,9 +3543,10 @@
             "enum": [
               "CREDIT",
               "TRANSACTION_ID",
+              "ACC_CREDIT_CARD",
               "MANUAL"
             ],
-            "description": "How this batch is paid, among the methods the booking allows. Credit-line bookings: CREDIT (default) or TRANSACTION_ID (charge the passenger through Stripe). Stripe bookings: TRANSACTION_ID. WL/CMI bookings: MANUAL (system admin / operations only). Omit to use the booking default.",
+            "description": "How this batch is paid, among the methods the booking allows. Credit-line bookings: CREDIT (default) or TRANSACTION_ID (charge the passenger through Stripe). Stripe bookings: TRANSACTION_ID. WL/CMI bookings: MANUAL (system admin / operations only). ACC_CREDIT_CARD charges the card stored on the booking owner's account; it is available (never as default) on credit-line, Stripe and voucher-only bookings when the account has a stored card. Omit to use the booking default.",
             "example": "TRANSACTION_ID"
           }
         },
@@ -3430,7 +3566,7 @@
           },
           "payment": {
             "type": "object",
-            "description": "Payment details for capturing the extra charge. method must match the booking original payment.",
+            "description": "Payment details for capturing the extra charge. method must match the method chosen at precharges.",
             "required": [
               "method"
             ],
@@ -3439,9 +3575,11 @@
                 "type": "string",
                 "enum": [
                   "TRANSACTION_ID",
-                  "CREDIT"
+                  "CREDIT",
+                  "ACC_CREDIT_CARD",
+                  "MANUAL"
                 ],
-                "description": "Must match the booking's original payment method"
+                "description": "Must match the method chosen at precharges (recorded in chargesId). ACC_CREDIT_CARD charges the batch total immediately to the card stored on the booking owner's account; no other fields are needed. In sandbox mode, ACC_CREDIT_CARD records the charge without charging the card."
               },
               "transactionId": {
                 "type": "string",
@@ -3538,10 +3676,12 @@
               "type": "string",
               "enum": [
                 "TRANSACTION_ID",
-                "CREDIT"
+                "CREDIT",
+                "ACC_CREDIT_CARD",
+                "MANUAL"
               ]
             },
-            "description": "Single-element list with the payment method chosen for this batch (CREDIT, TRANSACTION_ID or MANUAL); confirm must use it"
+            "description": "Single-element list with the payment method chosen for this batch (CREDIT, TRANSACTION_ID, ACC_CREDIT_CARD or MANUAL); confirm must use it"
           },
           "creditLine": {
             "type": "object",
@@ -3621,7 +3761,10 @@
             "description": "Provider selection rules over services (today the Travelfusion bag options). A selection breaking a rule is refused with 400 44019 and details.conflicts.",
             "items": {
               "type": "object",
-              "required": ["type", "serviceIds"],
+              "required": [
+                "type",
+                "serviceIds"
+              ],
               "properties": {
                 "type": {
                   "type": "string",
@@ -3902,7 +4045,7 @@
     },
     {
       "name": "Flight Bookings",
-      "description": "Checkout flow: **1.** Create a checkout session (PREBOOK) → **1.2** Attach services to prebook (optional) → **2.** Complete a booking. Also includes retrieving a booking by ID."
+      "description": "Checkout flow: **1.** Create a checkout session (PREBOOK) \u2192 **1.2** Attach services to prebook (optional) \u2192 **2.** Complete a booking. Also includes retrieving a booking by ID."
     }
   ],
   "paths": {
@@ -4484,7 +4627,7 @@
                       "minimum": 2,
                       "maximum": 11
                     },
-                    "description": "Age of each child (2–11 inclusive, per IATA). Length must equal children count. Optional — omit if ages are not relevant.",
+                    "description": "Age of each child (2\u201311 inclusive, per IATA). Length must equal children count. Optional \u2014 omit if ages are not relevant.",
                     "example": [
                       5,
                       11
@@ -4497,7 +4640,7 @@
                       "minimum": 0,
                       "maximum": 1
                     },
-                    "description": "Age of each infant (under 2, per IATA). Length must equal infants count. Optional — omit if ages are not relevant.",
+                    "description": "Age of each infant (under 2, per IATA). Length must equal infants count. Optional \u2014 omit if ages are not relevant.",
                     "example": [
                       1
                     ]
@@ -4808,6 +4951,11 @@
                         "example": "asc"
                       }
                     }
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+                    "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
                   }
                 }
               },
@@ -4910,6 +5058,16 @@
                                 "description": "Journey with the fewest stops (connections between segments plus en-route technical stops inside segments)"
                               }
                             }
+                          },
+                          "searchId": {
+                            "type": "string",
+                            "description": "Search correlation id: the id of the search this offer came from. Stamped on every offer at rates time and carried through verify, prebook and book in the offerId. Omitted when the search has no id (for example, offers issued before the id existed).",
+                            "example": "0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+                            "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
                           }
                         }
                       },
@@ -5011,10 +5169,7 @@
                                 },
                                 "converted": false
                               },
-                              "provider": {
-                                "code": "SABRE",
-                                "logo": "https://sandbox.nuitee.flights/static/providers/sabre.svg"
-                              },
+                              "loyaltyProgramsSupported": true,
                               "fare": {
                                 "family": "Economy",
                                 "mixedCabin": false,
@@ -5139,7 +5294,7 @@
             }
           },
           "400": {
-            "description": "Bad request — missing or invalid search parameters",
+            "description": "Bad request \u2014 missing or invalid search parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -5313,7 +5468,7 @@
         ],
         "operationId": "searchFlightsMatrix",
         "summary": "Flexible-date price matrix (one-way or round-trip)",
-        "description": "## Overview\n\nSearch the cheapest fare for each departure (and, on round-trips, return) date combination across a grid of nearby dates — `±flexDays` around the dates in your request. Accepts the same `legs`-based body as `POST /flights/rates` plus optional `flexDays` (1–3, default 3).\n\n**Supported:** one-way (1 leg) or round-trip (2 legs) only. Multi-city (3+ legs) is not supported.\n\n**Date limit:** each leg `date` must not be more than 11 months from today (same as `POST /flights/rates`).\n\n**Not supported:** top-level `origin`, `destination`, `departureDate`, or `returnDate` — use `legs` only.\n\n## Access\n\nRequires Flights API access and matrix enablement on your account. Matrix search is not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- **Flexible-date calendars** — price heatmap when the traveller can shift dates\n- **Cheap-date discovery** — find the lowest fare in a ±N day window before a full `/flights/rates` search\n- **Round-trip date pairing** — compare outbound × return combinations on one grid\n- **Progressive UI** — stream cells over SSE as each underlying search completes\n\n## What You Get\n\n- **`cells`** — one entry per valid date combination, sorted by `(outboundOffset, returnOffset)`\n- **`cheapest`** — globally lowest-priced cell (null when nothing was priced)\n- **`currency`** — currency of the global cheapest cell\n- **`baseOutboundDate`** / **`baseReturnDate`** — the originally requested dates\n- **`flexDays`**, **`roundTrip`** — grid metadata\n- Per-cell **`price`**, **`currency`**, date offsets, and whether the underlying search was **`cached`** or **`success`**\n- **Margined prices** — cell `price`, `cheapest`, and `currency` include the authenticated user's rate-search margin (same as `/flights/rates`)\n\n## Key Features\n\n- Probes `±flexDays` (1–3) around requested departure and return dates\n- Each underlying date pair uses normal provider caching — a later `POST /flights/rates` for a matrix date is served from warm cache\n- **SSE:** send header `Accept: text/event-stream` for incremental events: `matrix-start` (grid skeleton), `matrix-chunk` (one priced cell), `matrix-complete` (full sorted grid + cheapest)\n- Same global `filters`, `sort`, and `options` as `/flights/rates` where applicable\n\n## Quick Start\n\n**Required:** `legs` (1 leg for one-way or 2 for round-trip, each with `origin`, `destination`, `date`), `adults` (≥ 1), `currency`\n\n**Optional:** `flexDays` (1–3, default 3), `country`, passenger counts, `filters`, `sort`\n\n**Round-trip:** two legs — outbound then return with optional `direction` `OUTBOUND` / `INBOUND`. **One-way:** one leg.\n\nAfter choosing a date pair from the matrix, call `POST /flights/rates` with `legs` set to those dates for full offer details.",
+        "description": "## Overview\n\nSearch the cheapest fare for each departure (and, on round-trips, return) date combination across a grid of nearby dates \u2014 `\u00b1flexDays` around the dates in your request. Accepts the same `legs`-based body as `POST /flights/rates` plus optional `flexDays` (1\u20133, default 3).\n\n**Supported:** one-way (1 leg) or round-trip (2 legs) only. Multi-city (3+ legs) is not supported.\n\n**Date limit:** each leg `date` must not be more than 11 months from today (same as `POST /flights/rates`).\n\n**Not supported:** top-level `origin`, `destination`, `departureDate`, or `returnDate` \u2014 use `legs` only.\n\n## Access\n\nRequires Flights API access and matrix enablement on your account. Matrix search is not enabled by default \u2014 contact the LiteAPI support team to request access.\n\n## When to Use\n\n- **Flexible-date calendars** \u2014 price heatmap when the traveller can shift dates\n- **Cheap-date discovery** \u2014 find the lowest fare in a \u00b1N day window before a full `/flights/rates` search\n- **Round-trip date pairing** \u2014 compare outbound \u00d7 return combinations on one grid\n- **Progressive UI** \u2014 stream cells over SSE as each underlying search completes\n\n## What You Get\n\n- **`cells`** \u2014 one entry per valid date combination, sorted by `(outboundOffset, returnOffset)`\n- **`cheapest`** \u2014 globally lowest-priced cell (null when nothing was priced)\n- **`currency`** \u2014 currency of the global cheapest cell\n- **`baseOutboundDate`** / **`baseReturnDate`** \u2014 the originally requested dates\n- **`flexDays`**, **`roundTrip`** \u2014 grid metadata\n- Per-cell **`price`**, **`currency`**, date offsets, and whether the underlying search was **`cached`** or **`success`**\n- **Margined prices** \u2014 cell `price`, `cheapest`, and `currency` include the authenticated user's rate-search margin (same as `/flights/rates`)\n\n## Key Features\n\n- Probes `\u00b1flexDays` (1\u20133) around requested departure and return dates\n- Each underlying date pair uses normal provider caching \u2014 a later `POST /flights/rates` for a matrix date is served from warm cache\n- **SSE:** send header `Accept: text/event-stream` for incremental events: `matrix-start` (grid skeleton), `matrix-chunk` (one priced cell), `matrix-complete` (full sorted grid + cheapest)\n- Same global `filters`, `sort`, and `options` as `/flights/rates` where applicable\n\n## Quick Start\n\n**Required:** `legs` (1 leg for one-way or 2 for round-trip, each with `origin`, `destination`, `date`), `adults` (\u2265 1), `currency`\n\n**Optional:** `flexDays` (1\u20133, default 3), `country`, passenger counts, `filters`, `sort`\n\n**Round-trip:** two legs \u2014 outbound then return with optional `direction` `OUTBOUND` / `INBOUND`. **One-way:** one leg.\n\nAfter choosing a date pair from the matrix, call `POST /flights/rates` with `legs` set to those dates for full offer details.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5378,7 +5533,7 @@
                   "adults": {
                     "type": "integer",
                     "minimum": 1,
-                    "description": "Number of adult passengers (≥ 1).",
+                    "description": "Number of adult passengers (\u2265 1).",
                     "example": 1
                   },
                   "children": {
@@ -5526,7 +5681,7 @@
             }
           },
           "400": {
-            "description": "Bad request — missing or invalid matrix search parameters",
+            "description": "Bad request \u2014 missing or invalid matrix search parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -5614,7 +5769,7 @@
             }
           },
           "403": {
-            "description": "Forbidden — matrix access not enabled for this account",
+            "description": "Forbidden \u2014 matrix access not enabled for this account",
             "content": {
               "application/json": {
                 "schema": {
@@ -5650,13 +5805,111 @@
         }
       }
     },
+    "/flights/booking-links": {
+      "post": {
+        "operationId": "getFlightBookingLinks",
+        "tags": ["Flight Search"],
+        "summary": "Airline website links for a selected flight",
+        "description": "Returns URLs on the airline website for a flight from a rates result, so the traveller can finish there. This does not book, verify, or charge. The airline price replaces the rates offer, and more than one fare brand may be returned. Connections are not supported: send one OUTBOUND segment and, for a round trip, one INBOUND segment.",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "object",
+                "required": ["segments", "parameters"],
+                "properties": {
+                  "segments": {
+                    "type": "array",
+                    "minItems": 1,
+                    "description": "Rates journey segments. Exactly one OUTBOUND, and one INBOUND when the trip returns.",
+                    "items": {"$ref": "#/components/schemas/FlightSegment"}
+                  },
+                  "parameters": {
+                    "type": "object",
+                    "required": ["adults"],
+                    "properties": {
+                      "adults": {"type": "integer", "minimum": 1, "maximum": 9, "example": 1, "description": "Adult passengers"},
+                      "children": {"type": "integer", "minimum": 0, "example": 0, "description": "Child passengers"},
+                      "infants": {"type": "integer", "minimum": 0, "example": 0, "description": "Lap infants"}
+                    }
+                  },
+                  "market": {
+                    "type": "string",
+                    "description": "Point of sale, 2-letter country code. Defaults to US.",
+                    "example": "US"
+                  }
+                }
+              },
+              "example": {
+                "market": "US",
+                "parameters": {"adults": 1, "children": 0, "infants": 0},
+                "segments": [
+                  {
+                    "direction": "OUTBOUND",
+                    "originCode": "SFO",
+                    "destinationCode": "JFK",
+                    "departureTime": "2026-12-13T16:05:00",
+                    "carrier": {"marketingCode": "AA", "marketingName": "American"},
+                    "flight": {"marketingNumber": "148", "operatingNumber": "148"}
+                  }
+                ]
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Airline links. data is empty when none are available.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "required": ["data"],
+                  "properties": {
+                    "data": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "required": ["url", "providerName", "price"],
+                        "properties": {
+                          "url": {"type": "string", "format": "uri", "description": "Opaque airline website URL. Do not cache or rewrite it."},
+                          "providerName": {"type": "string", "example": "American"},
+                          "fareName": {"type": "string", "example": "Basic Economy"},
+                          "directions": {"type": "array", "items": {"type": "string", "enum": ["OUTBOUND", "INBOUND"]}, "example": ["OUTBOUND"]},
+                          "price": {
+                            "type": "object",
+                            "required": ["amount", "currency", "status"],
+                            "properties": {
+                              "amount": {"type": "number", "example": 184},
+                              "currency": {"type": "string", "example": "USD"},
+                              "status": {"type": "string", "example": "verified"}
+                            }
+                          }
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {"description": "Invalid journey or rejected lookup", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+          "401": {"description": "Authentication required", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+          "402": {"description": "Booking-link account has no remaining requests", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+          "429": {"description": "Rate limit exceeded", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+          "500": {"description": "Booking links are not configured", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}},
+          "502": {"description": "Booking-link provider unavailable", "content": {"application/json": {"schema": {"$ref": "#/components/schemas/Error"}}}}
+        }
+      }
+    },
     "/flights/verify": {
       "post": {
         "tags": [
           "Flight Search"
         ],
         "summary": "Verify flight offer",
-        "description": "## Overview\n\nConfirm a flight offer is still available and retrieve the latest pricing before proceeding to booking. Always verify before prebooking to avoid price discrepancies.\n\n## When to Use\n\n- **Pre-booking validation** - Confirm offer availability after user selects a flight\n- **Price confirmation** - Show users the guaranteed price before they enter payment details\n- **Fare rule retrieval** - Get the latest cancellation and change policies\n\n## What You Get\n\n- **Verified pricing** with up-to-date fare breakdown\n- **`changes`** (when present) — cabin/fare flags, human-readable `messages`, and **`pricing`** (`old` / `new` full OfferPricing) instead of deprecated scalar currency/prices\n- **Journey `pricing`** — `original` (provider/PCC) and `display` (customer) price breakdown per provider FlattenedJourney\n- **Fare family details** including name and included amenities\n- **Baggage policy** for each passenger type and segment\n- **Booking terms** including cancellation and change fee rules\n\n## Key Features\n\n- **Real-time price check**: Confirms current availability and price with the provider\n- **Updated baggage info**: Returns the latest baggage allowances at time of verification\n- **Fare rules**: Includes cancellation and change fee policies before commitment\n\n## Quick Start\n\nProvide the `offerId` from `/flights/rates` search results. Use the verified offer data to populate a booking summary page before proceeding to `/flights/prebooks`.",
+        "description": "## Overview\n\nConfirm a flight offer is still available and retrieve the latest pricing before proceeding to booking. Always verify before prebooking to avoid price discrepancies.\n\n## When to Use\n\n- **Pre-booking validation** - Confirm offer availability after user selects a flight\n- **Price confirmation** - Show users the guaranteed price before they enter payment details\n- **Fare rule retrieval** - Get the latest cancellation and change policies\n\n## What You Get\n\n- **Verified pricing** with up-to-date fare breakdown\n- **`changes`** (when present) \u2014 cabin/fare flags, human-readable `messages`, and **`pricing`** (`old` / `new` full OfferPricing) instead of deprecated scalar currency/prices\n- **Journey `pricing`** \u2014 `original` (provider/PCC) and `display` (customer) price breakdown per provider FlattenedJourney\n- **Fare family details** including name and included amenities\n- **Baggage policy** for each passenger type and segment\n- **Booking terms** including cancellation and change fee rules\n\n## Key Features\n\n- **Real-time price check**: Confirms current availability and price with the provider\n- **Updated baggage info**: Returns the latest baggage allowances at time of verification\n- **Fare rules**: Includes cancellation and change fee policies before commitment\n\n## Quick Start\n\nProvide the `offerId` from `/flights/rates` search results. Use the verified offer data to populate a booking summary page before proceeding to `/flights/prebooks`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -5670,6 +5923,11 @@
                   "offerId": {
                     "type": "string",
                     "description": "The offerId from the search results"
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+                    "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
                   }
                 }
               },
@@ -5701,6 +5959,16 @@
                             "$ref": "#/components/schemas/FlightVerifyChanges",
                             "description": "Changes detected since search (price, cabin, fare); omitted when the provider sends no changes block",
                             "nullable": true
+                          },
+                          "searchId": {
+                            "type": "string",
+                            "description": "Search correlation id: the id of the search this offer came from. Stamped on every offer at rates time and carried through verify, prebook and book in the offerId. Omitted when the search has no id (for example, offers issued before the id existed).",
+                            "example": "0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+                            "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
                           }
                         }
                       },
@@ -5715,10 +5983,7 @@
                         "journeyKey": "26b2fa3085dc22b2",
                         "expiration": "2026-03-19T13:15:09.485Z",
                         "timestamp": "2026-03-19T12:45:07.715Z",
-                        "provider": {
-                          "code": "SABRE",
-                          "logo": "https://production.nuitee.flights/static/providers/sabre.svg"
-                        },
+                        "loyaltyProgramsSupported": true,
                         "pricing": {
                           "display": {
                             "total": 1423.42,
@@ -5981,7 +6246,7 @@
             }
           },
           "400": {
-            "description": "Bad request — missing or invalid verify parameters",
+            "description": "Bad request \u2014 missing or invalid verify parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -6015,7 +6280,7 @@
                     "value": {
                       "error": {
                         "code": 42015,
-                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
+                        "description": "The search session has expired; search for new flights \u2014 offers from this search can no longer be used",
                         "message": "verify validation error: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -6070,7 +6335,7 @@
                     "value": {
                       "error": {
                         "code": 42004,
-                        "description": "The offer has expired or is invalid; search for new flights — do not retry this offerId",
+                        "description": "The offer has expired or is invalid; search for new flights \u2014 do not retry this offerId",
                         "message": "offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -6081,7 +6346,7 @@
                     "value": {
                       "error": {
                         "code": 42017,
-                        "description": "The offer has expired; search for new flights — do not retry this offerId",
+                        "description": "The offer has expired; search for new flights \u2014 do not retry this offerId",
                         "message": "expired: offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -6103,7 +6368,7 @@
                     "value": {
                       "error": {
                         "code": 42019,
-                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
+                        "description": "The search session has expired; search for new flights \u2014 offers from this search can no longer be used",
                         "message": "expired: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -6170,7 +6435,7 @@
                     "value": {
                       "error": {
                         "code": 52020,
-                        "description": "the fare of this offer has changed since your search; search for new flights — do not retry this offerId",
+                        "description": "the fare of this offer has changed since your search; search for new flights \u2014 do not retry this offerId",
                         "message": "provider error: fare changed"
                       }
                     }
@@ -6180,7 +6445,7 @@
                     "value": {
                       "error": {
                         "code": 52021,
-                        "description": "the price of this offer has increased since your search; search for new flights — do not retry this offerId",
+                        "description": "the price of this offer has increased since your search; search for new flights \u2014 do not retry this offerId",
                         "message": "provider error: price changed"
                       }
                     }
@@ -6241,7 +6506,7 @@
         ],
         "summary": "1.3 Get prebook details (optional)",
         "operationId": "getFlightPrebook",
-        "description": "## Overview\n\nRetrieve an existing flight checkout session (prebook) by ID, including any ancillary services already attached and a live catalog of remaining attachable services.\n\n## When to Use\n\n- **Resume checkout** — Reload prebook state after the user navigates away\n- **Confirm attached ancillaries** — Show selected seats/bags before final book\n- **Reuse payment intent** — Returns the stored Stripe `transactionId` / `secretKey` as-is (GET does not create or refresh a PaymentIntent)\n- **Credit balance** — Optionally include a live credit-line snapshot with `includeCreditBalance=true`\n\n## What You Get\n\n- Same core `FlightPrebookData` shape as `POST /flights/prebooks` / attach-services (journey, pricing, payment intent fields, `servicesAttachable`)\n- `booking.selectedServices` / `booking.bookedServices` when services were attached\n- Live `servicesAttachable` from the provider (not persisted)\n- Existing payment fields conserved from create/attach\n- Optional `creditLine` when `includeCreditBalance=true` (live remaining credit when the account can cover the prebook price)\n\n## Quick Start\n\nProvide the `prebookId` returned from `POST /flights/prebooks` in the URL path. Optionally pass `includeCreditBalance=true` to include credit-line availability.",
+        "description": "## Overview\n\nRetrieve an existing flight checkout session (prebook) by ID, including any ancillary services already attached and a live catalog of remaining attachable services.\n\n## When to Use\n\n- **Resume checkout** \u2014 Reload prebook state after the user navigates away\n- **Confirm attached ancillaries** \u2014 Show selected seats/bags before final book\n- **Reuse payment intent** \u2014 Returns the stored Stripe `transactionId` / `secretKey` as-is (GET does not create or refresh a PaymentIntent)\n- **Credit balance** \u2014 Optionally include a live credit-line snapshot with `includeCreditBalance=true`\n\n## What You Get\n\n- Same core `FlightPrebookData` shape as `POST /flights/prebooks` / attach-services (journey, pricing, payment intent fields, `servicesAttachable`)\n- `booking.selectedServices` / `booking.bookedServices` when services were attached\n- Live `servicesAttachable` from the provider (not persisted)\n- Existing payment fields conserved from create/attach\n- Optional `creditLine` when `includeCreditBalance=true` (live remaining credit when the account can cover the prebook price)\n\n## Quick Start\n\nProvide the `prebookId` returned from `POST /flights/prebooks` in the URL path. Optionally pass `includeCreditBalance=true` to include credit-line availability.",
         "parameters": [
           {
             "name": "prebookId",
@@ -6321,7 +6586,7 @@
                                         "properties": {
                                           "serviceId": {
                                             "type": "string",
-                                            "description": "Unique service identifier — use this in selectedServices when attaching"
+                                            "description": "Unique service identifier \u2014 use this in selectedServices when attaching"
                                           },
                                           "name": {
                                             "type": "string",
@@ -6349,7 +6614,7 @@
                                             "properties": {
                                               "seat": {
                                                 "type": "object",
-                                                "description": "Seat details — present only when the service category is `seat`",
+                                                "description": "Seat details \u2014 present only when the service category is `seat`",
                                                 "properties": {
                                                   "available": {
                                                     "type": "boolean",
@@ -6379,7 +6644,7 @@
                                               },
                                               "baggage": {
                                                 "type": "object",
-                                                "description": "Baggage details — present only when the service category is `baggage`",
+                                                "description": "Baggage details \u2014 present only when the service category is `baggage`",
                                                 "properties": {
                                                   "bagType": {
                                                     "type": "string",
@@ -6425,7 +6690,7 @@
                           },
                           "transactionId": {
                             "type": "string",
-                            "description": "New Stripe transaction ID reflecting the updated price — use this (not the prebook transactionId) when calling /bookings"
+                            "description": "New Stripe transaction ID reflecting the updated price \u2014 use this (not the prebook transactionId) when calling /bookings"
                           },
                           "secretKey": {
                             "type": "string",
@@ -6885,7 +7150,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized — missing or invalid API key",
+            "description": "Unauthorized \u2014 missing or invalid API key",
             "content": {
               "application/json": {
                 "schema": {
@@ -7068,7 +7333,7 @@
           "Flight Bookings"
         ],
         "summary": "1.2 Attach or detach services on prebook (Optional)",
-        "description": "## Overview\n\nSet the ancillary selection (seats / bags) on an existing prebook before confirming the final booking. Each call **replaces** the prebook's current selection — it is not additive.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Detach / clear services** - Remove previously attached seats or bags before book\n- **Price update** - Required when services change the total booking cost\n- **Voucher discount** - Optional `voucherCode` when attaching services changes the total and you need the discount reflected on the new payment intent\n\n## What You Get\n\n- **Updated prebook** with the selected services attached (or cleared)\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price (after any voucher discount)\n- **Same response format** as `POST /flights/prebooks` for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Full replacement**: Send the complete desired `selectedServices` list every time\n- **Detach**: Omit a service from `selectedServices` to remove it; send `selectedServices: []` to clear all seats/bags and refresh the payment intent to the journey-only total\n- **Updated payment**: Creates a new Stripe payment intent when the prebook used Stripe (`usePaymentSdk: true`). For whitelabel/CMI prebooks (`used_custom_payment_keys`), no new intent is returned — re-charge via WL and submit a fresh JWT at `POST /flights/bookings`\n- **Voucher recalculation**: When a voucher applies, the discount is recomputed against the updated total (journey + ancillaries); invalid or expired vouchers return `400` (same as prebook)\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Changing / removing services\n\nThis endpoint replaces the prebook's ancillary selection. To detach one seat or bag, re-POST without that item. To detach all services:\n\n```json\n{ \"selectedServices\": [] }\n```\n\nThe field must be present (`selectedServices` is required); an empty array clears the selection. Omitting the field entirely is a validation error.\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and `selectedServices` in the request body. Optionally pass `voucherCode` to apply a discount. Use the **new** `transactionId` from this response (not the original prebook `transactionId`) when confirming payment with Stripe and when calling `POST /flights/bookings`.",
+        "description": "## Overview\n\nSet the ancillary selection (seats / bags) on an existing prebook before confirming the final booking. Each call **replaces** the prebook's current selection \u2014 it is not additive.\n\n## When to Use\n\n- **Seat selection** - Allow users to choose specific seats after prebook\n- **Extra baggage** - Let users add additional luggage allowance\n- **Detach / clear services** - Remove previously attached seats or bags before book\n- **Price update** - Required when services change the total booking cost\n- **Voucher discount** - Optional `voucherCode` when attaching services changes the total and you need the discount reflected on the new payment intent\n\n## What You Get\n\n- **Updated prebook** with the selected services attached (or cleared)\n- **New payment intent** (`transactionId`, `secretKey`) reflecting the updated total price (after any voucher discount)\n- **Same response format** as `POST /flights/prebooks` for easy integration\n\n## Key Features\n\n- **Seat selection**: Assign specific seats to each passenger and segment\n- **Extra baggage**: Add checked baggage or overweight allowances\n- **Full replacement**: Send the complete desired `selectedServices` list every time\n- **Detach**: Omit a service from `selectedServices` to remove it; send `selectedServices: []` to clear all seats/bags and refresh the payment intent to the journey-only total\n- **Updated payment**: Creates a new Stripe payment intent when the prebook used Stripe (`usePaymentSdk: true`). For whitelabel/CMI prebooks (`used_custom_payment_keys`), no new intent is returned \u2014 re-charge via WL and submit a fresh JWT at `POST /flights/bookings`\n- **Voucher recalculation**: When a voucher applies, the discount is recomputed against the updated total (journey + ancillaries); invalid or expired vouchers return `400` (same as prebook)\n- **Modifies in place**: Updates the existing prebook record in the database\n\n## Changing / removing services\n\nThis endpoint replaces the prebook's ancillary selection. To detach one seat or bag, re-POST without that item. To detach all services:\n\n```json\n{ \"selectedServices\": [] }\n```\n\nThe field must be present (`selectedServices` is required); an empty array clears the selection. Omitting the field entirely is a validation error.\n\n## Quick Start\n\nProvide the `prebookId` in the URL path and `selectedServices` in the request body. Optionally pass `voucherCode` to apply a discount. Use the **new** `transactionId` from this response (not the original prebook `transactionId`) when confirming payment with Stripe and when calling `POST /flights/bookings`.",
         "parameters": [
           {
             "name": "prebookId",
@@ -7185,7 +7450,7 @@
                                         "properties": {
                                           "serviceId": {
                                             "type": "string",
-                                            "description": "Unique service identifier — use this in selectedServices when attaching"
+                                            "description": "Unique service identifier \u2014 use this in selectedServices when attaching"
                                           },
                                           "name": {
                                             "type": "string",
@@ -7213,7 +7478,7 @@
                                             "properties": {
                                               "seat": {
                                                 "type": "object",
-                                                "description": "Seat details — present only when the service category is `seat`",
+                                                "description": "Seat details \u2014 present only when the service category is `seat`",
                                                 "properties": {
                                                   "available": {
                                                     "type": "boolean",
@@ -7243,7 +7508,7 @@
                                               },
                                               "baggage": {
                                                 "type": "object",
-                                                "description": "Baggage details — present only when the service category is `baggage`",
+                                                "description": "Baggage details \u2014 present only when the service category is `baggage`",
                                                 "properties": {
                                                   "bagType": {
                                                     "type": "string",
@@ -7289,7 +7554,7 @@
                           },
                           "transactionId": {
                             "type": "string",
-                            "description": "New Stripe transaction ID reflecting the updated price — use this (not the prebook transactionId) when calling /bookings"
+                            "description": "New Stripe transaction ID reflecting the updated price \u2014 use this (not the prebook transactionId) when calling /bookings"
                           },
                           "secretKey": {
                             "type": "string",
@@ -7673,7 +7938,7 @@
             }
           },
           "400": {
-            "description": "Bad request — missing or invalid service parameters",
+            "description": "Bad request \u2014 missing or invalid service parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -7751,7 +8016,7 @@
                     "value": {
                       "error": {
                         "code": 44013,
-                        "description": "The search session has expired; search for new flights and create a new prebook — services cannot be attached to this prebook",
+                        "description": "The search session has expired; search for new flights and create a new prebook \u2014 services cannot be attached to this prebook",
                         "message": "validation error: session expired",
                         "key": "bodyRequest"
                       }
@@ -7777,7 +8042,9 @@
                         "message": "validation error: service conflict",
                         "key": "bodyRequest",
                         "details": {
-                          "conflicts": ["Two checked bags for passenger 0 on segment a1b2c3d4"]
+                          "conflicts": [
+                            "Two checked bags for passenger 0 on segment a1b2c3d4"
+                          ]
                         }
                       }
                     }
@@ -8181,7 +8448,7 @@
             }
           },
           "400": {
-            "description": "Bad request — invalid booking ID format",
+            "description": "Bad request \u2014 invalid booking ID format",
             "content": {
               "application/json": {
                 "schema": {
@@ -8365,7 +8632,7 @@
                                     "properties": {
                                       "serviceId": {
                                         "type": "string",
-                                        "description": "Unique service identifier — use this in selectedServices when attaching"
+                                        "description": "Unique service identifier \u2014 use this in selectedServices when attaching"
                                       },
                                       "name": {
                                         "type": "string",
@@ -8393,7 +8660,7 @@
                                         "properties": {
                                           "seat": {
                                             "type": "object",
-                                            "description": "Seat details — present only when the service category is `seat`",
+                                            "description": "Seat details \u2014 present only when the service category is `seat`",
                                             "properties": {
                                               "available": {
                                                 "type": "boolean",
@@ -8423,7 +8690,7 @@
                                           },
                                           "baggage": {
                                             "type": "object",
-                                            "description": "Baggage details — present only when the service category is `baggage`",
+                                            "description": "Baggage details \u2014 present only when the service category is `baggage`",
                                             "properties": {
                                               "bagType": {
                                                 "type": "string",
@@ -8487,7 +8754,7 @@
                           "services": [
                             {
                               "serviceId": "h6NwaWTZJD...",
-                              "name": "Seat 14A — Exit Row (LHR→JFK)",
+                              "name": "Seat 14A \u2014 Exit Row (LHR\u2192JFK)",
                               "category": "seat",
                               "passengerType": "ALL",
                               "segmentKey": "seg-1",
@@ -8540,7 +8807,7 @@
                       "bookedServices": [
                         {
                           "serviceId": "h6NwaWTZJD...",
-                          "name": "Seat 14A — Exit Row (LHR→JFK)",
+                          "name": "Seat 14A \u2014 Exit Row (LHR\u2192JFK)",
                           "category": "seat",
                           "passengerIndex": 0,
                           "segmentKey": "seg-1",
@@ -8562,7 +8829,7 @@
             }
           },
           "400": {
-            "description": "Bad request — invalid booking ID format",
+            "description": "Bad request \u2014 invalid booking ID format",
             "content": {
               "application/json": {
                 "schema": {
@@ -8657,7 +8924,7 @@
         ],
         "summary": "Select services on a ticketed booking",
         "operationId": "attachFlightTicketedServices",
-        "description": "## Overview\n\nSelects seats / bags to sell on a **ticketed** booking (status `CONFIRMED`, `canAddServicesAfterTicketing: true`) and prepares their payment. Nothing is sold yet: confirm with `POST /flights/bookings/{bookingId}/services/confirm`.\n\n## Payment\n\nThe services are paid with the booking's own method:\n\n- **Stripe bookings (`TRANSACTION_ID`)** - a new payment intent is created for `pendingTotal` (`transactionId`, `secretKey`). Confirm it with the Stripe SDK; it is captured only once the airline sells the services.\n- **Credit-line bookings (`CREDIT`)** - the credit line is checked now and billed after the sale.\n\nBookings paid otherwise (partner card, account card, third party) cannot buy services after ticketing.\n\n## Changing the selection\n\nCalling this endpoint again replaces the pending selection (its payment intent is cancelled). Send `selectedServices: []` to clear it.\n\n## Access\n\nNot enabled by default — contact the LiteAPI team. System admins and operations users (Connect dashboard) can act on any account's booking; the request then uses the booking owner's markups and payment settings.",
+        "description": "## Overview\n\nSelects seats / bags to sell on a **ticketed** booking (status `CONFIRMED`, `canAddServicesAfterTicketing: true`) and prepares their payment. Nothing is sold yet: confirm with `POST /flights/bookings/{bookingId}/services/confirm`.\n\n## Payment\n\nThe services are paid with the booking's own method:\n\n- **Stripe bookings (`TRANSACTION_ID`)** - a new payment intent is created for `pendingTotal` (`transactionId`, `secretKey`). Confirm it with the Stripe SDK; it is captured only once the airline sells the services.\n- **Credit-line bookings (`CREDIT`)** - the credit line is checked now and billed after the sale.\n\nBookings paid otherwise (partner card, account card, third party) cannot buy services after ticketing.\n\n## Changing the selection\n\nCalling this endpoint again replaces the pending selection (its payment intent is cancelled). Send `selectedServices: []` to clear it.\n\n## Access\n\nNot enabled by default \u2014 contact the LiteAPI team. System admins and operations users (Connect dashboard) can act on any account's booking; the request then uses the booking owner's markups and payment settings.",
         "parameters": [
           {
             "name": "bookingId",
@@ -8796,7 +9063,9 @@
                         "message": "validation error: service conflict",
                         "description": "Service conflicts detected",
                         "details": {
-                          "conflicts": ["Two checked bags for passenger 0 on segment a1b2c3d4"]
+                          "conflicts": [
+                            "Two checked bags for passenger 0 on segment a1b2c3d4"
+                          ]
                         }
                       }
                     }
@@ -8927,7 +9196,7 @@
           "Flight Bookings"
         ],
         "summary": "Get cancellation quote",
-        "description": "## Overview\n\nReturns refund eligibility, estimated refund amounts, and penalty details for a booking **without actually cancelling it**. Use this before calling `POST /flights/bookings/{bookingId}/cancellations` to understand the financial impact of cancellation.\n\n## When to Use\n\n- **Pre-cancellation review** — Show the customer the potential maximum refund (not guaranteed) before they confirm cancellation\n- **Refund estimation** — Display potential maximum refund and penalty amounts in the booking management UI (refund is not granted until cancel completes)\n- **Eligibility check** — Determine whether the booking is within the void window (`isVoidable`) or eligible for a partial refund (`isRefundable`)\n\n## What You Get\n\n- **`confidence`** — How reliable the quote is (`confirmed`, `estimated`, `heuristic`, `unknown`)\n- **`isRefundable` / `isVoidable`** — Quick eligibility flags\n- **`refund` / `penalty`** — Aggregate amounts with margin applied. `refund` is the potential maximum the airline may refund — not a granted/guaranteed amount\n- **`penalties[]`** — Itemised penalty breakdown when available\n- **`tickets[]`** — Per-ticket detail when available\n- **`destination`** — Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** — Airline travel vouchers / credit-shells when `destination` is `voucher`; omitted when absent. Distinct from LiteAPI discount `voucherCode` on prebook\n\n## Concurrent cancellation\n\nIf a cancellation was already submitted and is still awaiting provider confirmation, this endpoint returns **HTTP 409** with code `49007` (`CONCURRENT_OPERATION`). A new quote is not available until that cancellation completes or fails.\n\n## Refund amount caveat\n\nThe `refund` amount on a cancellation quote is the **potential maximum** the airline may refund if cancellation proceeds under the quoted conditions. It is an estimate for decision-making only and is **not granted** — the final refund (if any) is determined when cancellation completes and may be lower or zero. The refund may arrive asynchronously once the airline determines the final amount.\n\n## Key Features\n\n- **Non-destructive** — Does not cancel the booking; safe to call before user confirmation\n- **Margin-applied pricing** — All amounts (including voucher `pricing.display`) reflect the same margin applied at booking time\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. Every call hits the upstream provider — do not place this on a hot polling loop.",
+        "description": "## Overview\n\nReturns refund eligibility, estimated refund amounts, and penalty details for a booking **without actually cancelling it**. Use this before calling `POST /flights/bookings/{bookingId}/cancellations` to understand the financial impact of cancellation.\n\n## When to Use\n\n- **Pre-cancellation review** \u2014 Show the customer the potential maximum refund (not guaranteed) before they confirm cancellation\n- **Refund estimation** \u2014 Display potential maximum refund and penalty amounts in the booking management UI (refund is not granted until cancel completes)\n- **Eligibility check** \u2014 Determine whether the booking is within the void window (`isVoidable`) or eligible for a partial refund (`isRefundable`)\n\n## What You Get\n\n- **`confidence`** \u2014 How reliable the quote is (`confirmed`, `estimated`, `heuristic`, `unknown`)\n- **`isRefundable` / `isVoidable`** \u2014 Quick eligibility flags\n- **`refund` / `penalty`** \u2014 Aggregate amounts with margin applied. `refund` is the potential maximum the airline may refund \u2014 not a granted/guaranteed amount\n- **`penalties[]`** \u2014 Itemised penalty breakdown when available\n- **`tickets[]`** \u2014 Per-ticket detail when available\n- **`destination`** \u2014 Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** \u2014 Airline travel vouchers / credit-shells when `destination` is `voucher`; omitted when absent. Distinct from LiteAPI discount `voucherCode` on prebook\n\n## Concurrent cancellation\n\nIf a cancellation was already submitted and is still awaiting provider confirmation, this endpoint returns **HTTP 409** with code `49007` (`CONCURRENT_OPERATION`). A new quote is not available until that cancellation completes or fails.\n\n## Refund amount caveat\n\nThe `refund` amount on a cancellation quote is the **potential maximum** the airline may refund if cancellation proceeds under the quoted conditions. It is an estimate for decision-making only and is **not granted** \u2014 the final refund (if any) is determined when cancellation completes and may be lower or zero. The refund may arrive asynchronously once the airline determines the final amount.\n\n## Key Features\n\n- **Non-destructive** \u2014 Does not cancel the booking; safe to call before user confirmation\n- **Margin-applied pricing** \u2014 All amounts (including voucher `pricing.display`) reflect the same margin applied at booking time\n- **Booking currency** \u2014 Every amount, including `tickets[]` and `penalties[]` lines, is returned in the booking currency. Amounts the airline quotes in another currency are converted at the rate implied by the quote itself, or at the current exchange rate when the quote does not price them in the booking currency\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. Every call hits the upstream provider \u2014 do not place this on a hot polling loop.",
         "parameters": [
           {
             "name": "bookingId",
@@ -8980,14 +9249,14 @@
                           "refund": {
                             "type": "object",
                             "nullable": true,
-                            "description": "Potential maximum refund amount the airline may return if cancellation proceeds under this quote. Display amount includes margin. This value is not granted or guaranteed — the final refund (if any) is confirmed only after cancellation completes and may be lower or zero.",
+                            "description": "Potential maximum refund amount the airline may return if cancellation proceeds under this quote. Display amount includes margin. This value is not granted or guaranteed \u2014 the final refund (if any) is confirmed only after cancellation completes and may be lower or zero.",
                             "properties": {
                               "display": {
                                 "type": "object",
                                 "properties": {
                                   "amount": {
                                     "type": "number",
-                                    "description": "Potential maximum refund amount in the display currency. Not granted — subject to airline confirmation at cancel time."
+                                    "description": "Potential maximum refund amount in the display currency. Not granted \u2014 subject to airline confirmation at cancel time."
                                   },
                                   "currency": {
                                     "type": "string",
@@ -9239,7 +9508,7 @@
             }
           },
           "400": {
-            "description": "Bad request — invalid booking ID format",
+            "description": "Bad request \u2014 invalid booking ID format",
             "content": {
               "application/json": {
                 "schema": {
@@ -9418,7 +9687,7 @@
           "Flight Bookings"
         ],
         "summary": "Cancel a booking",
-        "description": "## Overview\n\n**Cancels a flight booking.** Submits cancellation for an existing booking and returns the cancellation outcome. Call `GET /flights/bookings/{bookingId}/cancellations` first to preview the financial impact without committing.\n\nIf cancellation is accepted but not yet confirmed, this endpoint returns **HTTP 202** with `status: CONFIRMED` (the booking is unchanged until the airline finalizes). Retries while cancellation is still pending are idempotent. While cancellation is awaiting confirmation, a subsequent `GET /flights/bookings/{bookingId}` includes `cancelIntentAt` (timestamp of the cancel request). When cancellation completes, the response is **HTTP 200** with a final status of `CANCELLED` or `CANCELLED_WITH_CHARGES`. All asynchronous cancellation updates are delivered as webhook events — subscribe to flight booking webhooks to receive final confirmation and status changes.\n\n## When to Use\n\n- **Confirmed cancellation** — Cancel the booking with the airline after the cancel quote has been reviewed and agreed\n\n## What You Get\n\n- **`bookingId`** — The LiteAPI booking identifier\n- **`status`** — Current booking status: `CONFIRMED` while cancellation is awaiting airline confirmation (HTTP 202), or final `CANCELLED` / `CANCELLED_WITH_CHARGES` (HTTP 200)\n- **`cancellation_fee`** — Total cancellation penalty; often `0` on idempotent pending retries\n- **`refund_amount`** — Amount to be returned (if any)\n- **`currency`** — Currency of the fee and refund amounts\n- **`destination`** — Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** — Airline travel vouchers when issued in lieu of cash; omitted when absent\n\n## Key Features\n\n- **Hotel-parity response** — Flat `data` object with `bookingId`, `status`, `cancellation_fee`, `refund_amount`, `currency`, plus optional `destination` / `vouchers`\n- **Pending cancel intent** — HTTP 202 when the airline accepts the cancel but has not confirmed it yet; booking stays `CONFIRMED` until cancellation is finalized, and `GET /flights/bookings/{bookingId}` returns `cancelIntentAt`\n- **Fee-based final status** — When cancellation completes (HTTP 200), the final `status` depends on `cancellation_fee`: if the fee is `0`, the booking is fully cancelled (`CANCELLED`); if the fee is greater than `0`, the booking is cancelled with charges retained (`CANCELLED_WITH_CHARGES`)\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. No request body is required.",
+        "description": "## Overview\n\n**Cancels a flight booking.** Submits cancellation for an existing booking and returns the cancellation outcome. Call `GET /flights/bookings/{bookingId}/cancellations` first to preview the financial impact without committing.\n\nIf cancellation is accepted but not yet confirmed, this endpoint returns **HTTP 202** with `status: CONFIRMED` (the booking is unchanged until the airline finalizes). Retries while cancellation is still pending are idempotent. While cancellation is awaiting confirmation, a subsequent `GET /flights/bookings/{bookingId}` includes `cancelIntentAt` (timestamp of the cancel request). When cancellation completes, the response is **HTTP 200** with a final status of `CANCELLED` or `CANCELLED_WITH_CHARGES`. All asynchronous cancellation updates are delivered as webhook events \u2014 subscribe to flight booking webhooks to receive final confirmation and status changes.\n\n## When to Use\n\n- **Confirmed cancellation** \u2014 Cancel the booking with the airline after the cancel quote has been reviewed and agreed\n\n## What You Get\n\n- **`bookingId`** \u2014 The LiteAPI booking identifier\n- **`status`** \u2014 Current booking status: `CONFIRMED` while cancellation is awaiting airline confirmation (HTTP 202), or final `CANCELLED` / `CANCELLED_WITH_CHARGES` (HTTP 200)\n- **`cancellation_fee`** \u2014 Total cancellation penalty; often `0` on idempotent pending retries\n- **`refund_amount`** \u2014 Amount to be returned (if any)\n- **`currency`** \u2014 Currency of the fee and refund amounts\n- **`destination`** \u2014 Where refunded money goes (`original_payment`, `agency_deposit`, `voucher`, etc.)\n- **`vouchers[]`** \u2014 Airline travel vouchers when issued in lieu of cash; omitted when absent\n\n## Key Features\n\n- **Hotel-parity response** \u2014 Flat `data` object with `bookingId`, `status`, `cancellation_fee`, `refund_amount`, `currency`, plus optional `destination` / `vouchers`\n- **Pending cancel intent** \u2014 HTTP 202 when the airline accepts the cancel but has not confirmed it yet; booking stays `CONFIRMED` until cancellation is finalized, and `GET /flights/bookings/{bookingId}` returns `cancelIntentAt`\n- **Fee-based final status** \u2014 When cancellation completes (HTTP 200), the final `status` depends on `cancellation_fee`: if the fee is `0`, the booking is fully cancelled (`CANCELLED`); if the fee is greater than `0`, the booking is cancelled with charges retained (`CANCELLED_WITH_CHARGES`)\n\n## Quick Start\n\nProvide the `bookingId` from `POST /flights/bookings` in the URL path. No request body is required.",
         "parameters": [
           {
             "name": "bookingId",
@@ -9690,7 +9959,7 @@
             }
           },
           "400": {
-            "description": "Bad request — invalid booking ID format",
+            "description": "Bad request \u2014 invalid booking ID format",
             "content": {
               "application/json": {
                 "schema": {
@@ -9891,7 +10160,7 @@
         ],
         "summary": "Precharge extra charges on a booking",
         "operationId": "prechargeFlightExtraCharges",
-        "description": "## Overview\n\nCreates a pending post-booking extra-charge batch for an existing flight booking and returns an opaque `chargesId`. When the batch is paid with `TRANSACTION_ID`, also creates a PaymentIntent (`transactionId` + `secretKey`) when `usePaymentSdk` is true.\n\n## Payment methods\n\n- **Credit-line booking** — `CREDIT` (default) bills the credit line; `TRANSACTION_ID` creates a Stripe PaymentIntent so the passenger pays (requires `usePaymentSdk: true`)\n- **Stripe booking** — `TRANSACTION_ID` (requires `usePaymentSdk: true`)\n- **WL / CMI booking** — `MANUAL` (system admin / operations only): nothing is captured; support collects the payment outside LiteAPI and marks it paid with `PUT /extra-charges/charges`\n\nThe chosen method is returned in `paymentTypes` and recorded in `chargesId`.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- Attach fees after confirmation (seat change, baggage, admin adjustment)\n- Obtain a Stripe client secret so the customer can confirm payment before `POST .../extra-charges/charges`\n\n## What You Get\n\n- **`chargesId`** — Opaque token required by `/extra-charges/charges` (do not re-send charge lines)\n- **`paymentTypes`** — The method chosen for this batch (`CREDIT`, `TRANSACTION_ID` or `MANUAL`)\n- **`transactionId` / `secretKey`** — Present when the batch is paid with `TRANSACTION_ID` and `usePaymentSdk` is true\n- Existing extras totals plus pending batch totals\n\n## Constraints\n\n- Booking status must be `CONFIRMED` or `PENDING_CONFIRMATION`\n- All lines in one request must share the same currency\n- Payment method on `/charges` must match the method chosen here",
+        "description": "## Overview\n\nCreates a pending post-booking extra-charge batch for an existing flight booking and returns an opaque `chargesId`. When the batch is paid with `TRANSACTION_ID`, also creates a PaymentIntent (`transactionId` + `secretKey`) when `usePaymentSdk` is true.\n\n## Payment methods\n\n- **Credit-line booking** — `CREDIT` (default) bills the credit line; `TRANSACTION_ID` creates a Stripe PaymentIntent so the passenger pays (requires `usePaymentSdk: true`)\n- **Stripe booking** — `TRANSACTION_ID` (requires `usePaymentSdk: true`)\n- **WL / CMI booking** — `MANUAL` (system admin / operations only): nothing is captured; support collects the payment outside LiteAPI and marks it paid with `PUT /extra-charges/charges`\n- **Card stored on your account** — `ACC_CREDIT_CARD` is also available on credit-line, Stripe and voucher-only bookings when the booking's account has a stored card. It is never the default; the batch is charged to that card on `/charges`. In sandbox mode, the charge is recorded without charging the card.\n\nThe chosen method is returned in `paymentTypes` and recorded in `chargesId`.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## When to Use\n\n- Attach fees after confirmation (seat change, baggage, admin adjustment)\n- Obtain a Stripe client secret so the customer can confirm payment before `POST .../extra-charges/charges`\n\n## What You Get\n\n- **`chargesId`** — Opaque token required by `/extra-charges/charges` (do not re-send charge lines)\n- **`paymentTypes`** — The method chosen for this batch (`CREDIT`, `TRANSACTION_ID`, `ACC_CREDIT_CARD` or `MANUAL`)\n- **`transactionId` / `secretKey`** — Present when the batch is paid with `TRANSACTION_ID` and `usePaymentSdk` is true\n- Existing extras totals plus pending batch totals\n\n## Constraints\n\n- Booking status must be `CONFIRMED` or `PENDING_CONFIRMATION`\n- All lines in one request must share the same currency\n- Payment method on `/charges` must match the method chosen here",
         "parameters": [
           {
             "name": "bookingId",
@@ -9951,6 +10220,19 @@
                     ],
                     "usePaymentSdk": true,
                     "paymentMethod": "TRANSACTION_ID"
+                  }
+                },
+                "accountCreditCard": {
+                  "summary": "Charge the card stored on your account",
+                  "value": {
+                    "charges": [
+                      {
+                        "description": "Seat change fee",
+                        "amount": 45.0,
+                        "currency": "USD"
+                      }
+                    ],
+                    "paymentMethod": "ACC_CREDIT_CARD"
                   }
                 },
                 "manualCmi": {
@@ -10161,7 +10443,7 @@
         ],
         "summary": "Confirm extra charges on a booking",
         "operationId": "chargeFlightExtraCharges",
-        "description": "## Overview\n\nConfirms a pending extra-charge batch created by `/extra-charges/precharges`. Captures the Stripe PaymentIntent, bills the credit line, or (MANUAL) records the lines as `awaiting_payment`, then appends the lines to the booking.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## Idempotency\n\nIdempotent on `chargesId`, mirroring `POST /flights/bookings` prebookId replay:\n\n- **Already confirmed** — HTTP 200 with `data.message` and the persisted extras (no re-capture / no duplicate credit-line billing)\n- **Concurrent confirm** — HTTP 409 / `45035` while another confirm for the same `chargesId` holds the Redis lock; retry after the first completes\n\n## When to Use\n\n- After the customer confirmed the Stripe PaymentIntent (status `requires_capture` / `succeeded`), or immediately for `CREDIT` bookings\n\n## Constraints\n\n- Body only needs `chargesId` + `payment` (charge lines are encoded in `chargesId`)\n- `payment.method` must match the method chosen at precharges (`TRANSACTION_ID`, `CREDIT` or `MANUAL`); ids minted before methods were recorded must use the booking's original payment\n- For Stripe, `payment.transactionId` must be the id returned by precharges",
+        "description": "## Overview\n\nConfirms a pending extra-charge batch created by `/extra-charges/precharges`. Captures the Stripe PaymentIntent, bills the credit line, charges the card stored on the booking's account (`ACC_CREDIT_CARD`; in sandbox mode, recorded without charging the card), or (MANUAL) records the lines as `awaiting_payment`, then appends the lines to the booking.\n\n## Access\n\nRequires Flights API access. Post-booking extra charges are not enabled by default — contact the LiteAPI support team to request access.\n\n## Idempotency\n\nIdempotent on `chargesId`, mirroring `POST /flights/bookings` prebookId replay:\n\n- **Already confirmed** — HTTP 200 with `data.message` and the persisted extras (no re-capture / no duplicate credit-line billing)\n- **Concurrent confirm** — HTTP 409 / `45035` while another confirm for the same `chargesId` holds the Redis lock; retry after the first completes\n\n## When to Use\n\n- After the customer confirmed the Stripe PaymentIntent (status `requires_capture` / `succeeded`), or immediately for `CREDIT` and `ACC_CREDIT_CARD`\n\n## Constraints\n\n- Body only needs `chargesId` + `payment` (charge lines are encoded in `chargesId`)\n- `payment.method` must match the method chosen at precharges (`TRANSACTION_ID`, `CREDIT`, `ACC_CREDIT_CARD` or `MANUAL`); ids minted before methods were recorded must use the booking's original payment\n- For Stripe, `payment.transactionId` must be the id returned by precharges",
         "parameters": [
           {
             "name": "bookingId",
@@ -10199,6 +10481,15 @@
                     "chargesId": "g6x...",
                     "payment": {
                       "method": "CREDIT"
+                    }
+                  }
+                },
+                "accountCreditCard": {
+                  "summary": "Charge the card stored on your account",
+                  "value": {
+                    "chargesId": "g6x...",
+                    "payment": {
+                      "method": "ACC_CREDIT_CARD"
                     }
                   }
                 },
@@ -10262,17 +10553,43 @@
             }
           },
           "400": {
-            "description": "Validation error or payment method mismatch",
+            "description": "Validation error, payment method mismatch, or ACC_CREDIT_CARD charge failure",
             "content": {
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/Error"
                 },
-                "example": {
-                  "error": {
-                    "code": 4000,
-                    "message": "bad request",
-                    "description": "extra charges payment method must match the booking payment method: booking requires TRANSACTION_ID"
+                "examples": {
+                  "paymentMethodMismatch": {
+                    "summary": "Payment method does not match precharges",
+                    "value": {
+                      "error": {
+                        "code": 4000,
+                        "message": "bad request",
+                        "description": "extra charges payment method must match the booking payment method: booking requires TRANSACTION_ID"
+                      }
+                    }
+                  },
+                  "accountCardMissing": {
+                    "summary": "ACC_CREDIT_CARD: no card stored on the account",
+                    "value": {
+                      "error": {
+                        "code": 45009,
+                        "message": "invalid format: payment method unsupported",
+                        "description": "please check if you have provided a payment method for your account",
+                        "key": "bodyRequest.payment.method"
+                      }
+                    }
+                  },
+                  "accountCardRejected": {
+                    "summary": "ACC_CREDIT_CARD: card rejected",
+                    "value": {
+                      "error": {
+                        "code": 45040,
+                        "message": "invalid format: card rejected",
+                        "description": "account credit card payment rejected: the extra charges are charged to the card on your liteAPI account, but the transaction got rejected by the card provider"
+                      }
+                    }
                   }
                 }
               }
@@ -11100,7 +11417,7 @@
             }
           },
           "400": {
-            "description": "Bad request — invalid PNR lookup parameters",
+            "description": "Bad request \u2014 invalid PNR lookup parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -11191,7 +11508,7 @@
           "Flight Bookings"
         ],
         "summary": "2. Complete a booking",
-        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`), bill an enabled **credit line** (`CREDIT`), pay with a **credit card** (`CREDIT_CARD` via the secure endpoint), or charge the **card stored on your account** (`ACC_CREDIT_CARD`)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking (HTTP 200 + `data[0].message`) if one already exists for the given `prebookId`. Transient book failures are retried in place without exposing a terminal failure status. Concurrent duplicate requests while a book is in progress return HTTP 409 (`45035`).\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks; `CREDIT_CARD` charges the provided card immediately — send card details in `billingInfo` via `https://pci-book.liteapi.travel` (contact the team to enable this on your API key); `ACC_CREDIT_CARD` charges the card saved on your account immediately, with no card details in the request (in sandbox it simulates the booking without a charge)\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebooks`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.",
+        "description": "## Overview\n\nComplete a flight reservation by confirming a prebook and processing payment. This is the final step in the booking flow.\n\n## When to Use\n\n- **Final booking confirmation** - Convert a prebook into a confirmed booking\n- **Payment completion** - Confirm with Stripe (`TRANSACTION_ID`), bill an enabled **credit line** (`CREDIT`), pay with a **credit card** (`CREDIT_CARD` via the secure endpoint), or charge the **card stored on your account** (`ACC_CREDIT_CARD`)\n- **After service selection** - Book after optionally attaching seats or baggage via the services endpoint\n\n## What You Get\n\n- **Confirmed booking** with a unique booking ID\n- **Payment confirmation** with transaction details\n- **Full itinerary** including all segments and passenger assignments\n- **Provider confirmation** reference number\n\n## Key Features\n\n- **Idempotent**: Returns the existing booking (HTTP 200 + `data[0].message`) if one already exists for the given `prebookId`. Transient book failures are retried in place without exposing a terminal failure status. Concurrent duplicate requests while a book is in progress return HTTP 409 (`45035`).\n- **Payments**: Stripe uses `transactionId` from prebook or attach-services after SDK confirmation; credit line uses `CREDIT` with server-side eligibility checks; `CREDIT_CARD` charges the provided card immediately — send card details in `billingInfo` via `https://pci-book.liteapi.travel` (contact the team to enable this on your API key); `ACC_CREDIT_CARD` charges the card saved on your account immediately, with no card details in the request (in sandbox it simulates the booking without a charge)\n- **Provider confirmation**: Finalizes the reservation on the provider side\n\n## Quick Start\n\n**Required fields**: `prebookId` (from `POST /flights/prebooks`), `payment` with `method` and, for Stripe, `transactionId`\n\n**Tip**: If you used `POST /flights/prebooks/{prebookId}/services` to attach ancillary services, use the new `transactionId` from that response, not the original prebook `transactionId`.\n\n## Vouchers\n\nA voucher applied at prebook (or attach-services) is checked again when you book, before anything is charged or booked. The booking is refused with HTTP 400, and nothing is charged, when since then the voucher was deactivated or deleted (`45088`), its validity period no longer includes the booking time (`45089`), its discount was changed so that it no longer gives the amount applied, or its minimum spend was raised above the price (`45090`), its usage limit was reached by other bookings (`45091`), or its remaining budget no longer covers the amount applied (`45092`). The amount applied is never changed at book: prebook again to apply the voucher as it is now. A booking retried in place after its voucher was already charged is not checked again.",
         "requestBody": {
           "required": true,
           "content": {
@@ -11270,7 +11587,7 @@
         },
         "responses": {
           "200": {
-            "description": "Idempotent replay — an existing booking for this `prebookId` is returned",
+            "description": "Idempotent replay \u2014 an existing booking for this `prebookId` is returned",
             "content": {
               "application/json": {
                 "schema": {
@@ -11340,7 +11657,7 @@
             }
           },
           "400": {
-            "description": "Bad request — invalid booking parameters",
+            "description": "Bad request \u2014 invalid booking parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -11392,7 +11709,7 @@
                     }
                   },
                   "invalidFormatDashboardCardRejected": {
-                    "summary": "Invalid format: card rejected — voucher charge on the liteAPI account card",
+                    "summary": "Invalid format: card rejected \u2014 voucher charge on the liteAPI account card",
                     "value": {
                       "error": {
                         "code": 45040,
@@ -11406,7 +11723,7 @@
                     "value": {
                       "error": {
                         "code": 45063,
-                        "description": "The search session has expired; search for new flights and create a new prebook — this prebook can no longer be booked",
+                        "description": "The search session has expired; search for new flights and create a new prebook \u2014 this prebook can no longer be booked",
                         "message": "invalid parameters: session expired",
                         "key": "bodyRequest.prebookId"
                       }
@@ -11431,6 +11748,56 @@
                         "description": "Validation failed: ticketing is inactive",
                         "message": "validation error: ticketing inactive",
                         "key": "bodyRequest"
+                      }
+                    }
+                  },
+                  "voucherInactive": {
+                    "summary": "Voucher no longer active",
+                    "value": {
+                      "error": {
+                        "code": 45088,
+                        "description": "the voucher applied at prebook is no longer active",
+                        "message": "voucher no longer active"
+                      }
+                    }
+                  },
+                  "voucherExpired": {
+                    "summary": "Voucher outside its validity period",
+                    "value": {
+                      "error": {
+                        "code": 45089,
+                        "description": "the voucher applied at prebook is outside its validity period",
+                        "message": "voucher outside its validity period"
+                      }
+                    }
+                  },
+                  "voucherChanged": {
+                    "summary": "Voucher changed since prebook",
+                    "value": {
+                      "error": {
+                        "code": 45090,
+                        "description": "the voucher applied at prebook has changed and no longer gives the discount applied at prebook",
+                        "message": "voucher changed since prebook"
+                      }
+                    }
+                  },
+                  "voucherUsageLimitReached": {
+                    "summary": "Voucher usage limit reached",
+                    "value": {
+                      "error": {
+                        "code": 45091,
+                        "description": "the voucher applied at prebook has reached its usage limit",
+                        "message": "voucher usage limit reached"
+                      }
+                    }
+                  },
+                  "voucherBudgetExhausted": {
+                    "summary": "Voucher budget exhausted",
+                    "value": {
+                      "error": {
+                        "code": 45092,
+                        "description": "the voucher's remaining budget no longer covers the discount applied at prebook",
+                        "message": "voucher budget exhausted"
                       }
                     }
                   }
@@ -11500,7 +11867,7 @@
                     "value": {
                       "error": {
                         "code": 45029,
-                        "description": "The offer has expired; search for new flights and create a new prebook — do not retry this prebook",
+                        "description": "The offer has expired; search for new flights and create a new prebook \u2014 do not retry this prebook",
                         "message": "offer expired",
                         "key": "bodyRequest.prebookId"
                       }
@@ -11533,7 +11900,7 @@
             }
           },
           "409": {
-            "description": "Conflict — provider-detected duplicate, concurrent book in progress, ticketed, or invalid state",
+            "description": "Conflict \u2014 provider-detected duplicate, concurrent book in progress, ticketed, or invalid state",
             "content": {
               "application/json": {
                 "schema": {
@@ -11715,7 +12082,7 @@
           "Flight Bookings"
         ],
         "summary": "1. Create a checkout session (PREBOOK)",
-        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services — all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true — for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer → payment setup (Stripe payment intent or credit line) → books with provider → fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** (sandbox or whitelabel) and either an **enabled credit line** or a **whitelabel/CMI** checkout (no Stripe intent; complete payment via WL and call `/flights/bookings` with `payment.method: THIRD_PARTY` and `payment.token`)\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, `phoneCountryCode`, phone), `passengers` (with `passengerType`, birthday, gender, nationality, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` when paying on credit line or via whitelabel/CMI (requires payment bypass); otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
+        "description": "## Overview\n\nInitiate a flight booking session by reserving the offer with the provider, creating a payment intent when you use the Stripe SDK, and discovering available ancillary services \u2014 all in a single request.\n\n## When to Use\n\n- **Start the booking flow** once a user has confirmed their flight selection\n- **Collect passenger details** and initiate payment processing\n- **Discover add-ons** like seat selection and extra baggage before final confirmation\n\n## What You Get\n\n- **Prebook ID** required to complete the booking at `/flights/bookings`\n- **Payment intent** (`transactionId`, `secretKey`) when `usePaymentSdk` is true \u2014 for Stripe SDK integration\n- **Credit line snapshot** (`creditLine` in the response) when you set `includeCreditBalance: true` and your account has an enabled credit line with payment bypass\n- **Available services** (`servicesAttachable`) including seats and baggage options\n- **Booking confirmation** from the provider with reservation details\n\n## Key Features\n\n- **End-to-end prebook flow**: Verifies offer \u2192 payment setup (Stripe payment intent or credit line) \u2192 books with provider \u2192 fetches services\n- **Payment options**: `usePaymentSdk: true` uses the Stripe SDK. `usePaymentSdk: false` is allowed when your user has **payment bypass** (sandbox or whitelabel) and either an **enabled credit line** or a **whitelabel/CMI** checkout (no Stripe intent; complete payment via WL and call `/flights/bookings` with `payment.method: THIRD_PARTY` and `payment.token`)\n- **Ancillary services**: Returns attachable services (seats, baggage) that can be added before final booking\n- **Same shape as /book**: Uses `offerId` instead of `prebookId`\n\n## Quick Start\n\n**Required fields**: `offerId` (from search/verify), `contact` (name, email, `phoneCountryCode`, phone), `passengers` (with `passengerType`, birthday, gender, nationality, document, and name details).\n\n**Payment**: Send `usePaymentSdk: true` for Stripe (typical). Send `usePaymentSdk: false` when paying on credit line or via whitelabel/CMI (requires payment bypass); otherwise you receive a validation error.\n\n**Tip**: Use the `servicesAttachable` in the response to offer seat selection or extra baggage before calling `/flights/bookings`.",
         "requestBody": {
           "required": true,
           "content": {
@@ -11945,7 +12312,7 @@
                             1,
                             2
                           ],
-                          "description": "Passenger type: 0 = adult (12+), 1 = child (2–11), 2 = infant (under 2). Required by the flights provider.",
+                          "description": "Passenger type: 0 = adult (12+), 1 = child (2\u201311), 2 = infant (under 2). Required by the flights provider.",
                           "example": 0
                         },
                         "title": {
@@ -11961,7 +12328,7 @@
                         },
                         "loyaltyPrograms": {
                           "type": "array",
-                          "description": "Frequent flyer / loyalty programs for this passenger (Sabre and Travelport only; ignored for Atlas).",
+                          "description": "Frequent flyer / loyalty programs for this passenger. Forwarded to the airline only when the selected offer has `loyaltyProgramsSupported: true`; otherwise ignored without failing the booking. The airline or fare can still decline to credit the number, and the booking response does not confirm that it was applied.",
                           "items": {
                             "type": "object",
                             "required": [
@@ -11984,6 +12351,11 @@
                         }
                       }
                     }
+                  },
+                  "sessionId": {
+                    "type": "string",
+                    "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+                    "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
                   }
                 }
               },
@@ -12050,7 +12422,7 @@
                         "properties": {
                           "prebookId": {
                             "type": "string",
-                            "description": "Unique prebook identifier — use this in /bookings to complete the booking"
+                            "description": "Unique prebook identifier \u2014 use this in /bookings to complete the booking"
                           },
                           "booking": {
                             "$ref": "#/components/schemas/FlightPrebookBooking",
@@ -12119,7 +12491,7 @@
                                             "properties": {
                                               "seat": {
                                                 "type": "object",
-                                                "description": "Seat details — present only when the service category is `seat`",
+                                                "description": "Seat details \u2014 present only when the service category is `seat`",
                                                 "properties": {
                                                   "available": {
                                                     "type": "boolean",
@@ -12149,7 +12521,7 @@
                                               },
                                               "baggage": {
                                                 "type": "object",
-                                                "description": "Baggage details — present only when the service category is `baggage`",
+                                                "description": "Baggage details \u2014 present only when the service category is `baggage`",
                                                 "properties": {
                                                   "bagType": {
                                                     "type": "string",
@@ -12195,11 +12567,11 @@
                           },
                           "transactionId": {
                             "type": "string",
-                            "description": "When `usePaymentSdk` was true: Stripe transaction ID — use as `payment.transactionId` with `payment.method: TRANSACTION_ID` when calling `/flights/bookings`. Empty or omitted when prebooking on a credit line only."
+                            "description": "When `usePaymentSdk` was true: Stripe transaction ID \u2014 use as `payment.transactionId` with `payment.method: TRANSACTION_ID` when calling `/flights/bookings`. Empty or omitted when prebooking on a credit line only."
                           },
                           "secretKey": {
                             "type": "string",
-                            "description": "When `usePaymentSdk` was true: Stripe payment intent client secret — use with the Stripe SDK before calling `/flights/bookings`"
+                            "description": "When `usePaymentSdk` was true: Stripe payment intent client secret \u2014 use with the Stripe SDK before calling `/flights/bookings`"
                           },
                           "publishableKey": {
                             "type": "string",
@@ -12224,6 +12596,16 @@
                               "type": "string"
                             },
                             "description": "Available payment methods for completing this prebook at `/flights/bookings`. Possible values: `TRANSACTION_ID` (use the returned Stripe `transactionId`), `CREDIT` (charge the account credit line), `CREDIT_CARD` (direct card payment via the secure endpoint `https://pci-book.liteapi.travel` with `billingInfo`; enabled per API key), `ACC_CREDIT_CARD` (charge the card stored on your account; listed when a payment method is saved on the account)."
+                          },
+                          "searchId": {
+                            "type": "string",
+                            "description": "Search correlation id: the id of the search this offer came from. Stamped on every offer at rates time and carried through verify, prebook and book in the offerId. Omitted when the search has no id (for example, offers issued before the id existed).",
+                            "example": "0199a1b2-c3d4-7e5f-8a9b-0c1d2e3f4a5b"
+                          },
+                          "sessionId": {
+                            "type": "string",
+                            "description": "Optional journey session id. Send your own to group the calls of one journey: up to 64 visible ASCII characters without spaces (a value outside these limits is ignored, the call still succeeds). When omitted on rates, LiteAPI creates one and returns it. Every offer remembers the session of its search, so verify and prebook continue it when you do not resend it; on book, an omitted value inherits the session of the prebook.",
+                            "example": "session_01986070f5fbw6buvRsCtgSB9p4jSatL2DQtYVP2"
                           }
                         }
                       },
@@ -12588,7 +12970,7 @@
             }
           },
           "400": {
-            "description": "Bad request — missing or invalid prebook parameters",
+            "description": "Bad request \u2014 missing or invalid prebook parameters",
             "content": {
               "application/json": {
                 "schema": {
@@ -12721,7 +13103,7 @@
                     "value": {
                       "error": {
                         "code": 43015,
-                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
+                        "description": "The search session has expired; search for new flights \u2014 offers from this search can no longer be used",
                         "message": "prebook validation error: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -12787,7 +13169,7 @@
                     "value": {
                       "error": {
                         "code": 43004,
-                        "description": "The offer has expired or is invalid; search for new flights — do not retry this offerId",
+                        "description": "The offer has expired or is invalid; search for new flights \u2014 do not retry this offerId",
                         "message": "offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -12798,7 +13180,7 @@
                     "value": {
                       "error": {
                         "code": 43017,
-                        "description": "The offer has expired; search for new flights — do not retry this offerId",
+                        "description": "The offer has expired; search for new flights \u2014 do not retry this offerId",
                         "message": "expired: offer expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -12809,7 +13191,7 @@
                     "value": {
                       "error": {
                         "code": 43019,
-                        "description": "The search session has expired; search for new flights — offers from this search can no longer be used",
+                        "description": "The search session has expired; search for new flights \u2014 offers from this search can no longer be used",
                         "message": "expired: session expired",
                         "key": "bodyRequest.offerId"
                       }
@@ -12870,7 +13252,7 @@
                     "value": {
                       "error": {
                         "code": 53016,
-                        "description": "The offer has expired; search for new flights — do not retry this offerId",
+                        "description": "The offer has expired; search for new flights \u2014 do not retry this offerId",
                         "message": "provider auth failed: offer expired",
                         "key": "bodyRequest"
                       }
@@ -12903,7 +13285,7 @@
                     "value": {
                       "error": {
                         "code": 53021,
-                        "description": "the fare of this offer has changed since your search; search for new flights — do not retry this offerId",
+                        "description": "the fare of this offer has changed since your search; search for new flights \u2014 do not retry this offerId",
                         "message": "provider error: fare changed"
                       }
                     }

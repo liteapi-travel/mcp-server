@@ -1477,7 +1477,7 @@
       "post": {
         "tags": ["Make bookings"],
         "summary": "2. Complete a booking",
-        "description": "## Overview\n\n**Step 2 of 2** in the booking flow. Complete the booking by providing guest information and payment details. This confirms the reservation and creates the final booking.\n\n## When to Use\n\n- **After prebook** - Call this after creating a prebook session\n- **Payment processing** - Submit payment information to confirm booking\n- **Booking confirmation** - Finalize the reservation\n\n## What You Get\n\n- **Booking ID** - Unique identifier for the confirmed booking\n- **Hotel confirmation code** - Reference code from the hotel\n- **Complete booking details** - Dates, pricing, room information\n- **Cancellation policies** - Terms for cancelling the booking\n- **Guest information** - Confirmed guest details\n\n## Payment Methods\n\n- **ACC_CREDIT_CARD** - Direct credit card payment. In sandbox mode, this can be used to simulate a booking without getting charged.\n- **TRANSACTION** - Use when using Payment SDK (provide `transactionId`)\n- **WALLET** - Wallet payment method\n- **CREDIT** - Use account credit balance\n- **CREDIT_CARD** - Credit card payment via secure endpoint. Accepts any credit or debit card, including virtual credit cards. Send card details via `https://pci-book.liteapi.travel` using the `billingInfo` object. Contact the team to enable this on your API key.\n\n## Testing\n\nWhen testing sandbox bookings, simply use the `ACC_CREDIT_CARD` payment method. This allows you to simulate a booking without getting charged.\n\n## Required Information\n\n- **Prebook ID** - From the prebook step\n- **Guest details** - First name, last name, and email\n- **Payment information** - Payment method and details\n\n## Quick Start\n\nProvide the `prebookId`, guest information (firstName, lastName, email), and payment details. Returns confirmed booking with booking ID and confirmation code.",
+        "description": "## Overview\n\n**Step 2 of 2** in the booking flow. Complete the booking by providing guest information and payment details. This confirms the reservation and creates the final booking.\n\n## When to Use\n\n- **After prebook** - Call this after creating a prebook session\n- **Payment processing** - Submit payment information to confirm booking\n- **Booking confirmation** - Finalize the reservation\n\n## What You Get\n\n- **Booking ID** - Unique identifier for the confirmed booking\n- **Hotel confirmation code** - Reference code from the hotel\n- **Complete booking details** - Dates, pricing, room information\n- **Cancellation policies** - Terms for cancelling the booking\n- **Guest information** - Confirmed guest details\n\n## Payment Methods\n\n- **ACC_CREDIT_CARD** - Direct credit card payment. In sandbox mode, this can be used to simulate a booking without getting charged.\n- **TRANSACTION** - Use when using Payment SDK (provide `transactionId`)\n- **WALLET** - Wallet payment method\n- **CREDIT** - Use account credit balance\n- **CREDIT_CARD** - Credit card payment via secure endpoint. Accepts any credit or debit card, including virtual credit cards. Send card details via `https://pci-book.liteapi.travel` using the `billingInfo` object. Contact the team to enable this on your API key.\n\n## Testing\n\nWhen testing sandbox bookings, simply use the `ACC_CREDIT_CARD` payment method. This allows you to simulate a booking without getting charged.\n\n## Required Information\n\n- **Prebook ID** - From the prebook step\n- **Guest details** - First name, last name, and email\n- **Payment information** - Payment method and details\n\n## Quick Start\n\nProvide the `prebookId`, guest information (firstName, lastName, email), and payment details. Returns confirmed booking with booking ID and confirmation code.\n\n## Vouchers\n\nA voucher applied at prebook is checked again when you book, before anything is charged or booked. The booking is refused with HTTP 400, and nothing is charged, when since the prebook the voucher was deactivated or deleted (`40033`), its validity period no longer includes the booking time (`40034`), its discount was changed so that it no longer gives the amount applied at prebook, or its minimum spend was raised above the price (`40035`), its usage limit was reached by other bookings (`40036`), or its remaining budget no longer covers the amount applied at prebook (`40037`). The amount applied at prebook is never changed at book: prebook again to apply the voucher as it is now. The same `clientReference` can be used again.",
         "requestBody": {
           "content": {
             "application/json": {
@@ -2905,6 +2905,60 @@
                         "code": 2014,
                         "description": "payment metadata retrieval failed",
                         "message": "booking incomplete"
+                      }
+                    }
+                  },
+                  "prebook not found": {
+                    "value": {
+                      "error": {
+                        "code": 4004,
+                        "description": "prebook not found",
+                        "message": "entity not found"
+                      }
+                    }
+                  },
+                  "voucher no longer active": {
+                    "value": {
+                      "error": {
+                        "code": 40033,
+                        "description": "the voucher applied at prebook is no longer active",
+                        "message": "voucher no longer active"
+                      }
+                    }
+                  },
+                  "voucher outside its validity period": {
+                    "value": {
+                      "error": {
+                        "code": 40034,
+                        "description": "the voucher applied at prebook is outside its validity period",
+                        "message": "voucher outside its validity period"
+                      }
+                    }
+                  },
+                  "voucher changed since prebook": {
+                    "value": {
+                      "error": {
+                        "code": 40035,
+                        "description": "the voucher applied at prebook has changed and no longer gives the discount applied at prebook",
+                        "message": "voucher changed since prebook"
+                      }
+                    }
+                  },
+                  "voucher usage limit reached": {
+                    "value": {
+                      "error": {
+                        "code": 40036,
+                        "description": "the voucher applied at prebook has reached its usage limit",
+                        "message": "voucher usage limit reached"
+                      }
+                    }
+                  },
+                  "voucher budget exhausted": {
+                    "value": {
+                      "error": {
+                        "code": 40037,
+                        "description": "the voucher's remaining budget no longer covers the discount applied at prebook",
+                        "message": "voucher budget exhausted"
                       }
                     }
                   },

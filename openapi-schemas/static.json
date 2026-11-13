@@ -1,7 +1,14 @@
 {
   "openapi": "3.0.0",
-  "info": { "title": "API: Hotel data", "version": "3.0.0" },
-  "servers": [{ "url": "https://api.liteapi.travel/v3.0" }],
+  "info": {
+    "title": "API: Hotel data",
+    "version": "3.0.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.liteapi.travel/v3.0"
+    }
+  ],
   "security": [
     {
       "apikeyAuth": []
@@ -15,7 +22,7 @@
         ],
         "operationId": "getHotelTaxSchema",
         "summary": "Get the normalized tax schema of a hotel",
-        "description": "## Overview\n\nReturns the taxes and fees of a hotel as normalized static data. Each entry describes one tax or fee: whether it is settled with the booking or paid at the property, whether it is a percentage of the room rate or a fixed amount, how fixed amounts scale (per adult and/or per night), and its category.\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Charges with `payAtProperty` = true are collected at the hotel\n- **Tax auditing** - Compare a supplier's rate breakdown against the reference schema\n\n## Notes\n\n- Every listed tax or fee applies on top of the room rate\n- `included` and `payAtProperty` are always opposites: `included` = true means the charge is settled with the booking, `payAtProperty` = true means the guest pays it at the property\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- Fixed amounts are expressed in USD unless `currency` says otherwise\n- `appliedPer`, `appliedOn`, `validFrom` and `validTo` are present when that detail is known for the charge; an entry without them is complete\n- Tax data is refreshed periodically; use `lastUpdated` to detect changes. Hotels without tax data return 404",
+        "description": "## Overview\n\nReturns the taxes and fees of a hotel as normalized static data. Each entry describes one tax or fee: whether it is settled with the booking or paid at the property, whether it is a percentage of the room rate or a fixed amount, how fixed amounts scale (per adult and/or per night), and its category.\n\n## When to Use\n\n- **Price transparency** - Show guests which taxes and fees apply at a property\n- **Amount-due-at-property estimates** - Charges with `payAtProperty` = true are collected at the hotel\n- **Tax auditing** - Compare a supplier's rate breakdown against the reference schema\n\n## Notes\n\n- Every listed tax or fee applies on top of the room rate\n- `included` and `payAtProperty` are always opposites: `included` = true means the charge is settled with the booking, `payAtProperty` = true means the guest pays it at the property\n- When `payAtProperty` is returned, fixed amounts are always paid at the property, and fees (`chargeType` = fee) that apply on the same basis are combined into one entry settled with the booking and one paid at the property; a combined entry's name lists the fees it covers\n- Percentage rates apply to the room rate (e.g. 13.5 means 13.5%)\n- Fixed amounts are expressed in USD unless `currency` says otherwise\n- `appliedPer`, `appliedOn`, `validFrom` and `validTo` are present when that detail is known for the charge; an entry without them is complete\n- Tax data is refreshed periodically; use `lastUpdated` to detect changes. Hotels without tax data return 404",
         "security": [
           {
             "apikeyAuth": []
@@ -83,11 +90,11 @@
                               "type"
                             ],
                             "properties": {
-                  "name": {
-                    "type": "string",
-                    "description": "Display name of the tax or fee.",
-                    "example": "City Tax"
-                  },
+                              "name": {
+                                "type": "string",
+                                "description": "Display name of the tax or fee.",
+                                "example": "City Tax"
+                              },
                               "included": {
                                 "type": "boolean",
                                 "description": "Whether the charge is settled with the booking (true) or paid by the guest at the property (false). Every listed tax or fee applies on top of the room rate. Always the opposite of payAtProperty.",
@@ -129,13 +136,60 @@
                               },
                               "category": {
                                 "type": "string",
-                                "enum": ["Value Added Tax (VAT)", "Goods and services tax (GST)", "City tax", "City hotel fee", "County tax", "State tax", "Federal tax", "Country tax", "National government tax", "Sales tax", "Occupancy tax", "Lodging tax", "Room tax", "Bed tax", "Total tax", "Tourism tax", "Convention tax", "Convention / Tourism fee", "Destination marketing fee", "Tourism marketing fee", "Assessment/license tax", "Energy tax", "Service charge", "Resort fee", "Destination amenity fee", "Maintenance fee", "Local amenity usage/maintenance fee", "Local Government fee", "Local fee", "Local ordinance surcharge", "Surcharge", "Total surcharges", "Sustainability fee", "Charity support fee", "Hotel development Fee", "State cost recovery fee", "Extra person charge", "Extra child charge", "Crib fee", "Rollaway fee", "Miscellaneous", "Miscellaneous fee"],
+                                "enum": [
+                                  "Value Added Tax (VAT)",
+                                  "Goods and services tax (GST)",
+                                  "City tax",
+                                  "City hotel fee",
+                                  "County tax",
+                                  "State tax",
+                                  "Federal tax",
+                                  "Country tax",
+                                  "National government tax",
+                                  "Sales tax",
+                                  "Occupancy tax",
+                                  "Lodging tax",
+                                  "Room tax",
+                                  "Bed tax",
+                                  "Total tax",
+                                  "Tourism tax",
+                                  "Convention tax",
+                                  "Convention / Tourism fee",
+                                  "Destination marketing fee",
+                                  "Tourism marketing fee",
+                                  "Assessment/license tax",
+                                  "Energy tax",
+                                  "Service charge",
+                                  "Resort fee",
+                                  "Destination amenity fee",
+                                  "Maintenance fee",
+                                  "Local amenity usage/maintenance fee",
+                                  "Local Government fee",
+                                  "Local fee",
+                                  "Local ordinance surcharge",
+                                  "Surcharge",
+                                  "Total surcharges",
+                                  "Sustainability fee",
+                                  "Charity support fee",
+                                  "Hotel development Fee",
+                                  "State cost recovery fee",
+                                  "Extra person charge",
+                                  "Extra child charge",
+                                  "Crib fee",
+                                  "Rollaway fee",
+                                  "Miscellaneous",
+                                  "Miscellaneous fee"
+                                ],
                                 "description": "Category of the tax or fee, one of the OpenTravel Fee Tax Type names. 'Total tax' is used when the hotel reports one combined rate without a breakdown. Absent when the name could not be classified.",
                                 "example": "Resort fee"
                               },
                               "chargeType": {
                                 "type": "string",
-                                "enum": ["tax", "fee", "charge"],
+                                "enum": [
+                                  "tax",
+                                  "fee",
+                                  "charge"
+                                ],
                                 "description": "tax (government-imposed), fee (property-imposed) or charge (extra person).",
                                 "example": "fee"
                               },
@@ -146,7 +200,10 @@
                               },
                               "appliedOn": {
                                 "type": "string",
-                                "enum": ["net", "net_vat"],
+                                "enum": [
+                                  "net",
+                                  "net_vat"
+                                ],
                                 "description": "Base a percentage applies to: 'net' (room rate) or 'net_vat' (room rate plus VAT, i.e. compounded). Present when known.",
                                 "example": "net"
                               },
@@ -363,7 +420,9 @@
     },
     "/data/places": {
       "get": {
-        "tags": ["Places"],
+        "tags": [
+          "Places"
+        ],
         "summary": "Search for a list of places",
         "description": "## Overview\n\nSearch for places, locations, and areas using Google Places API. Returns a list of matching places that can be used to search for hotels within specific boundaries.\n\n**Pricing**: $0.01 per request\n\n## When to Use\n\n- **Location autocomplete** - Build location search with autocomplete suggestions\n- **Place selection** - Let users select cities, airports, or areas\n- **Hotel search boundaries** - Get Place IDs to restrict hotel searches to specific regions\n- **Location discovery** - Find places by name or description\n\n## What You Get\n\n- **Place list** - Multiple matching places with details\n- **Place IDs** - Unique identifiers for use in hotel searches\n- **Location information** - Names, addresses, and location types\n- **Formatted addresses** - Human-readable addresses for display\n\n## Key Features\n\n- **Multiple types** - Search for cities, airports, hotels, or other place types\n- **Type filtering** - Specify place types (e.g., 'locality,airport,hotel')\n- **Smart defaults** - Automatically excludes less relevant types unless specified\n- **Relevance ordering** - Results sorted by relevance using Google's ranking\n\n## Quick Start\n\nProvide a `textQuery` (e.g., \"Manhattan\") and optionally specify `type` to filter results. Returns matching places with Place IDs you can use in hotel searches.",
         "security": [
@@ -445,7 +504,11 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["placeId", "displayName", "formattedAddress"],
+                        "required": [
+                          "placeId",
+                          "displayName",
+                          "formattedAddress"
+                        ],
                         "properties": {
                           "placeId": {
                             "type": "string",
@@ -462,7 +525,9 @@
                           "types": {
                             "type": "array",
                             "description": "A list of categories or designations describing the place (e.g. 'hotel', 'lodging').",
-                            "items": { "type": "string" }
+                            "items": {
+                              "type": "string"
+                            }
                           }
                         }
                       }
@@ -555,7 +620,9 @@
     },
     "/data/places/{placeId}": {
       "get": {
-        "tags": ["Places"],
+        "tags": [
+          "Places"
+        ],
         "summary": "Search for a specific place",
         "description": "## Overview\n\nGet detailed information about a specific place using its Place ID. Returns complete place details including boundaries and location information.\n\n**Pricing**: $0.01 per request\n\n## When to Use\n\n- **Place details** - Get full information about a selected place\n- **Boundary information** - Retrieve place boundaries for hotel searches\n- **Location verification** - Verify place details before using in searches\n- **Display information** - Show place names and addresses to users\n\n## What You Get\n\n- **Complete place details** - Full information about the place\n- **Boundary data** - Geographic boundaries for the place\n- **Location information** - Coordinates, address, and display name\n- **Place metadata** - Types, formatted address, and language\n\n## Quick Start\n\nProvide the `placeId` in the URL path. Returns complete details for that specific place.",
         "security": [
@@ -617,7 +684,10 @@
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["displayName", "location"],
+                      "required": [
+                        "displayName",
+                        "location"
+                      ],
                       "properties": {
                         "addressComponents": {
                           "type": "array",
@@ -640,7 +710,9 @@
                               "types": {
                                 "type": "array",
                                 "description": "A list of types describing the address component (e.g., 'country', 'political').",
-                                "items": { "type": "string" }
+                                "items": {
+                                  "type": "string"
+                                }
                               }
                             }
                           }
@@ -715,43 +787,60 @@
                         "languageCode": "en",
                         "longText": "140",
                         "shortText": "140",
-                        "types": ["street_number"]
+                        "types": [
+                          "street_number"
+                        ]
                       },
                       {
                         "languageCode": "en",
                         "longText": "Park Lane",
                         "shortText": "Park Ln",
-                        "types": ["route"]
+                        "types": [
+                          "route"
+                        ]
                       },
                       {
                         "languageCode": "en",
                         "longText": "London",
                         "shortText": "London",
-                        "types": ["postal_town"]
+                        "types": [
+                          "postal_town"
+                        ]
                       },
                       {
                         "languageCode": "en",
                         "longText": "Greater London",
                         "shortText": "Greater London",
-                        "types": ["administrative_area_level_2", "political"]
+                        "types": [
+                          "administrative_area_level_2",
+                          "political"
+                        ]
                       },
                       {
                         "languageCode": "en",
                         "longText": "England",
                         "shortText": "England",
-                        "types": ["administrative_area_level_1", "political"]
+                        "types": [
+                          "administrative_area_level_1",
+                          "political"
+                        ]
                       },
                       {
                         "languageCode": "en",
                         "longText": "United Kingdom",
                         "shortText": "GB",
-                        "types": ["country", "political"]
+                        "types": [
+                          "country",
+                          "political"
+                        ]
                       },
                       {
                         "languageCode": "en",
                         "longText": "W1K 7AA",
                         "shortText": "W1K 7AA",
-                        "types": ["postal_code"]
+                        "types": [
+                          "postal_code"
+                        ]
                       }
                     ],
                     "displayName": "London Marriott Hotel Park Lane",
@@ -837,10 +926,11 @@
         }
       }
     },
-
     "/data/hotels": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Retrieve a list of hotels",
         "description": "## Overview\n\nSearch and retrieve hotel listings based on various criteria. Get hotel metadata including names, addresses, ratings, amenities, and images for display in your application.\n\n## When to Use\n\n- **Hotel listings** - Display hotel search results\n- **Location-based search** - Find hotels by city, coordinates, or Place ID\n- **Hotel discovery** - Browse hotels in specific areas\n- **Metadata retrieval** - Get hotel information for display\n\n## What You Get\n\n- **Hotel list** - Matching hotels with complete metadata\n- **Basic information** - Names, addresses, ratings, and locations\n- **Amenities** - Available facilities and features\n- **Images** - Hotel photos for display\n- **Identifiers** - Hotel IDs for use in rate searches\n\n## Search Options\n\n- **By city** - Search hotels in a specific city\n- **By coordinates** - Find hotels near latitude/longitude with radius\n- **By Place ID** - Get hotels within a specific place boundary\n- **By hotel IDs** - Retrieve specific hotels by their IDs\n\n## Quick Start\n\nProvide search criteria (city, coordinates+radius, placeId, or hotelIds). Returns matching hotels with complete metadata.",
         "security": [
@@ -1086,7 +1176,14 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["id", "name", "country", "city", "latitude", "longitude"],
+                        "required": [
+                          "id",
+                          "name",
+                          "country",
+                          "city",
+                          "latitude",
+                          "longitude"
+                        ],
                         "properties": {
                           "id": {
                             "type": "string",
@@ -1287,7 +1384,9 @@
                               "types": {
                                 "type": "array",
                                 "description": "A list of types describing the address component (e.g., 'country', 'political').",
-                                "items": { "type": "string" }
+                                "items": {
+                                  "type": "string"
+                                }
                               }
                             }
                           }
@@ -1372,7 +1471,11 @@
                           "chainId": 0,
                           "chain": "Not Available",
                           "stars": 3,
-                          "facilityIds": [1, 2, 3],
+                          "facilityIds": [
+                            1,
+                            2,
+                            3
+                          ],
                           "accessibilityAttributes": {
                             "attributes": [
                               "entranceLeveled",
@@ -1456,7 +1559,11 @@
                           }
                         }
                       ],
-                      "hotelIds": ["lp42fec", "lp50f7f", "lp51261"],
+                      "hotelIds": [
+                        "lp42fec",
+                        "lp50f7f",
+                        "lp51261"
+                      ],
                       "total": 1004
                     }
                   }
@@ -1572,7 +1679,9 @@
     },
     "/data/hotels/semantic-search": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Search hotels by semantic query (Beta)",
         "description": "## Overview\n\n**Beta Feature** - Search hotels using natural language queries. Uses AI to understand search intent and find hotels that match the meaning, not just keywords.\n\n## When to Use\n\n- **Natural language search** - Let users search with phrases like \"romantic getaway in London\"\n- **Intent-based matching** - Find hotels matching the vibe or style, not just location\n- **Conversational search** - Support natural language hotel discovery\n- **Semantic matching** - Get hotels that semantically match the query\n\n## What You Get\n\n- **Matching hotels** - Hotels that semantically match your query\n- **Semantic attributes** - Tags, persona, style, location_type, and story for each hotel\n- **Relevance scores** - How well each hotel matches the query\n- **Hotel metadata** - ID, name, photos, address, city, country\n\n## Example Queries\n\n- \"Romantic getaway in London with Italian vibes\"\n- \"Hotels near Paris\"\n- \"Family-friendly beachfront hotels\"\n\n## Quick Start\n\nProvide a natural language `query` parameter. Returns hotels with semantic matching scores and attributes.\n\n**Note:** This is a beta feature and may be subject to changes.",
         "x-beta": true,
@@ -1642,7 +1751,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["id", "name"],
+                        "required": [
+                          "id",
+                          "name"
+                        ],
                         "properties": {
                           "id": {
                             "type": "string",
@@ -1680,7 +1792,11 @@
                             "items": {
                               "type": "string"
                             },
-                            "example": ["boutique hotel", "coastal retreat", "romantic getaway"]
+                            "example": [
+                              "boutique hotel",
+                              "coastal retreat",
+                              "romantic getaway"
+                            ]
                           },
                           "score": {
                             "type": "number",
@@ -1831,7 +1947,9 @@
     },
     "/data/hotel/ask": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Ask a question about a hotel (Beta)",
         "description": "## Overview\n\n**Beta Feature** - Ask natural language questions about a specific hotel and get AI-powered answers based on the hotel's information.\n\n## When to Use\n\n- **Hotel Q&A** - Answer customer questions about hotels\n- **Information lookup** - Get specific details about amenities, services, or features\n- **Conversational interfaces** - Build chat interfaces for hotel information\n- **Detailed inquiries** - Ask about specific aspects like restaurants, parking, or amenities\n\n## What You Get\n\n- **AI-generated answers** - Relevant responses to your questions\n- **Hotel-specific information** - Answers based on the hotel's actual data\n- **Natural language responses** - Human-readable answers\n\n## Example Questions\n\n- \"What amenities does this hotel have?\"\n- \"Is there parking available?\"\n- \"What does a meal at the restaurant look like?\"\n\n## Key Features\n\n- **Web search option** - Enable `allowWebSearch` to get additional information from the web\n- **Hotel context** - Answers are specific to the hotel you're asking about\n- **Natural language** - Ask questions conversationally\n\n## Quick Start\n\nProvide the `hotelId` and your `question`. Optionally enable `allowWebSearch` for web-enhanced answers.\n\n**Note:** This is a beta feature and may be subject to changes.",
         "x-beta": true,
@@ -1896,7 +2014,9 @@
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["answer"],
+                      "required": [
+                        "answer"
+                      ],
                       "properties": {
                         "answer": {
                           "type": "string",
@@ -2223,7 +2343,9 @@
     "/data/hotel/description-evaluation": {
       "post": {
         "operationId": "evaluateHotelDescription",
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Evaluate a hotel description (Beta)",
         "description": "## Overview\n\n**Beta Feature** - Check a customer-written hotel description against LiteAPI hotel data. The check compares the text with the hotel's static record (name, description, important information, facilities, rooms, policies, location, stars, and nearby places) and with stored guest-review sentiment. It does not fetch live reviews.\n\n**Access**: enterprise API keys only. Other keys receive `403`.\n\n**Rate Limiting**: This endpoint is rate-limited to **10 requests per minute** per API key for both sandbox and production API keys. Exceeding this limit returns `429 Too Many Requests`.\n\n## What You Get\n\n- `verdict`: `pass` when there are no flags, `review` when there is a minor or unverified flag and no red flag, `fail` when any flag is red. The verdict is computed from the flags.\n- `confidence`: the model's certainty in that judgment, from 0 to 1. It is not a second verdict and it is not a writing-quality score.\n- `flags`: concrete claims in the submitted text.\n\n## Flag severity\n\n- `red`: the text contradicts hotel data or stored sentiment. `evidence` quotes the contradicting fact.\n- `minor`: the text matches hotel data but overstates it (distance, star level, or policy strength). `evidence` is set.\n- `unverified`: a concrete fact in the text that our data neither supports nor contradicts. `evidence` is null. A swimming pool that is absent from facilities, rooms, the hotel description, important information, and sentiment is unverified, not red.\n\nMarketing with no checkable fact (`perfect getaway`, `unforgettable stay`) produces no flag.\n\n`description` is rejected above 20,000 characters. It is not truncated. `language` selects the language of `summary` and each `explanation` and defaults to `en`. The description itself may be any language.\n\nHotel facts are resolved server-side from `hotelId`. A child property is checked against its parent record. The response `hotelId` is the id you sent.\n\nIf the model call fails, the endpoint returns `500`. It does not return a pass it did not compute.\n\n**Note:** This is a beta feature and may be subject to changes.",
         "x-beta": true,
@@ -2238,7 +2360,10 @@
             "application/json": {
               "schema": {
                 "type": "object",
-                "required": ["hotelId", "description"],
+                "required": [
+                  "hotelId",
+                  "description"
+                ],
                 "properties": {
                   "hotelId": {
                     "type": "string",
@@ -2275,13 +2400,30 @@
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["hotelId", "language", "verdict", "confidence", "summary", "flags"],
+                      "required": [
+                        "hotelId",
+                        "language",
+                        "verdict",
+                        "confidence",
+                        "summary",
+                        "flags"
+                      ],
                       "properties": {
-                        "hotelId": {"type": "string", "example": "lp1897"},
-                        "language": {"type": "string", "example": "en"},
+                        "hotelId": {
+                          "type": "string",
+                          "example": "lp1897"
+                        },
+                        "language": {
+                          "type": "string",
+                          "example": "en"
+                        },
                         "verdict": {
                           "type": "string",
-                          "enum": ["pass", "review", "fail"],
+                          "enum": [
+                            "pass",
+                            "review",
+                            "fail"
+                          ],
                           "description": "pass: no flags. review: minor or unverified flags only. fail: one or more red flags."
                         },
                         "confidence": {
@@ -2291,29 +2433,80 @@
                           "description": "Model certainty in the judgment, from 0 to 1.",
                           "example": 0.86
                         },
-                        "summary": {"type": "string"},
+                        "summary": {
+                          "type": "string"
+                        },
                         "flags": {
                           "type": "array",
                           "items": {
                             "type": "object",
-                            "required": ["severity", "category", "claim", "excerpt", "explanation", "evidence"],
+                            "required": [
+                              "severity",
+                              "category",
+                              "claim",
+                              "excerpt",
+                              "explanation",
+                              "evidence"
+                            ],
                             "properties": {
-                              "severity": {"type": "string", "enum": ["red", "minor", "unverified"]},
-                              "category": {"type": "string", "enum": ["amenity", "policy", "location", "room", "rating", "sentiment", "other"]},
-                              "claim": {"type": "string", "example": "pets are welcome"},
-                              "excerpt": {"type": "string", "description": "Verbatim substring of the submitted description.", "example": "Pets are welcome."},
-                              "explanation": {"type": "string"},
+                              "severity": {
+                                "type": "string",
+                                "enum": [
+                                  "red",
+                                  "minor",
+                                  "unverified"
+                                ]
+                              },
+                              "category": {
+                                "type": "string",
+                                "enum": [
+                                  "amenity",
+                                  "policy",
+                                  "location",
+                                  "room",
+                                  "rating",
+                                  "sentiment",
+                                  "other"
+                                ]
+                              },
+                              "claim": {
+                                "type": "string",
+                                "example": "pets are welcome"
+                              },
+                              "excerpt": {
+                                "type": "string",
+                                "description": "Verbatim substring of the submitted description.",
+                                "example": "Pets are welcome."
+                              },
+                              "explanation": {
+                                "type": "string"
+                              },
                               "evidence": {
                                 "nullable": true,
                                 "type": "object",
                                 "description": "Null when severity is unverified.",
-                                "required": ["source", "detail"],
+                                "required": [
+                                  "source",
+                                  "detail"
+                                ],
                                 "properties": {
                                   "source": {
                                     "type": "string",
-                                    "enum": ["facility", "policy", "description", "importantInformation", "room", "location", "rating", "sentiment"]
+                                    "enum": [
+                                      "facility",
+                                      "policy",
+                                      "description",
+                                      "importantInformation",
+                                      "room",
+                                      "location",
+                                      "rating",
+                                      "sentiment"
+                                    ]
                                   },
-                                  "detail": {"type": "string", "example": "petsAllowed: no"}
+                                  "detail": {
+                                    "type": "string",
+                                    "example": "petsAllowed: no"
+                                  }
                                 }
                               }
                             }
@@ -2337,7 +2530,10 @@
                         "claim": "pets are welcome",
                         "excerpt": "Pets are welcome.",
                         "explanation": "Hotel policy says pets are not allowed.",
-                        "evidence": {"source": "policy", "detail": "petsAllowed: no"}
+                        "evidence": {
+                          "source": "policy",
+                          "detail": "petsAllowed: no"
+                        }
                       },
                       {
                         "severity": "minor",
@@ -2345,7 +2541,10 @@
                         "claim": "steps from the beach",
                         "excerpt": "The hotel is steps from the beach.",
                         "explanation": "The nearest beach is a short drive, not on the property.",
-                        "evidence": {"source": "location", "detail": "Beach — short drive"}
+                        "evidence": {
+                          "source": "location",
+                          "detail": "Beach — short drive"
+                        }
                       },
                       {
                         "severity": "unverified",
@@ -2384,7 +2583,9 @@
     },
     "/data/hotels/room-search": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Search hotel rooms by image and text (Beta)",
         "description": "## Overview\n\n**Beta Feature** - Search hotel rooms using visual and text-based queries. Uses image search technology to match your query against room images and find hotels with rooms that match your visual preferences, amenities, or style.\n\n## When to Use\n\n- **Visual room search** - Find rooms based on visual characteristics like \"luxury modernist comfort\" or \"blue accessible bathroom\"\n- **Style-based search** - Search for rooms by design style like \"art deco hotel room\" or \"brutalist room\"\n- **Amenity-focused search** - Find rooms with specific features like \"twin room with a city view\" or \"room with a skylight\"\n- **Geographic filtering** - Limit results to hotels near a specific location using coordinates or Place ID\n- **City and country filtering** - Filter results by city and/or country\n\n## What You Get\n\n- **Matching hotels** - Hotels grouped by hotel ID with rooms that match your query\n- **Room details** - Room name, image URL, and similarity score (rounded to 3 decimals) for each matching room\n- **Hotel metadata** - ID, name, address, city, country, and rating for each hotel\n- **Geographic filtering** - Optionally limit results to a specific area using coordinates or Place ID\n- **City and country filters** - Filter results by city and/or country code\n\n## Example Queries\n\n- \"luxury modernist comfort\"\n- \"an extremely fun room or art deco hotel room\"\n- \"luxurious accessible bathroom or blue accessible bathroom with walk in shower\"\n- \"twin room with a city view\"\n- \"a room filled with paintings\"\n- \"a hotel room with a skylight\"\n\n## Geographic Filtering\n\nYou can optionally limit search results to a specific geographic area:\n\n- **Using coordinates**: Provide `latitude`, `longitude`, and optionally `radius` (in kilometers, default: 12km)\n- **Using Place ID**: Provide `placeId` - the place's location will be automatically fetched and the search will use the place's viewport boundaries (or the provided `radius` if viewport is unavailable)\n- **Using city/country**: Provide `city` and/or `country` to filter results by location\n\n## Quick Start\n\nProvide a `query` parameter describing the room you're looking for. Optionally add geographic filtering with `latitude`/`longitude` or `placeId` to limit results to a specific area.\n\n**Note:** This is a beta feature and may be subject to changes.",
         "x-beta": true,
@@ -2506,7 +2707,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["id", "name"],
+                        "required": [
+                          "id",
+                          "name"
+                        ],
                         "properties": {
                           "id": {
                             "type": "string",
@@ -2682,7 +2886,9 @@
     },
     "/data/hotel": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Get the details of a hotel",
         "description": "## Overview\n\nGet comprehensive details about a specific hotel including descriptions, amenities, images, location, and ratings. Perfect for displaying hotel detail pages.\n\n## When to Use\n\n- **Hotel detail pages** - Show complete hotel information\n- **Booking pages** - Display hotel details before booking\n- **Hotel profiles** - Build rich hotel information pages\n- **Content display** - Show descriptions, amenities, and images\n\n## What You Get\n\n- **Complete hotel information** - Name, address, description, and ratings\n- **Amenities list** - All available facilities and services\n- **Image gallery** - Hotel photos and images\n- **Location details** - Address, coordinates, and location information\n- **Hotel metadata** - Star rating, chain information, and classifications\n\n## Quick Start\n\nProvide the `hotelId` as a query parameter. Returns complete hotel details including all metadata, amenities, and images.",
         "security": [
@@ -2755,7 +2961,10 @@
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["id", "name"],
+                      "required": [
+                        "id",
+                        "name"
+                      ],
                       "properties": {
                         "id": {
                           "type": "string",
@@ -2783,16 +2992,31 @@
                         },
                         "connectivityType": {
                           "type": "string",
-                          "enum": ["Pull", "Pull&Push"],
+                          "enum": [
+                            "Pull",
+                            "Pull&Push"
+                          ],
                           "description": "How the property is connected: `Pull&Push` for Cloud properties connected as Push+Pull, `Pull` otherwise."
                         },
                         "securityDeposit": {
                           "type": "object",
                           "description": "The refundable deposit the property collects from the guest. Only amount, currency and basis are returned.",
                           "properties": {
-                            "amount": { "type": "number", "description": "Deposit amount in the currency given.", "example": 150 },
-                            "currency": { "type": "string", "description": "ISO 4217 code, e.g. USD.", "example": "USD" },
-                            "basis": { "type": "string", "description": "How the amount is charged, e.g. per_stay or per_night. Absent when not known.", "example": "per_stay" }
+                            "amount": {
+                              "type": "number",
+                              "description": "Deposit amount in the currency given.",
+                              "example": 150
+                            },
+                            "currency": {
+                              "type": "string",
+                              "description": "ISO 4217 code, e.g. USD.",
+                              "example": "USD"
+                            },
+                            "basis": {
+                              "type": "string",
+                              "description": "How the amount is charged, e.g. per_stay or per_night. Absent when not known.",
+                              "example": "per_stay"
+                            }
                           }
                         },
                         "state": {
@@ -5886,7 +6110,9 @@
     },
     "/data/reviews": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "summary": "Get the reviews of a hotel",
         "description": "## Overview\n\nRetrieve guest reviews and ratings for a specific hotel. Display authentic feedback from previous guests to help users make informed booking decisions.\n\n## When to Use\n\n- **Review display** - Show guest reviews on hotel detail pages\n- **Rating aggregation** - Display average ratings and review counts\n- **Trust building** - Show authentic guest feedback\n- **Decision support** - Help users evaluate hotels before booking\n\n## What You Get\n\n- **Guest reviews** - Individual review text and ratings\n- **Review dates** - When each review was written\n- **Ratings** - Numerical and textual ratings\n- **Guest feedback** - Detailed comments from previous guests\n\n## Quick Start\n\nProvide the `hotelId` as a query parameter. Returns all reviews for that hotel with ratings and comments.",
         "security": [
@@ -5965,7 +6191,14 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["reviewId", "averageScore", "country", "type", "name", "date"],
+                        "required": [
+                          "reviewId",
+                          "averageScore",
+                          "country",
+                          "type",
+                          "name",
+                          "date"
+                        ],
                         "properties": {
                           "reviewId": {
                             "type": "integer",
@@ -6143,7 +6376,9 @@
     },
     "/data/hotel/{hotelId}/registration": {
       "get": {
-        "tags": ["Hotels"],
+        "tags": [
+          "Hotels"
+        ],
         "operationId": "getHotelRegistration",
         "summary": "Get the registration details of a hotel",
         "description": "## Overview\n\nRetrieve the business registration details of a hotel: the legal entity (trader) operating the property, its registration number, the trade register it is listed in, and its published contact details.\n\n## When to Use\n\n- **Legal disclosure** - Show guests who they are contracting with, as required by consumer-protection rules such as the EU Digital Services Act\n- **Compliance checks** - Verify the legal entity and registration number behind a property\n- **Supplier vetting** - Confirm a hotel is operated by a registered business before listing it\n\n## What You Get\n\n- **Registration number** - The business registration or tax number published by the hotel\n- **Trade register** - The register the business is listed in\n- **Trader** - Legal name, verification flag, email, telephone, and address of the operating entity\n\n## Quick Start\n\nProvide the `hotelId` as a path parameter. Returns the registration details for that hotel, or 404 when none are known.",
@@ -6174,7 +6409,10 @@
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["hotelId", "status"],
+                      "required": [
+                        "hotelId",
+                        "status"
+                      ],
                       "properties": {
                         "hotelId": {
                           "type": "string",
@@ -6444,7 +6682,9 @@
     },
     "/data/cities": {
       "get": {
-        "tags": ["Cities"],
+        "tags": [
+          "Cities"
+        ],
         "summary": "List the cities of a country",
         "description": "## Overview\n\nGet a list of all cities within a specific country. Perfect for building location dropdowns and city selection interfaces.\n\n## When to Use\n\n- **City dropdowns** - Populate city selection lists\n- **Location filters** - Filter hotels by city\n- **Geographic data** - Get city lists for specific countries\n- **Form autocomplete** - Build city autocomplete features\n\n## What You Get\n\n- **City list** - All cities in the specified country\n- **City names** - Formatted city names ready for display\n\n## Quick Start\n\nProvide the `countryCode` in ISO-2 format (e.g., \"US\", \"GB\"). Returns all cities in that country. Use the [Get Country List endpoint](/v3.0.0/reference/get_data-countries) to get country codes.",
         "security": [
@@ -6573,7 +6813,9 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["city"],
+                        "required": [
+                          "city"
+                        ],
                         "properties": {
                           "city": {
                             "type": "string"
@@ -6985,7 +7227,9 @@
     },
     "/data/countries": {
       "get": {
-        "tags": ["Countries"],
+        "tags": [
+          "Countries"
+        ],
         "summary": "List all countries",
         "description": "## Overview\n\nGet a complete list of all countries available in the system with their ISO-2 country codes. Essential for building country selection interfaces.\n\n## When to Use\n\n- **Country dropdowns** - Populate country selection lists\n- **Location filters** - Filter hotels or searches by country\n- **Form inputs** - Build country selection forms\n- **Reference data** - Get country codes for use in other endpoints\n\n## What You Get\n\n- **Country list** - All available countries\n- **ISO-2 codes** - Standard country codes (e.g., \"US\", \"GB\", \"FR\")\n- **Country names** - Full country names\n\n## Quick Start\n\nNo parameters required. Returns all countries with their ISO-2 codes.",
         "security": [
@@ -7104,7 +7348,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["code", "name"],
+                        "required": [
+                          "code",
+                          "name"
+                        ],
                         "properties": {
                           "code": {
                             "type": "string"
@@ -8231,7 +8478,9 @@
     },
     "/data/currencies": {
       "get": {
-        "tags": ["Currencies"],
+        "tags": [
+          "Currencies"
+        ],
         "summary": "List all currencies",
         "description": "## Overview\n\nGet all available currencies with their codes, names, and the countries where each currency is used. Perfect for building currency selection interfaces.\n\n## When to Use\n\n- **Currency dropdowns** - Populate currency selection lists\n- **Price display** - Show prices in different currencies\n- **Currency conversion** - Get currency information for conversion\n- **Reference data** - Get currency codes for use in booking endpoints\n\n## What You Get\n\n- **Currency list** - All available currencies\n- **Currency codes** - ISO currency codes (e.g., \"USD\", \"EUR\", \"GBP\")\n- **Currency names** - Full currency names\n- **Country mapping** - Countries where each currency is used\n\n## Quick Start\n\nNo parameters required. Returns all currencies with codes, names, and country mappings.",
         "security": [
@@ -8350,7 +8599,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["code", "currency"],
+                        "required": [
+                          "code",
+                          "currency"
+                        ],
                         "properties": {
                           "code": {
                             "type": "string"
@@ -8376,7 +8628,9 @@
                         {
                           "code": "AED",
                           "currency": "UAE Dirham",
-                          "countries": ["United Arab Emirates (The)"]
+                          "countries": [
+                            "United Arab Emirates (The)"
+                          ]
                         },
                         {
                           "code": "AUD",
@@ -8395,17 +8649,23 @@
                         {
                           "code": "BRL",
                           "currency": "Brazilian Real",
-                          "countries": ["Brazil"]
+                          "countries": [
+                            "Brazil"
+                          ]
                         },
                         {
                           "code": "CAD",
                           "currency": "Canadian Dollar",
-                          "countries": ["Canada"]
+                          "countries": [
+                            "Canada"
+                          ]
                         },
                         {
                           "code": "CNY",
                           "currency": "Yuan Renminbi",
-                          "countries": ["China"]
+                          "countries": [
+                            "China"
+                          ]
                         },
                         {
                           "code": "EUR",
@@ -8451,7 +8711,9 @@
                         {
                           "code": "FJD",
                           "currency": "Fiji Dollar",
-                          "countries": ["Fiji"]
+                          "countries": [
+                            "Fiji"
+                          ]
                         },
                         {
                           "code": "GBP",
@@ -8466,87 +8728,122 @@
                         {
                           "code": "HKD",
                           "currency": "Hong Kong Dollar",
-                          "countries": ["Hong Kong"]
+                          "countries": [
+                            "Hong Kong"
+                          ]
                         },
                         {
                           "code": "IDR",
                           "currency": "Rupiah",
-                          "countries": ["Indonesia"]
+                          "countries": [
+                            "Indonesia"
+                          ]
                         },
                         {
                           "code": "INR",
                           "currency": "Indian Rupee",
-                          "countries": ["Bhutan", "India"]
+                          "countries": [
+                            "Bhutan",
+                            "India"
+                          ]
                         },
                         {
                           "code": "JPY",
                           "currency": "Yen",
-                          "countries": ["Japan"]
+                          "countries": [
+                            "Japan"
+                          ]
                         },
                         {
                           "code": "LKR",
                           "currency": "Sri Lanka Rupee",
-                          "countries": ["Sri Lanka"]
+                          "countries": [
+                            "Sri Lanka"
+                          ]
                         },
                         {
                           "code": "MAD",
                           "currency": "Moroccan Dirham",
-                          "countries": ["Morocco"]
+                          "countries": [
+                            "Morocco"
+                          ]
                         },
                         {
                           "code": "MNT",
                           "currency": "Tugrik",
-                          "countries": ["Mongolia"]
+                          "countries": [
+                            "Mongolia"
+                          ]
                         },
                         {
                           "code": "MUR",
                           "currency": "Mauritius Rupee",
-                          "countries": ["Mauritius"]
+                          "countries": [
+                            "Mauritius"
+                          ]
                         },
                         {
                           "code": "MXN",
                           "currency": "Mexican Peso",
-                          "countries": ["Mexico"]
+                          "countries": [
+                            "Mexico"
+                          ]
                         },
                         {
                           "code": "MYR",
                           "currency": "Malaysian Ringgit",
-                          "countries": ["Malaysia"]
+                          "countries": [
+                            "Malaysia"
+                          ]
                         },
                         {
                           "code": "OMR",
                           "currency": "Rial Omani",
-                          "countries": ["Oman"]
+                          "countries": [
+                            "Oman"
+                          ]
                         },
                         {
                           "code": "PHP",
                           "currency": "Philippine Peso",
-                          "countries": ["Philippines (The)"]
+                          "countries": [
+                            "Philippines (The)"
+                          ]
                         },
                         {
                           "code": "RUB",
                           "currency": "Russian Ruble",
-                          "countries": ["Russian Federation (The)"]
+                          "countries": [
+                            "Russian Federation (The)"
+                          ]
                         },
                         {
                           "code": "SAR",
                           "currency": "Saudi Riyal",
-                          "countries": ["Saudi Arabia"]
+                          "countries": [
+                            "Saudi Arabia"
+                          ]
                         },
                         {
                           "code": "SGD",
                           "currency": "Singapore Dollar",
-                          "countries": ["Singapore"]
+                          "countries": [
+                            "Singapore"
+                          ]
                         },
                         {
                           "code": "THB",
                           "currency": "Baht",
-                          "countries": ["Thailand"]
+                          "countries": [
+                            "Thailand"
+                          ]
                         },
                         {
                           "code": "TWD",
                           "currency": "New Taiwan Dollar",
-                          "countries": ["Taiwan (Province of China)"]
+                          "countries": [
+                            "Taiwan (Province of China)"
+                          ]
                         },
                         {
                           "code": "USD",
@@ -8576,7 +8873,11 @@
                         {
                           "code": "ZAR",
                           "currency": "Rand",
-                          "countries": ["Lesotho", "Namibia", "South Africa"]
+                          "countries": [
+                            "Lesotho",
+                            "Namibia",
+                            "South Africa"
+                          ]
                         }
                       ]
                     }
@@ -8716,7 +9017,9 @@
     },
     "/data/iataCodes": {
       "get": {
-        "tags": ["IATA codes"],
+        "tags": [
+          "IATA codes"
+        ],
         "summary": "List the IATA codes",
         "description": "## Overview\n\nGet IATA (International Air Transport Association) airport codes with airport names, coordinates, and country information. Useful for airport-based hotel searches.\n\n## When to Use\n\n- **Airport searches** - Find hotels near airports\n- **Location selection** - Let users search by airport codes\n- **Geographic data** - Get airport locations and coordinates\n- **Reference data** - Get IATA codes for use in hotel searches\n\n## What You Get\n\n- **Airport list** - All available airports with IATA codes\n- **Airport names** - Full airport names\n- **Coordinates** - Latitude and longitude for each airport\n- **Country codes** - ISO-2 country codes for each airport\n\n## Quick Start\n\nNo parameters required. Returns all airports with IATA codes, names, coordinates, and country information.",
         "security": [
@@ -8835,7 +9138,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["code", "name"],
+                        "required": [
+                          "code",
+                          "name"
+                        ],
                         "properties": {
                           "code": {
                             "type": "string"
@@ -9020,7 +9326,9 @@
     },
     "/data/facilities": {
       "get": {
-        "tags": ["Hotel Facilities"],
+        "tags": [
+          "Hotel Facilities"
+        ],
         "summary": "List Hotel Facilities with Multi-Language Support",
         "description": "## Overview\n\nGet all available hotel facilities (amenities) with multi-language translations. Use these facility IDs to filter hotel searches by amenities.\n\n## When to Use\n\n- **Facility filters** - Build amenity filtering in hotel searches\n- **Facility display** - Show available facilities with translated names\n- **Multi-language support** - Display facilities in user's language\n- **Reference data** - Get facility IDs for use in search filters\n\n## What You Get\n\n- **Facility list** - All available hotel facilities\n- **Facility IDs** - Numeric IDs for use in search filters\n- **Multi-language names** - Facility names in multiple languages\n- **Translations** - Localized facility names\n\n## Quick Start\n\nNo parameters required. Returns all facilities with IDs and multi-language translations. Use facility IDs in hotel search filters.",
         "security": [
@@ -9054,7 +9362,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["facility", "facility_id"],
+                        "required": [
+                          "facility",
+                          "facility_id"
+                        ],
                         "properties": {
                           "facility": {
                             "type": "string",
@@ -9356,7 +9667,9 @@
     },
     "/data/hotelTypes": {
       "get": {
-        "tags": ["Hotel Types"],
+        "tags": [
+          "Hotel Types"
+        ],
         "summary": "List of hotel types",
         "description": "## Overview\n\nGet all available hotel type classifications (e.g., resort, boutique, business hotel). Use type IDs to filter hotel searches.\n\n## When to Use\n\n- **Type filters** - Filter hotels by type in search\n- **Type display** - Show hotel type classifications\n- **Reference data** - Get hotel type IDs for filtering\n\n## What You Get\n\n- **Hotel type list** - All available hotel types\n- **Type IDs** - Numeric IDs for use in search filters\n- **Type names** - Hotel type classifications\n\n## Quick Start\n\nNo parameters required. Returns all hotel types with IDs. Use type IDs in hotel search filters.",
         "security": [
@@ -9390,7 +9703,10 @@
                       "type": "array",
                       "items": {
                         "type": "object",
-                        "required": ["id", "name"],
+                        "required": [
+                          "id",
+                          "name"
+                        ],
                         "properties": {
                           "id": {
                             "type": "number",
@@ -9413,7 +9729,9 @@
     },
     "/data/chains": {
       "get": {
-        "tags": ["Hotel Chains"],
+        "tags": [
+          "Hotel Chains"
+        ],
         "summary": "List of hotel chains",
         "description": "## Overview\n\nGet all available hotel chains (e.g., Marriott, Hilton, IHG). Use chain IDs to filter hotel searches by brand.\n\n## When to Use\n\n- **Chain filters** - Filter hotels by chain/brand\n- **Brand selection** - Let users search for specific hotel chains\n- **Reference data** - Get chain IDs for use in search filters\n\n## What You Get\n\n- **Chain list** - All available hotel chains\n- **Chain IDs** - Numeric IDs for use in search filters\n- **Chain names** - Hotel chain/brand names\n\n## Quick Start\n\nNo parameters required. Returns all hotel chains with IDs. Use chain IDs in hotel search filters.",
         "security": [
@@ -9448,7 +9766,10 @@
                       "description": "An array containing objects for each hotel chain.",
                       "items": {
                         "type": "object",
-                        "required": ["id", "name"],
+                        "required": [
+                          "id",
+                          "name"
+                        ],
                         "properties": {
                           "id": {
                             "type": "number",
@@ -9471,7 +9792,9 @@
     },
     "/data/languages": {
       "get": {
-        "tags": ["Languages"],
+        "tags": [
+          "Languages"
+        ],
         "summary": "List of supported languages",
         "description": "## Overview\n\nGet all supported languages for hotel translations and content localization. Use language codes to request hotel data in specific languages.\n\n## When to Use\n\n- **Language selection** - Display available languages to users\n- **Content localization** - Get language codes for API requests\n- **Multi-language support** - Build language switchers in your application\n- **Reference data** - Validate language codes before making requests\n\n## What You Get\n\n- **Language list** - All supported and enabled languages\n- **Language codes** - ISO 639-1 codes (e.g., 'en', 'es', 'fr')\n- **Language names** - Human-readable language names in English\n\n## Quick Start\n\nNo parameters required. Returns all supported languages with codes and names. Use language codes in hotel search and detail requests.",
         "security": [
@@ -9506,7 +9829,10 @@
                       "description": "An array containing objects for each supported language.",
                       "items": {
                         "type": "object",
-                        "required": ["code", "name"],
+                        "required": [
+                          "code",
+                          "name"
+                        ],
                         "properties": {
                           "code": {
                             "type": "string",
@@ -9659,11 +9985,13 @@
         }
       }
     },
-    "/data/weather": {
+    "/data/hotel/search": {
       "get": {
-        "tags": ["Weather"],
-        "summary": "Get weather data",
-        "description": "## Overview\n\nGet weather forecasts for specific locations. Response structure adapts based on the forecast time range (short-term vs. long-term).\n\n## When to Use\n\n- **Travel planning** - Show weather forecasts for destinations\n- **Hotel pages** - Display weather information on hotel detail pages\n- **Trip preparation** - Help users plan for weather conditions\n- **Destination information** - Provide weather context for locations\n\n## What You Get\n\n- **Weather forecasts** - Temperature, humidity, wind, precipitation\n- **Time-based structure** - Different formats for short-term (<1 week) vs. long-term forecasts\n- **Detailed data** - Atmospheric pressure, conditions, and summaries\n- **Date-specific** - Weather data for specific dates\n\n## Key Features\n\n- **Adaptive structure** - Response format changes based on time range\n- **Short-term** - Detailed hourly/daily data for forecasts within one week\n- **Long-term** - Daily summaries for forecasts beyond one week\n- **Accuracy note** - Forecasts beyond one week have reduced accuracy\n\n## Quick Start\n\nProvide location coordinates (`latitude`, `longitude`) and date range. Returns weather forecasts with appropriate detail level.",
+        "tags": [
+          "Hotels"
+        ],
+        "summary": "Semantic hotel search by text query",
+        "description": "Search for a hotel using a semantic text query. Returns the best-matching hotel with basic details and a relevance score.",
         "security": [
           {
             "apikeyAuth": []
@@ -9671,583 +9999,11 @@
         ],
         "parameters": [
           {
-            "name": "latitude",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Latitude of the location.",
-            "example": "36.12510"
-          },
-          {
-            "name": "longitude",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string"
-            },
-            "description": "Longitude of the location.",
-            "example": "-115.16988"
-          },
-          {
-            "name": "startDate",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            },
-            "description": "Start date in YYYY-MM-DD format. The service can provide future forecasts, but reliability significantly decreases beyond one week.",
-            "examples": {
-              "Example1": {
-                "value": "2026-07-11"
-              },
-              "Example2": {
-                "value": "2026-07-15"
-              }
-            }
-          },
-          {
-            "name": "endDate",
-            "in": "query",
-            "required": true,
-            "schema": {
-              "type": "string",
-              "format": "date"
-            },
-            "description": "End date in YYYY-MM-DD format. The service can provide future forecasts, but reliability significantly decreases beyond one week.",
-            "examples": {
-              "Example1": {
-                "value": "2026-07-15"
-              },
-              "Example2": {
-                "value": "2026-07-16"
-              }
-            }
-          },
-          {
-            "name": "units",
-            "in": "query",
-            "required": false,
-            "schema": {
-              "type": "string",
-              "enum": ["metric", "imperial"],
-              "default": "metric"
-            },
-            "description": "Units of measurement. Default is metric."
-          }
-        ],
-        "responses": {
-          "200": {
-            "description": "OK",
-            "headers": {
-              "Content-Type": {
-                "schema": {
-                  "type": "string",
-                  "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/WeatherData"
-                },
-                "examples": {
-                  "OneWeekLaterForecast": {
-                    "value": {
-                      "data": [
-                        {
-                          "weatherData": [
-                            {
-                              "detailedWeatherData": {
-                                "lat": 36.1251,
-                                "lon": -115.1699,
-                                "timezone": "America/Los_Angeles",
-                                "timezone_offset": -25200,
-                                "daily": [
-                                  {
-                                    "date": "2026-07-10",
-                                    "sunrise": "13:13:32",
-                                    "sunset": "02:09:47",
-                                    "moonrise": "00:22:00",
-                                    "moonset": "12:09:00",
-                                    "moon_phase": 0.43,
-                                    "summary": "Date: 2026-07-10, Summary: The day will start with clear sky through the late morning hours, transitioning to partly cloudy",
-                                    "temp": {
-                                      "day": 29.42,
-                                      "min": 18.56,
-                                      "max": 32.77,
-                                      "night": 24.65,
-                                      "eve": 32.53,
-                                      "morn": 18.56
-                                    },
-                                    "feels_like": {
-                                      "day": 27.69,
-                                      "night": 23.51,
-                                      "eve": 30.26,
-                                      "morn": 17.02
-                                    },
-                                    "pressure": 1017,
-                                    "humidity": 10,
-                                    "dew_point": -4.5,
-                                    "wind_speed": 2.16,
-                                    "wind_deg": 247,
-                                    "wind_gust": 3.66,
-                                    "weather": [
-                                      {
-                                        "id": 804,
-                                        "main": "Clouds",
-                                        "description": "overcast clouds",
-                                        "icon": "04d"
-                                      }
-                                    ],
-                                    "clouds": 88,
-                                    "pop": 0,
-                                    "uvi": 9.24
-                                  },
-                                  {
-                                    "date": "2026-07-11",
-                                    "sunrise": "13:12:09",
-                                    "sunset": "02:10:38",
-                                    "moonrise": "01:18:00",
-                                    "moonset": "12:31:00",
-                                    "moon_phase": 0.46,
-                                    "summary": "Date: 2026-07-11, Summary: Expect a day of partly cloudy with clear spells",
-                                    "temp": {
-                                      "day": 31.13,
-                                      "min": 19.4,
-                                      "max": 34.37,
-                                      "night": 25.79,
-                                      "eve": 32.16,
-                                      "morn": 19.4
-                                    },
-                                    "feels_like": {
-                                      "day": 29.07,
-                                      "night": 24.76,
-                                      "eve": 29.95,
-                                      "morn": 17.89
-                                    },
-                                    "pressure": 1012,
-                                    "humidity": 9,
-                                    "dew_point": -5.12,
-                                    "wind_speed": 8.67,
-                                    "wind_deg": 234,
-                                    "wind_gust": 11.81,
-                                    "weather": [
-                                      {
-                                        "id": 803,
-                                        "main": "Clouds",
-                                        "description": "broken clouds",
-                                        "icon": "04d"
-                                      }
-                                    ],
-                                    "clouds": 82,
-                                    "pop": 0,
-                                    "uvi": 9.17
-                                  }
-                                ]
-                              }
-                            }
-                          ]
-                        }
-                      ],
-                      "guestLevel": 0,
-                      "sandbox": true,
-                      "weather": [
-                        {
-                          "dailyWeather": {
-                            "date": "2026-07-01",
-                            "units": "metric",
-                            "cloud_cover": {
-                              "afternoon": 99.92
-                            },
-                            "humidity": {
-                              "afternoon": 94.34
-                            },
-                            "precipitation": {
-                              "total": 181.55
-                            },
-                            "temperature": {
-                              "min": 5.34,
-                              "max": 7.16,
-                              "afternoon": 5.57,
-                              "night": 7.16,
-                              "evening": 6.36,
-                              "morning": 5.34
-                            },
-                            "pressure": {
-                              "afternoon": 1014.21
-                            },
-                            "wind": {
-                              "max": {
-                                "speed": 10.05,
-                                "direction": 71.31
-                              }
-                            }
-                          }
-                        },
-                        {
-                          "dailyWeather": {
-                            "date": "2026-07-02",
-                            "units": "metric",
-                            "cloud_cover": {
-                              "afternoon": 99.52
-                            },
-                            "humidity": {
-                              "afternoon": 99.45
-                            },
-                            "precipitation": {
-                              "total": 135.08
-                            },
-                            "temperature": {
-                              "min": 6.78,
-                              "max": 11.56,
-                              "afternoon": 8.73,
-                              "night": 6.78,
-                              "evening": 11.56,
-                              "morning": 6.9
-                            },
-                            "pressure": {
-                              "afternoon": 1006.58
-                            },
-                            "wind": {
-                              "max": {
-                                "speed": 4.76,
-                                "direction": 54.28
-                              }
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  },
-                  "BeyondOneWeeksForecast": {
-                    "value": {
-                      "data": [
-                        {
-                          "weatherData": [
-                            {
-                              "dailyWeather": {
-                                "date": "2026-07-01",
-                                "units": "metric",
-                                "cloud_cover": {
-                                  "afternoon": 4.1
-                                },
-                                "humidity": {
-                                  "afternoon": 26.24
-                                },
-                                "precipitation": {
-                                  "total": 0
-                                },
-                                "temperature": {
-                                  "min": 20.91,
-                                  "max": 35.42,
-                                  "afternoon": 20.91,
-                                  "night": 35.42,
-                                  "evening": 33.27,
-                                  "morning": 25.92
-                                },
-                                "pressure": {
-                                  "afternoon": 1011.62
-                                },
-                                "wind": {
-                                  "max": {
-                                    "speed": 3.86,
-                                    "direction": 191.47
-                                  }
-                                }
-                              }
-                            },
-                            {
-                              "dailyWeather": {
-                                "date": "2026-07-02",
-                                "units": "metric",
-                                "cloud_cover": {
-                                  "afternoon": 12.16
-                                },
-                                "humidity": {
-                                  "afternoon": 23.69
-                                },
-                                "precipitation": {
-                                  "total": 0
-                                },
-                                "temperature": {
-                                  "min": 22.47,
-                                  "max": 36.76,
-                                  "afternoon": 22.47,
-                                  "night": 36.76,
-                                  "evening": 33.37,
-                                  "morning": 26.14
-                                },
-                                "pressure": {
-                                  "afternoon": 1012.57
-                                },
-                                "wind": {
-                                  "max": {
-                                    "speed": 3.9,
-                                    "direction": 156.21
-                                  }
-                                }
-                              }
-                            }
-                          ]
-                        }
-                      ],
-                      "guestLevel": 0,
-                      "sandbox": true,
-                      "weather": [
-                        {
-                          "dailyWeather": {
-                            "date": "2026-07-01",
-                            "units": "metric",
-                            "cloud_cover": {
-                              "afternoon": 99.92
-                            },
-                            "humidity": {
-                              "afternoon": 94.34
-                            },
-                            "precipitation": {
-                              "total": 181.55
-                            },
-                            "temperature": {
-                              "min": 5.34,
-                              "max": 7.16,
-                              "afternoon": 5.57,
-                              "night": 7.16,
-                              "evening": 6.36,
-                              "morning": 5.34
-                            },
-                            "pressure": {
-                              "afternoon": 1014.21
-                            },
-                            "wind": {
-                              "max": {
-                                "speed": 10.05,
-                                "direction": 71.31
-                              }
-                            }
-                          }
-                        },
-                        {
-                          "dailyWeather": {
-                            "date": "2026-07-02",
-                            "units": "metric",
-                            "cloud_cover": {
-                              "afternoon": 99.52
-                            },
-                            "humidity": {
-                              "afternoon": 99.45
-                            },
-                            "precipitation": {
-                              "total": 135.08
-                            },
-                            "temperature": {
-                              "min": 6.78,
-                              "max": 11.56,
-                              "afternoon": 8.73,
-                              "night": 6.78,
-                              "evening": 11.56,
-                              "morning": 6.9
-                            },
-                            "pressure": {
-                              "afternoon": 1006.58
-                            },
-                            "wind": {
-                              "max": {
-                                "speed": 4.76,
-                                "direction": 54.28
-                              }
-                            }
-                          }
-                        }
-                      ]
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "204": {
-            "description": "No Content",
-            "headers": {
-              "Content-Type": {
-                "schema": {
-                  "type": "string",
-                  "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "object",
-                      "properties": {
-                        "code": {
-                          "type": "integer",
-                          "description": "Numeric error code representing the type of issue"
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Message providing context about the error"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "400": {
-            "description": "Bad Request",
-            "headers": {
-              "Content-Type": {
-                "schema": {
-                  "type": "string",
-                  "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Invalid latitude",
-                      "properties": {
-                        "code": {
-                          "type": "integer",
-                          "description": "Numeric error code representing the type of issue"
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Message providing context about the error"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "401": {
-            "description": "Unauthorized",
-            "headers": {
-              "Content-Type": {
-                "schema": {
-                  "type": "string",
-                  "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Failed to fetch weather data",
-                      "properties": {
-                        "code": {
-                          "type": "integer",
-                          "description": "Numeric error code representing the type of issue"
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Message providing context about the error"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          },
-          "500": {
-            "description": "Internal Server Error",
-            "headers": {
-              "Content-Type": {
-                "schema": {
-                  "type": "string",
-                  "example": "application/json; charset=utf-8"
-                }
-              },
-              "Content-Encoding": {
-                "schema": {
-                  "type": "string",
-                  "example": "gzip"
-                }
-              }
-            },
-            "content": {
-              "application/json": {
-                "schema": {
-                  "type": "object",
-                  "properties": {
-                    "error": {
-                      "type": "string",
-                      "example": "Failed to fetch weather data",
-                      "properties": {
-                        "code": {
-                          "type": "integer",
-                          "description": "Numeric error code representing the type of issue"
-                        },
-                        "message": {
-                          "type": "string",
-                          "description": "Message providing context about the error"
-                        }
-                      }
-                    }
-                  }
-                }
-              }
-            }
-          }
-        }
-      }
-    },
-    "/data/hotel/search": {
-      "get": {
-        "tags": ["Hotels"],
-        "summary": "Semantic hotel search by text query",
-        "description": "Search for a hotel using a semantic text query. Returns the best-matching hotel with basic details and a relevance score.",
-        "security": [{ "apikeyAuth": [] }],
-        "parameters": [
-          {
             "name": "query",
             "in": "query",
-            "schema": { "type": "string" },
+            "schema": {
+              "type": "string"
+            },
             "description": "The semantic search query (e.g. 'Burj Jumeirah Dubai').",
             "required": true,
             "example": "Burj Jumeirah Dubai"
@@ -10263,7 +10019,14 @@
                   "properties": {
                     "data": {
                       "type": "object",
-                      "required": ["id", "name", "city", "country", "latitude", "longitude"],
+                      "required": [
+                        "id",
+                        "name",
+                        "city",
+                        "country",
+                        "latitude",
+                        "longitude"
+                      ],
                       "properties": {
                         "id": {
                           "type": "string",
@@ -10277,7 +10040,10 @@
                           "type": "string",
                           "description": "Hotel description"
                         },
-                        "city": { "type": "string", "description": "City" },
+                        "city": {
+                          "type": "string",
+                          "description": "City"
+                        },
                         "country": {
                           "type": "string",
                           "description": "Country code"
@@ -10294,7 +10060,10 @@
                           "type": "string",
                           "description": "Address"
                         },
-                        "zip": { "type": "string", "description": "ZIP code" }
+                        "zip": {
+                          "type": "string",
+                          "description": "ZIP code"
+                        }
                       }
                     },
                     "score": {
@@ -10330,9 +10099,15 @@
                     "error": {
                       "type": "object",
                       "properties": {
-                        "code": { "type": "integer" },
-                        "description": { "type": "string" },
-                        "message": { "type": "string" }
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -10357,9 +10132,15 @@
                     "error": {
                       "type": "object",
                       "properties": {
-                        "code": { "type": "integer" },
-                        "description": { "type": "string" },
-                        "message": { "type": "string" }
+                        "code": {
+                          "type": "integer"
+                        },
+                        "description": {
+                          "type": "string"
+                        },
+                        "message": {
+                          "type": "string"
+                        }
                       }
                     }
                   }
@@ -10386,339 +10167,7 @@
         "in": "header"
       }
     },
-    "schemas": {
-      "WeatherData": {
-        "type": "object",
-        "properties": {
-          "detailedWeatherData": {
-            "$ref": "#/components/schemas/DetailedWeatherData"
-          },
-          "dailyWeather": {
-            "$ref": "#/components/schemas/DailyWeather"
-          }
-        }
-      },
-
-      "DetailedWeatherData": {
-        "type": "object",
-        "description": "Represents a summarized daily weather forecast.",
-
-        "properties": {
-          "lat": {
-            "type": "number",
-            "description": "The latitude coordinate of the location."
-          },
-          "lon": {
-            "type": "number",
-            "description": "The longitude coordinate of the location."
-          },
-          "timezone": {
-            "type": "string",
-            "description": "The timezone identifier (e.g., America/New_York) for the location."
-          },
-          "timezone_offset": {
-            "type": "integer",
-            "description": "The offset in seconds from UTC for the specified timezone."
-          },
-          "daily": {
-            "type": "array",
-            "description": "An array of daily weather details, each adhering to the DetailedDailyWeather schema.",
-            "items": {
-              "$ref": "#/components/schemas/DetailedDailyWeather"
-            }
-          }
-        }
-      },
-
-      "DailyWeather": {
-        "type": "object",
-        "description": "Represents a summarized daily weather forecast.",
-        "properties": {
-          "date": {
-            "type": "string",
-            "description": "The date for which the weather information applies."
-          },
-          "units": {
-            "type": "string",
-            "description": "The unit system used for measurements (e.g., metric or imperial)."
-          },
-          "cloud_cover": {
-            "$ref": "#/components/schemas/CloudCover",
-            "description": "Cloud coverage details for the afternoon, defined by the CloudCover schema."
-          },
-          "humidity": {
-            "$ref": "#/components/schemas/Humidity",
-            "description": "Humidity measurement for the afternoon as specified in the Humidity schema."
-          },
-          "precipitation": {
-            "$ref": "#/components/schemas/Precipitation",
-            "description": "Total precipitation data (e.g., rainfall amount) as defined in the Precipitation schema."
-          },
-          "temperature": {
-            "$ref": "#/components/schemas/Temperature",
-            "description": "Temperature metrics including min, max, and specific times of the day, as outlined in the Temperature schema."
-          },
-          "pressure": {
-            "$ref": "#/components/schemas/Pressure",
-            "description": "Atmospheric pressure reading during the afternoon as defined in the Pressure schema."
-          },
-          "wind": {
-            "$ref": "#/components/schemas/Wind",
-            "description": "Wind-related information, particularly maximum wind details, structured according to the Wind schema."
-          }
-        }
-      },
-      "CloudCover": {
-        "type": "object",
-        "properties": {
-          "afternoon": {
-            "type": "number",
-            "description": "The cloud cover measurement (often as a percentage or fraction) during the afternoon."
-          }
-        }
-      },
-      "Humidity": {
-        "type": "object",
-        "properties": {
-          "afternoon": {
-            "type": "number",
-            "description": "The humidity level for the afternoon, typically expressed as a percentage."
-          }
-        }
-      },
-      "Precipitation": {
-        "type": "object",
-        "properties": {
-          "total": {
-            "type": "number",
-            "description": "The total amount of precipitation (for example, in millimeters or inches) recorded over the period."
-          }
-        }
-      },
-      "Temperature": {
-        "type": "object",
-        "description": "Represents precipitation data.",
-        "properties": {
-          "min": {
-            "type": "number",
-            "description": "The minimum temperature recorded for the day."
-          },
-          "max": {
-            "type": "number",
-            "description": "The maximum temperature recorded for the day."
-          },
-          "afternoon": {
-            "type": "number",
-            "description": "The temperature measured in the afternoon."
-          },
-          "night": {
-            "type": "number",
-            "description": "The temperature recorded during the night."
-          },
-          "evening": {
-            "type": "number",
-            "description": "The temperature observed in the evening."
-          },
-          "morning": {
-            "type": "number",
-            "description": "The temperature measured in the morning."
-          }
-        }
-      },
-      "Pressure": {
-        "type": "object",
-        "description": "Provides atmospheric pressure details.",
-        "properties": {
-          "afternoon": {
-            "type": "number",
-            "description": "The pressure reading taken during the afternoon (commonly measured in hPa)."
-          }
-        }
-      },
-      "Wind": {
-        "type": "object",
-        "description": "Encapsulates wind-related data.",
-        "properties": {
-          "max": {
-            "$ref": "#/components/schemas/WindMax",
-            "description": "Details the maximum wind speed and direction, as further defined in the WindMax schema."
-          }
-        }
-      },
-      "WindMax": {
-        "type": "object",
-        "description": "Details the peak wind measurements.",
-        "properties": {
-          "speed": {
-            "type": "number",
-            "description": "The maximum wind speed observed (typically in meters per second or miles per hour)."
-          },
-          "direction": {
-            "type": "number",
-            "description": "The wind direction represented in degrees (from 0° to 360°)."
-          }
-        }
-      },
-      "DetailedDailyWeather": {
-        "type": "object",
-        "description": "Provides an in-depth daily forecast with additional parameters such as sunrise/sunset times, temperature, wind, and precipitation probability.",
-        "properties": {
-          "date": {
-            "type": "string",
-            "description": "The specific date for the forecast."
-          },
-          "sunrise": {
-            "type": "string",
-            "description": "Time of sunrise on the given date."
-          },
-          "sunset": {
-            "type": "string",
-            "description": "Time of sunset on the given date."
-          },
-          "moonrise": {
-            "type": "string",
-            "description": "Time when the moon rises on the specified day."
-          },
-          "moonset": {
-            "type": "string",
-            "description": "Time when the moon sets on the specified day."
-          },
-          "moon_phase": {
-            "type": "number",
-            "description": "A numeric value representing the current phase of the moon (0.0–1.0)."
-          },
-          "summary": {
-            "type": "string",
-            "description": "Brief textual summary of the day's weather conditions."
-          },
-          "temp": {
-            "$ref": "#/components/schemas/TemperatureDetail",
-            "description": "Detailed temperatures for different times of the day."
-          },
-          "feels_like": {
-            "$ref": "#/components/schemas/FeelsLike",
-            "description": "Perceived temperatures ('feels like') for different times of the day."
-          },
-          "pressure": {
-            "type": "integer",
-            "description": "Atmospheric pressure in hPa."
-          },
-          "humidity": {
-            "type": "integer",
-            "description": "Humidity percentage."
-          },
-          "dew_point": {
-            "type": "number",
-            "description": "The temperature at which dew forms, indicating atmospheric moisture."
-          },
-          "wind_speed": {
-            "type": "number",
-            "description": "Speed of the wind."
-          },
-          "wind_deg": {
-            "type": "integer",
-            "description": "Direction of the wind in degrees (0–360)."
-          },
-          "wind_gust": {
-            "type": "number",
-            "description": "Speed of wind gusts, representing short bursts of higher wind."
-          },
-          "weather": {
-            "type": "array",
-            "description": "Array of weather condition objects.",
-            "items": {
-              "$ref": "#/components/schemas/Weather"
-            }
-          },
-          "clouds": {
-            "type": "integer",
-            "description": "Overall cloudiness, expressed as a percentage."
-          },
-          "pop": {
-            "type": "number",
-            "description": "Probability of precipitation (0.0–1.0)."
-          },
-          "uvi": {
-            "type": "number",
-            "description": "UV index value, representing the intensity of ultraviolet radiation."
-          }
-        }
-      },
-      "TemperatureDetail": {
-        "type": "object",
-        "description": "Provides a breakdown of temperatures throughout the day.",
-        "properties": {
-          "day": {
-            "type": "number",
-            "description": "Temperature during the daytime."
-          },
-          "min": {
-            "type": "number",
-            "description": "Minimum temperature for the day."
-          },
-          "max": {
-            "type": "number",
-            "description": "Maximum temperature for the day."
-          },
-          "night": {
-            "type": "number",
-            "description": "Temperature recorded at night."
-          },
-          "eve": {
-            "type": "number",
-            "description": "Temperature recorded in the evening."
-          },
-          "morn": {
-            "type": "number",
-            "description": "Temperature recorded in the morning."
-          }
-        }
-      },
-      "FeelsLike": {
-        "type": "object",
-        "description": "Represents perceived (feels-like) temperatures, accounting for factors like humidity and wind chill.",
-        "properties": {
-          "day": {
-            "type": "number",
-            "description": "Perceived temperature during the daytime."
-          },
-          "night": {
-            "type": "number",
-            "description": "Perceived temperature during the night."
-          },
-          "eve": {
-            "type": "number",
-            "description": "Perceived temperature in the evening."
-          },
-          "morn": {
-            "type": "number",
-            "description": "Perceived temperature in the morning."
-          }
-        }
-      },
-      "Weather": {
-        "type": "object",
-        "description": "Describes a particular weather condition for the day.",
-        "properties": {
-          "id": {
-            "type": "integer",
-            "description": "Numeric identifier of the weather condition."
-          },
-          "main": {
-            "type": "string",
-            "description": "Short label for the weather category (e.g., Rain, Snow, Clear)."
-          },
-          "description": {
-            "type": "string",
-            "description": "More detailed textual description of the weather condition."
-          },
-          "icon": {
-            "type": "string",
-            "description": "Identifier for an icon representing the weather condition."
-          }
-        }
-      }
-    }
+    "schemas": {}
   },
   "x-readme": {
     "explorer-enabled": true,

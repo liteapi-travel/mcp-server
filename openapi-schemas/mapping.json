@@ -3,7 +3,7 @@
   "info": {
     "title": "API: Mapping",
     "version": "3.0.0",
-    "description": "Hotel and room mapping APIs. Align partner hotel inventories with Nuitee / liteAPI catalogue IDs, and map or group supplier room names against a reference catalog."
+    "description": "Hotel and room mapping APIs. Map partner hotel IDs to LiteAPI catalogue hotels, and map or group supplier room names against your room catalog. Room matching: **Implementation Workflow** (`implementation-workflow`)."
   },
   "servers": [
     {
@@ -51,7 +51,7 @@
           },
           "mappings": {
             "type": "integer",
-            "description": "Number of known ID mappings for this partner \u2014 a proxy for inventory coverage size.",
+            "description": "Number of known ID mappings for this partner — a proxy for inventory coverage size.",
             "example": 1620514
           }
         }
@@ -367,6 +367,11 @@
             "type": "string",
             "description": "Short human explanation when not mapped",
             "example": "Run-of-house rate; no specific room type"
+          },
+          "p": {
+            "type": "string",
+            "description": "Source supplier of the supplier room name: the job `provider`, the room's `supplierRooms[].provider`, merged with the provider already stored on the mapping. A sorted, `|`-joined set when several providers sent the room. Absent for direct suppliers and when no provider was supplied.",
+            "example": "expedia"
           }
         }
       },
@@ -401,13 +406,15 @@
           "source": {
             "type": "string",
             "enum": [
-              "audit",
-              "omitted",
-              "audit_adjustment"
+              "internal_llm",
+              "internal_llm_omitted",
+              "internal_llm_adjustment",
+              "attribute_guard",
+              "promise_score"
             ],
-            "description": "How the final decision was produced"
+            "description": "How the final decision was produced: our internal audit LLM (internal_llm), the audit omitted the room (internal_llm_omitted), an advisory adjustment to an existing mapping (internal_llm_adjustment), the deterministic attribute guard rejecting an audit verdict (attribute_guard), or the guest-promise score rejecting an audit verdict on a hard stop or a score below 0.60 (promise_score)."
           },
-          "modelAction": {
+          "llmAction": {
             "type": "string",
             "enum": [
               "confirm",
@@ -417,10 +424,10 @@
             ],
             "description": "Action taken for this room"
           },
-          "modelOutput": {
+          "crossEncoder": {
             "nullable": true,
             "type": "object",
-            "description": "Candidate scores retained for transparency; null for exact-match and run-of-house rooms",
+            "description": "Legacy cross-encoder proposal. Always null: deep-map audits against the full catalog without cross-encoder pre-scoring. Use score instead.",
             "properties": {
               "selected": {
                 "type": "string",
@@ -448,6 +455,9 @@
                 }
               }
             }
+          },
+          "score": {
+            "$ref": "#/components/schemas/GuestPromiseScore"
           }
         }
       },
@@ -482,19 +492,11 @@
       },
       "RoomAttributes": {
         "type": "object",
-        "description": "Optional structured evidence about a room. Omitted fields mean the source did not state them, never that the room lacks them. Normalised on submit: enum values are lower-cased and trimmed, m2/m\u00b2 are folded into sqm, and string lists are deduplicated. Unknown structure, bedRelation or size.unit values, negative counts and non-positive sizes return 400. At most 4 KiB per room's attributes and 256 KiB across a list.",
+        "description": "Optional structured evidence about a room. Omitted fields mean the source did not state them, never that the room lacks them. Values are free-form: known variants are canonicalised (structure synonyms, both/either, m2/m²/sqft), the rest are lower-cased and trimmed and kept rather than rejected. Only unusable input is refused: negative counts, a non-positive size, a size without a unit, empty bed types and duplicate feature keys. At most 4 KiB per room's attributes and 256 KiB across a list.",
         "properties": {
           "structure": {
             "type": "string",
-            "enum": [
-              "room",
-              "suite",
-              "studio",
-              "apartment",
-              "villa",
-              "penthouse"
-            ],
-            "description": "Room structure as stated by the source. Do not infer it from a marketing room name.",
+            "description": "Room structure as stated by the source. Free-form: known variants are canonicalised (bungalow, chalet and cottage become villa; condo becomes apartment), anything else is kept lower-cased and trimmed. Do not infer it from a marketing room name.",
             "example": "studio"
           },
           "tier": {
@@ -517,12 +519,7 @@
           },
           "bedRelation": {
             "type": "string",
-            "enum": [
-              "and",
-              "or",
-              "none"
-            ],
-            "description": "Whether the listed beds are all present (and), alternatives (or), or a single configuration (none).",
+            "description": "How the listed beds relate. Free-form: both and all become and, either and alternatives become or; anything else is kept lower-cased and trimmed.",
             "example": "none"
           },
           "occupancy": {
@@ -562,10 +559,7 @@
               },
               "unit": {
                 "type": "string",
-                "enum": [
-                  "sqm"
-                ],
-                "description": "Square metres. m2 and m\u00b2 are folded into sqm on submit.",
+                "description": "Square metres by convention. m2, m² and sqft are converted to sqm; any other unit is kept as stated.",
                 "example": "sqm"
               }
             }
@@ -612,21 +606,526 @@
               "desk",
               "private bathroom"
             ]
+          }
+        }
+      },
+      "GuestPromiseScore": {
+        "type": "object",
+        "nullable": true,
+        "description": "Deterministic guest-promise score: if a guest booked the reference room, does the supplier room keep that promise? Computed from the physical attributes both names state (type, beds, capacity, view, balcony, access, tier, smoking, accessibility); meal plans, rate policies and marketing text are ignored. The audit model picks the reference; the score grades the pick and never raises it. Present on every mapped result, including exact matches and kept mappings (graded but never rewritten). Absent when the room was never mapped. The deductions are the system default or, for an account with its own scoring profile, that profile (see the scoring-profile endpoints).",
+        "properties": {
+          "score": {
+            "type": "number",
+            "description": "0 to 1. Starts at 1.0; each unconfirmed promise deducts its weight under the scoring profile in effect (default: view or bedrooms 0.30, balcony/terrace 0.25, lower tier 0.20, bed/tier/smoking 0.10, bed count/capacity/floor 0.05, inferred 0.05). 0 on a hard stop.",
+            "example": 0.9
           },
-          "source": {
-            "type": "object",
-            "description": "Provenance retained for auditability.",
-            "properties": {
-              "roomTitle": {
-                "type": "string"
-              },
-              "officialSiteRoomName": {
-                "type": "string"
-              },
-              "rawSizeUnit": {
-                "type": "string"
+          "band": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "review_sample",
+              "needs_review",
+              "not_mapped"
+            ],
+            "description": "auto at or above the auto threshold (0.90 by default; a profile may raise it), review_sample >= 0.75 (use, sample), needs_review >= 0.60 (human look), not_mapped (hard stop or below 0.60).",
+            "example": "auto"
+          },
+          "hardStop": {
+            "type": "string",
+            "description": "Reason code of the check that failed outright: structure_mismatch, bed_type_mismatch, no_confident_match, occupancy_mismatch, view_amenity_mismatch or restriction_mismatch.",
+            "example": "restriction_mismatch"
+          },
+          "core": {
+            "type": "string",
+            "description": "Supplier name reduced to its physical room words (rate, meal and marketing text removed, common foreign room words translated).",
+            "example": "deluxe double room"
+          },
+          "flags": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Non-scoring observations: single_use (sold for one guest), inconsistent_core (same physical room mapped to different references in this job), model_translated / reference_translated (graded on the model's English reading of a non-Latin supplier name / reference, returned in reading / referenceReading; same rules and weights as English), unreadable_name / unreadable_reference (non-Latin text with no reading: nothing to grade, so the mapping is held at review_sample), incomplete_catalog (some references of the hotel had no reading, so a hotel-wide inference could not be concluded; held at review_sample).",
+            "example": [
+              "single_use"
+            ]
+          },
+          "reading": {
+            "type": "string",
+            "description": "The audit model's plain-English reading of a non-Latin supplier name, when the score was graded on it (flag model_translated).",
+            "example": "junior suite"
+          },
+          "referenceReading": {
+            "type": "string",
+            "description": "The audit model's plain-English reading of a non-Latin reference room name, when the score was graded on it (flag reference_translated).",
+            "example": "deluxe king room"
+          },
+          "profile": {
+            "type": "string",
+            "description": "The scoring policy the number was computed under: default, or your account's profile stamp such as c368927/v3 (see the scoring-profile endpoints).",
+            "example": "default"
+          },
+          "reference": {
+            "type": "string",
+            "description": "The reference room this score grades. Set even when the mapping was then rejected, so a rejection shows what the model picked.",
+            "example": "Deluxe King Room, Sea View"
+          },
+          "decisive": {
+            "type": "boolean",
+            "description": "True when this score decided the room's outcome (a mapping the model chose in this job: the score either rejected it or is final.confidence). Absent for an exact match, a kept mapping or a room the attribute guard rejected: those are graded for the breakdown only.",
+            "example": true
+          },
+          "defaultScore": {
+            "type": "number",
+            "description": "Only under an account profile: the same checks graded with the system default, so your number can always be compared with the neutral one.",
+            "example": 0.7
+          },
+          "defaultBand": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "review_sample",
+              "needs_review",
+              "not_mapped"
+            ],
+            "description": "Only under an account profile: the band of defaultScore.",
+            "example": "needs_review"
+          },
+          "checks": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "description": "One promise verdict.",
+              "properties": {
+                "attribute": {
+                  "type": "string",
+                  "description": "structure, bedrooms, bed, bed_count, capacity, view, outdoor, access, tier, smoking, restriction, accessibility or location",
+                  "example": "view"
+                },
+                "promised": {
+                  "type": "string",
+                  "description": "What the reference promises; empty when only the supplier states it",
+                  "example": "sea"
+                },
+                "delivered": {
+                  "type": "string",
+                  "description": "What the supplier room states",
+                  "example": ""
+                },
+                "status": {
+                  "type": "string",
+                  "enum": [
+                    "delivered",
+                    "exceeded",
+                    "inferred",
+                    "silent",
+                    "conflict"
+                  ],
+                  "description": "delivered: stated or a synonym. exceeded: supplier has more than promised (ignored). inferred: supplier silent but every reference of that type at the hotel has it. silent: not mentioned. conflict: supplier states the opposite.",
+                  "example": "silent"
+                },
+                "delta": {
+                  "type": "number",
+                  "description": "Amount deducted from 1.0 for this promise",
+                  "example": 0.3
+                },
+                "knob": {
+                  "type": "string",
+                  "description": "The scoring-profile weight that priced this deduction (view, bedrooms, outdoor, tier_lower, bed, tier, restriction, minor, inferred). Absent when nothing was deducted.",
+                  "example": "view"
+                },
+                "code": {
+                  "type": "string",
+                  "description": "On a conflict: the reason code it stops with (or would stop with, when the profile softened it).",
+                  "example": "view_amenity_mismatch"
+                },
+                "fail": {
+                  "type": "string",
+                  "description": "On a conflict a profile may soften: access, outdoor_negated, bed_count or bedrooms.",
+                  "example": "outdoor_negated"
+                }
               }
             }
+          }
+        }
+      },
+      "ScoringWeight": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "view"
+          },
+          "value": {
+            "type": "number",
+            "description": "Deduction in effect under this profile",
+            "example": 0.3
+          },
+          "default": {
+            "type": "number",
+            "example": 0.3
+          },
+          "min": {
+            "type": "number",
+            "example": 0.1
+          },
+          "max": {
+            "type": "number",
+            "example": 0.5
+          },
+          "adjustable": {
+            "type": "boolean",
+            "example": true
+          },
+          "description": {
+            "type": "string",
+            "example": "Reference promises a view the supplier room does not mention"
+          }
+        }
+      },
+      "ScoringSoftenableFail": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "access",
+              "outdoor_negated",
+              "bed_count",
+              "bedrooms"
+            ],
+            "example": "access"
+          },
+          "softened": {
+            "type": "boolean",
+            "description": "True when this profile turns the fail into a deduction instead of rejecting the mapping",
+            "example": false
+          },
+          "deduction": {
+            "type": "number",
+            "description": "What a softened fail costs under this profile (never less than the matching silent weight)",
+            "example": 0.3
+          },
+          "adjustable": {
+            "type": "boolean",
+            "example": true
+          },
+          "description": {
+            "type": "string",
+            "example": "Reference promises spa / club / pool / beach access the supplier room never mentions"
+          }
+        }
+      },
+      "ScoringFixedRule": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "example": "structure"
+          },
+          "adjustable": {
+            "type": "boolean",
+            "example": false
+          },
+          "description": {
+            "type": "string",
+            "example": "Wrong room type in either direction (Room, Suite, Studio, Apartment, Villa)"
+          }
+        }
+      },
+      "ScoringThreshold": {
+        "type": "object",
+        "properties": {
+          "key": {
+            "type": "string",
+            "enum": [
+              "auto",
+              "review_sample",
+              "needs_review"
+            ],
+            "example": "auto"
+          },
+          "value": {
+            "type": "number",
+            "example": 0.9
+          },
+          "default": {
+            "type": "number",
+            "example": 0.9
+          },
+          "min": {
+            "type": "number",
+            "example": 0.9
+          },
+          "max": {
+            "type": "number",
+            "example": 1
+          },
+          "adjustable": {
+            "type": "boolean",
+            "description": "Only auto is adjustable, and only upwards",
+            "example": true
+          },
+          "description": {
+            "type": "string",
+            "example": "Lowest score that is still auto. May be raised, never lowered"
+          }
+        }
+      },
+      "ScoringProfile": {
+        "type": "object",
+        "description": "Your account's scoring profile as it applies: every weight with its value, default and allowed range; the four fails you may soften; the rules nobody can change; the band thresholds. Rendered from the same catalogue the validator enforces, so what is marked adjustable is exactly what a PUT accepts.",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "default, or your tenant stamp (c<accountId> live, s<accountId> sandbox). With version it is the score.profile stamp on results.",
+            "example": "c368927"
+          },
+          "version": {
+            "type": "integer",
+            "description": "Increments on every PUT and is never reused, even after a DELETE; 0 for the default.",
+            "example": 3
+          },
+          "isDefault": {
+            "type": "boolean",
+            "description": "True when the account has no profile and the system default applies",
+            "example": false
+          },
+          "updatedAt": {
+            "type": "string",
+            "format": "date-time",
+            "example": "2026-11-06T09:12:38Z"
+          },
+          "updatedBy": {
+            "type": "string",
+            "description": "The account id that made the change",
+            "example": "368927"
+          },
+          "weights": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringWeight"
+            }
+          },
+          "softenableFails": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringSoftenableFail"
+            }
+          },
+          "fixedRules": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringFixedRule"
+            }
+          },
+          "thresholds": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/ScoringThreshold"
+            }
+          }
+        }
+      },
+      "ScoringProfileRequest": {
+        "type": "object",
+        "description": "A full replacement of the profile. Every field is optional; a weight left out takes its default, an empty softened list softens nothing, an omitted autoThreshold is 0.90. Unknown fields are rejected (400), so a typo cannot silently reset a knob.",
+        "properties": {
+          "weights": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "number"
+            },
+            "description": "Deduction per knob key (view, bedrooms, outdoor, tier_lower, bed, tier, restriction, minor, inferred), each within the range GET reports.",
+            "example": {
+              "view": 0.1,
+              "outdoor": 0.1
+            }
+          },
+          "softened": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "enum": [
+                "access",
+                "outdoor_negated",
+                "bed_count",
+                "bedrooms"
+              ]
+            },
+            "description": "Fails that become a deduction instead of rejecting the mapping",
+            "example": [
+              "access"
+            ]
+          },
+          "autoThreshold": {
+            "type": "number",
+            "description": "Lowest score that is still auto; 0.90 to 1.00",
+            "example": 0.95
+          }
+        }
+      },
+      "ScoringPreviewRequest": {
+        "type": "object",
+        "required": [
+          "jobId"
+        ],
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "description": "A completed job of yours",
+            "example": "dm_1730000000000000000_a1b2c3d4e5f60718"
+          },
+          "profile": {
+            "$ref": "#/components/schemas/ScoringProfileRequest"
+          }
+        },
+        "description": "When profile is omitted, the job is re-graded under your current profile."
+      },
+      "ScoringPreview": {
+        "type": "object",
+        "description": "What a candidate profile would do to a completed job: arithmetic on the checks the job stored, no model call, nothing changed. Only rooms whose outcome the score decided are counted; exact matches, kept mappings and guard rejections are reported as notDecidedByScore because no profile moves them.",
+        "properties": {
+          "jobId": {
+            "type": "string",
+            "example": "dm_1730000000000000000_a1b2c3d4e5f60718"
+          },
+          "scoredUnder": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "The profile stamps the stored results carry",
+            "example": [
+              "default"
+            ]
+          },
+          "candidate": {
+            "type": "string",
+            "description": "candidate when a profile was sent, default when your account has none",
+            "example": "candidate"
+          },
+          "rooms": {
+            "type": "integer",
+            "example": 42
+          },
+          "graded": {
+            "type": "integer",
+            "description": "Rooms whose outcome the score decided",
+            "example": 30
+          },
+          "notDecidedByScore": {
+            "type": "integer",
+            "example": 10
+          },
+          "changed": {
+            "type": "integer",
+            "description": "Graded rooms whose score or band would move",
+            "example": 4
+          },
+          "before": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Graded rooms per band today",
+            "example": {
+              "auto": 22,
+              "review_sample": 3,
+              "needs_review": 4,
+              "not_mapped": 1
+            }
+          },
+          "after": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "integer"
+            },
+            "description": "Graded rooms per band under the candidate",
+            "example": {
+              "auto": 26,
+              "review_sample": 3,
+              "needs_review": 1
+            }
+          },
+          "changes": {
+            "type": "array",
+            "description": "Up to 200 rooms that would move",
+            "items": {
+              "type": "object",
+              "properties": {
+                "supplierName": {
+                  "type": "string",
+                  "example": "Deluxe Room"
+                },
+                "reference": {
+                  "type": "string",
+                  "example": "Deluxe Room, Sea View"
+                },
+                "beforeScore": {
+                  "type": "number",
+                  "example": 0.7
+                },
+                "beforeBand": {
+                  "type": "string",
+                  "example": "needs_review"
+                },
+                "afterScore": {
+                  "type": "number",
+                  "example": 0.9
+                },
+                "afterBand": {
+                  "type": "string",
+                  "example": "auto"
+                },
+                "afterHardStop": {
+                  "type": "string",
+                  "description": "Set when the candidate would reject the room outright",
+                  "example": ""
+                }
+              }
+            }
+          },
+          "truncated": {
+            "type": "boolean",
+            "description": "True when more than 200 rooms would move",
+            "example": false
+          },
+          "note": {
+            "type": "string"
+          }
+        }
+      },
+      "PurgeResult": {
+        "type": "object",
+        "properties": {
+          "hotelId": {
+            "type": "string",
+            "description": "Single-hotel purge only",
+            "example": "lp32f8b"
+          },
+          "hotels": {
+            "type": "integer",
+            "description": "Hotels whose stored mappings were removed",
+            "example": 1
+          },
+          "fields": {
+            "type": "integer",
+            "description": "Mappings removed",
+            "example": 12
+          },
+          "skippedBusy": {
+            "type": "integer",
+            "description": "All-hotels purge only: hotels left untouched because a job was in flight",
+            "example": 0
+          },
+          "busyHotels": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "All-hotels purge only: up to 100 of the skipped hotels",
+            "example": []
           }
         }
       }
@@ -639,11 +1138,11 @@
     },
     {
       "name": "Room Match",
-      "description": "Map supplier room names to a reference catalog. Includes the synchronous matcher plus async jobs and the saved mapping cache."
+      "description": "Map supplier names to your hotel catalog. Flow: async submit → poll job → read matches. See **Implementation Workflow** (`implementation-workflow`)."
     },
     {
       "name": "Room Group",
-      "description": "Cluster equivalent supplier rooms, with or without a reference catalog."
+      "description": "Cluster supplier names with or without a catalog. See **Implementation Workflow**."
     }
   ],
   "paths": {
@@ -684,7 +1183,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized \u2014 missing or invalid API key"
+            "description": "Unauthorized — missing or invalid API key"
           },
           "429": {
             "description": "Rate limit exceeded"
@@ -715,7 +1214,7 @@
         ],
         "summary": "Map partner hotel IDs to Nuitee inventory",
         "operationId": "post_hotels-match-partners-with-id",
-        "description": "## Overview\n\nMaps a specific partner's hotel inventory to Nuitee / liteAPI catalogue IDs. Upload a CSV of partner hotel IDs and receive a result CSV that links each row to Nuitee property identifiers.\n\nThis is the synchronous **partner ID \u2192 Nuitee ID** mapping path. Processing runs in one request: CSV in, mapped CSV out (plus an `X-Mapping-Summary` header with outcome counts).\n\n## When to Use\n\n- **Partner inventory alignment** - Convert Booking.com, Expedia, or other partner hotel IDs into Nuitee `core_property_id` / `lite_property_id`\n- **Bulk ID resolution** - Map large partner ID lists in a single call\n- **Coverage analysis** - Use `matched`, `review`, `not_found`, and `invalid` counts from `X-Mapping-Summary`\n- **Content & rates pipelines** - Resolve partner IDs before search, booking, or enrichment against Nuitee inventory\n\n## What You Get\n\n- **Result CSV** - Per-row mapping outcomes with columns such as `input_id`, `status`, `resolution`, `core_property_id`, `lite_property_id`, `candidate_core_ids`\n- **Summary header** - `X-Mapping-Summary` JSON with `rows`, `matched`, `review`, `not_found`, `invalid`\n- **Download filename** - `Content-Disposition` attachment name from the server (for example `id-mapping-Expedia.csv`)\n\n## Key Features\n\n- **Partner-scoped**: Mapping runs against one partner inventory at a time (`partner` form field)\n- **Flexible CSV input**: Single ID column (with or without header), or multi-column files with a recognized ID header\n- **Optional geo columns**: Latitude/longitude improve resolution when partner IDs are ambiguous\n- **Streamed response**: Result CSV is streamed; there is no `{\"data\": ...}` JSON wrapper\n\n## Quick Start\n\n1. Call `GET /hotels/match/partners` and copy the partner name\n2. Prepare a CSV of that partner's hotel IDs\n3. `POST` `multipart/form-data` with:\n   - `partner` \u2014 partner name from step 1\n   - `file` \u2014 the CSV\n4. Save the response body as CSV and read `X-Mapping-Summary` for counts\n\n**Accepted ID column names** (case-insensitive): `id`, `hotel_id`, `hotelid`, `hotel_code`, `provider_id`, `provider_hotel_id`, `provider_property_id`, `partner_id`, `partner_hotel_id`, `property_id`, `code`.\n\n**Example curl:**\n\n```bash\ncurl --request POST \\\n  --url \"https://api.liteapi.travel/v3.0/hotels/match/partners/with-id\" \\\n  --header \"X-API-Key: YOUR_API_KEY\" \\\n  --form \"partner=Booking.com\" \\\n  --form \"file=@/path/to/partner-ids.csv;type=text/csv\"\n```\n\nAuthenticate with your LiteAPI `X-API-Key`.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).\n\n**Platform note:** Cloud Run and the global load balancer cap request/response bodies at 32 MiB. Larger uploads may not fully pass through this API hop.",
+        "description": "## Overview\n\nMaps a specific partner's hotel inventory to Nuitee / liteAPI catalogue IDs. Upload a CSV of partner hotel IDs and receive a result CSV that links each row to Nuitee property identifiers.\n\nThis is the synchronous **partner ID → Nuitee ID** mapping path. Processing runs in one request: CSV in, mapped CSV out (plus an `X-Mapping-Summary` header with outcome counts).\n\n## When to Use\n\n- **Partner inventory alignment** - Convert Booking.com, Expedia, or other partner hotel IDs into Nuitee `core_property_id` / `lite_property_id`\n- **Bulk ID resolution** - Map large partner ID lists in a single call\n- **Coverage analysis** - Use `matched`, `review`, `not_found`, and `invalid` counts from `X-Mapping-Summary`\n- **Content & rates pipelines** - Resolve partner IDs before search, booking, or enrichment against Nuitee inventory\n\n## What You Get\n\n- **Result CSV** - Per-row mapping outcomes with columns such as `input_id`, `status`, `resolution`, `core_property_id`, `lite_property_id`, `candidate_core_ids`\n- **Summary header** - `X-Mapping-Summary` JSON with `rows`, `matched`, `review`, `not_found`, `invalid`\n- **Download filename** - `Content-Disposition` attachment name from the server (for example `id-mapping-Expedia.csv`)\n\n## Key Features\n\n- **Partner-scoped**: Mapping runs against one partner inventory at a time (`partner` form field)\n- **Flexible CSV input**: Single ID column (with or without header), or multi-column files with a recognized ID header\n- **Optional geo columns**: Latitude/longitude improve resolution when partner IDs are ambiguous\n- **Streamed response**: Result CSV is streamed; there is no `{\"data\": ...}` JSON wrapper\n\n## Quick Start\n\n1. Call `GET /hotels/match/partners` and copy the partner name\n2. Prepare a CSV of that partner's hotel IDs\n3. `POST` `multipart/form-data` with:\n   - `partner` — partner name from step 1\n   - `file` — the CSV\n4. Save the response body as CSV and read `X-Mapping-Summary` for counts\n\n**Accepted ID column names** (case-insensitive): `id`, `hotel_id`, `hotelid`, `hotel_code`, `provider_id`, `provider_hotel_id`, `provider_property_id`, `partner_id`, `partner_hotel_id`, `property_id`, `code`.\n\n**Example curl:**\n\n```bash\ncurl --request POST \\\n  --url \"https://api.liteapi.travel/v3.0/hotels/match/partners/with-id\" \\\n  --header \"X-API-Key: YOUR_API_KEY\" \\\n  --form \"partner=Booking.com\" \\\n  --form \"file=@/path/to/partner-ids.csv;type=text/csv\"\n```\n\nAuthenticate with your LiteAPI `X-API-Key`.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).\n\n**Platform note:** Cloud Run and the global load balancer cap request/response bodies at 32 MiB. Larger uploads may not fully pass through this API hop.",
         "security": [
           {
             "apikeyAuth": []
@@ -775,7 +1274,7 @@
             }
           },
           "400": {
-            "description": "Bad Request \u2014 missing partner, unknown partner, or unreadable CSV",
+            "description": "Bad Request — missing partner, unknown partner, or unreadable CSV",
             "content": {
               "application/json": {
                 "schema": {
@@ -789,12 +1288,12 @@
                   },
                   "unknownPartner": {
                     "value": {
-                      "error": "unknown partner \"X\"; \u2026"
+                      "error": "unknown partner \"X\"; …"
                     }
                   },
                   "noIdColumn": {
                     "value": {
-                      "error": "could not find an id column; \u2026"
+                      "error": "could not find an id column; …"
                     }
                   }
                 }
@@ -802,7 +1301,7 @@
             }
           },
           "401": {
-            "description": "Unauthorized \u2014 missing or invalid API key",
+            "description": "Unauthorized — missing or invalid API key",
             "content": {
               "application/json": {
                 "schema": {
@@ -856,7 +1355,7 @@
         ],
         "summary": "Submit an async hotel-match batch job",
         "operationId": "post_hotels-match-async",
-        "description": "## Overview\n\nUpload an onboarding CSV of hotel rows (name, country, optional address/coordinates) and start an async **content-based** hotel matching job. Returns immediately with a `job_id` to poll.\n\nUse this when partner hotel IDs are unavailable and you need to match hotels by content against Nuitee inventory.\n\n## When to Use\n\n- **Bulk onboarding** - Match many hotels by name/location when partner IDs are not available\n- **Large files** - Jobs above the inline row limit are processed via chunked workers\n- **GCS workflows** - Submit with `input_gcs` / `output_gcs` for large files outside the API body limit\n\n## What You Get\n\n- **202 Accepted** - Initial `JobStatus` with `status: queued` and `job_id`\n- **Progress polling** - Use `GET /hotels/match/async/jobs/{jobId}/status` until `status` is `done` or `error`\n- **Result CSV** - Download via `GET /hotels/match/async/jobs/{jobId}` when complete\n\n## Quick Start\n\n1. POST `multipart/form-data` with `file` (CSV), or JSON `{ \"input_gcs\": \"gs://...\" }` for large files\n2. Poll status with the returned `job_id`\n3. Download the result CSV when `status` is `done`\n\nInput CSV must include `name` and `country` columns (accepted header aliases vary upstream). Optional `output_gcs` writes the result directly to GCS instead of returning CSV through the API.\n\nAuthenticate with your LiteAPI `X-API-Key`.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).\n\n**Platform note:** Multipart uploads are capped at 32 MiB through this API hop \u2014 use GCS input mode for larger files.",
+        "description": "## Overview\n\nUpload an onboarding CSV of hotel rows (name, country, optional address/coordinates) and start an async **content-based** hotel matching job. Returns immediately with a `job_id` to poll.\n\nUse this when partner hotel IDs are unavailable and you need to match hotels by content against Nuitee inventory.\n\n## When to Use\n\n- **Bulk onboarding** - Match many hotels by name/location when partner IDs are not available\n- **Large files** - Jobs above the inline row limit are processed via chunked workers\n- **GCS workflows** - Submit with `input_gcs` / `output_gcs` for large files outside the API body limit\n\n## What You Get\n\n- **202 Accepted** - Initial `JobStatus` with `status: queued` and `job_id`\n- **Progress polling** - Use `GET /hotels/match/async/jobs/{jobId}/status` until `status` is `done` or `error`\n- **Result CSV** - Download via `GET /hotels/match/async/jobs/{jobId}` when complete\n\n## Quick Start\n\n1. POST `multipart/form-data` with `file` (CSV), or JSON `{ \"input_gcs\": \"gs://...\" }` for large files\n2. Poll status with the returned `job_id`\n3. Download the result CSV when `status` is `done`\n\nInput CSV must include `name` and `country` columns (accepted header aliases vary upstream). Optional `output_gcs` writes the result directly to GCS instead of returning CSV through the API.\n\nAuthenticate with your LiteAPI `X-API-Key`.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).\n\n**Platform note:** Multipart uploads are capped at 32 MiB through this API hop — use GCS input mode for larger files.",
         "security": [
           {
             "apikeyAuth": []
@@ -1041,7 +1540,7 @@
         ],
         "summary": "Download async hotel-match result CSV",
         "operationId": "get_hotels-match-async-jobs-jobid",
-        "description": "## Overview\n\nStreams the finished result CSV for a completed async hotel-match job.\n\n## When to Use\n\n- **After job completes** - Call when status polling returns `status: done` and no `output_gcs` was requested at submit time\n\n## What You Get\n\n- **Result CSV** - One row per input hotel with verdict, matched IDs, scores, and reasons\n- **Attachment header** - `Content-Disposition: attachment; filename=\"hotel-match-{jobId}.csv\"`\n\n## Quick Start\n\nPoll until `status` is `done`, then download this endpoint. If submit included `output_gcs`, read that URI instead \u2014 this endpoint returns **409**.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).",
+        "description": "## Overview\n\nStreams the finished result CSV for a completed async hotel-match job.\n\n## When to Use\n\n- **After job completes** - Call when status polling returns `status: done` and no `output_gcs` was requested at submit time\n\n## What You Get\n\n- **Result CSV** - One row per input hotel with verdict, matched IDs, scores, and reasons\n- **Attachment header** - `Content-Disposition: attachment; filename=\"hotel-match-{jobId}.csv\"`\n\n## Quick Start\n\nPoll until `status` is `done`, then download this endpoint. If submit included `output_gcs`, read that URI instead — this endpoint returns **409**.\n\n**Rate limit:** 50 requests/min (production), 10 requests/min (sandbox).",
         "security": [
           {
             "apikeyAuth": []
@@ -1136,7 +1635,7 @@
         ],
         "summary": "Match supplier rooms to a reference catalog",
         "operationId": "post_rooms-match",
-        "description": "## Overview\n\nMatch supplier room names to your reference catalog. For each supplier room, returns the best matching reference room along with ranked alternatives and confidence scores.\n\n## When to Use\n\n- **Normalize supplier inventory** - Map diverse supplier room names to your canonical catalog\n- **Rate shopping** - Identify equivalent rooms across suppliers for price comparison\n- **Content enrichment** - Link supplier rooms to your reference data for consistent display\n- **Booking flows** - Ensure supplier rooms match expected room types before confirmation\n\n## What You Get\n\n- **Match status** - `mapped` or `not_mapped` for each supplier room\n- **Best match** - Reference room with highest confidence (when above threshold)\n- **Ranked candidates** - Top K alternative matches with scores\n- **Confidence scores** - How confident the match is (0-1)\n\n## Quick Start\n\n**Required fields**: `suppliers` (rooms to map). `references` is optional: omit it to let the service resolve the hotel catalog from `room_mapping_catalog:{hotelId}` (dispatcher-owned, read-only here), falling back to the LiteAPI data API. When supplied, the caller's list wins. `hotelId` is required when `references` is omitted.\n\n**Optional tuning**: Set `threshold` (default 0.5) for match sensitivity, `topK` (default 3) for number of candidates",
+        "description": "**What it does:** For each supplier room, returns the best **reference room** match with confidence scores and ranked alternatives.\n\n**Workflow role:** Optional **step 0** — quick sync scoring before async hotel jobs.\n\n**Use when:** You need an **immediate** answer with `suppliers`. Either send `references` yourself, **or** omit `references` and set **`hotelId`** so the service resolves the catalog (`room_mapping_catalog` → LiteAPI data API; your references win if supplied; max 500 rooms).\n\n**Do not use when:** You need persisted mappings, audit reasons, or room attributes — use `POST /rooms/match/async`. Not for clustering without a catalog — use `POST /rooms/group`.\n\n**If `references` is omitted:** missing `hotelId` or unresolvable catalog → **400**; Redis or data API failure → **500**; suppliers×references over upstream cap → **413** when configured.\n\nDetails, examples, limits, and result codes: **Implementation Workflow** (doc page: `implementation-workflow`).",
         "security": [
           {
             "apikeyAuth": []
@@ -1423,7 +1922,7 @@
         ],
         "summary": "Submit an async room mapping job",
         "operationId": "post_rooms-match-async",
-        "description": "## Overview\n\nSubmit an async room mapping job for a hotel. The job processes in the background and produces high-quality mappings with detailed reasoning for each decision. Only one job per hotel can run at a time.\n\n**Note:** Internally referred to as a deep-map job.\n\n## When to Use\n\n- **Batch processing** - Map large sets of supplier rooms for a hotel\n- **Initial hotel setup** - Establish canonical mappings when onboarding a property\n- **Periodic refresh** - Re-map rooms when supplier catalogs change\n\n## What You Get\n\n- **Job ID** - Unique identifier to poll for results\n- **Queued status** - Immediate confirmation that processing has started\n- **Background processing** - Results ready in seconds to minutes\n\n## Quick Start\n\n**Required fields**: `hotelId` and either `roomNames` (supplier names to map, max 100) or `supplierRooms` (up to 100 `{ name, attributes }` objects; wins when non-empty). `referenceRooms` is optional: omit it to let the service score against our hotel catalog, which it resolves automatically. When supplied, the caller's list wins. Lists are rejected above 500 rooms, and the same limit applies to the catalog resolved on your behalf.\n\n**Attributes**: `supplierRooms[].attributes` and `referenceRooms[].attributes` carry optional structured evidence (beds, occupancy, size, views, accessibility, features). When supplier attributes are sent and the resolved catalog is name-only, the service enriches the references with our own catalog attributes from the LiteAPI data API before auditing. `attributeDetail` controls how much of them reaches the model (default `summary`). Absent fields mean \"not stated\", never \"known absent\"; features and amenities never gate a match, while structure, bed configuration, occupancy, size, views and accessibility are commitments.\n\n**Poll for results**: Use `GET /rooms/match/async/jobs/:jobId` until status is `completed` or `failed`",
+        "description": "**What it does:** Starts a **background mapping job** for one hotel (`jobId` to poll).\n\n**Workflow role:** **Step 1** — create or refresh hotel mappings.\n\n**Use when:** Hotel onboarding, catalog refresh, or sending trusted **attributes** (`supplierRooms`, optional `referenceRooms`, `attributeDetail`).\n\n**Do not use when:** You only need instant sync scores — use `POST /rooms/match`.\n\nDetails, examples, limits, and result codes: **Implementation Workflow** (doc page: `implementation-workflow`).",
         "security": [
           {
             "apikeyAuth": []
@@ -1436,23 +1935,13 @@
               "schema": {
                 "type": "object",
                 "required": [
-                  "hotelId"
-                ],
-                "anyOf": [
-                  {
-                    "required": [
-                      "roomNames"
-                    ]
-                  },
-                  {
-                    "required": [
-                      "supplierRooms"
-                    ]
-                  }
+                  "hotelId",
+                  "supplierRooms"
                 ],
                 "x-examples": {
                   "Example 1": {
                     "hotelId": "lp32f8b",
+                    "provider": "expedia",
                     "referenceRooms": [
                       {
                         "id": 1,
@@ -1467,17 +1956,27 @@
                         "name": "Junior Suite"
                       }
                     ],
-                    "roomNames": [
-                      "Deluxe King",
-                      "Standard Twin Room",
-                      "1 King Junior Suite"
+                    "supplierRooms": [
+                      {
+                        "name": "Deluxe King"
+                      },
+                      {
+                        "name": "Standard Twin Room"
+                      },
+                      {
+                        "name": "1 King Junior Suite"
+                      }
                     ]
                   },
                   "Example 2 - resolve catalog internally": {
                     "hotelId": "lp32f8b",
-                    "roomNames": [
-                      "Deluxe King",
-                      "Standard Twin Room"
+                    "supplierRooms": [
+                      {
+                        "name": "Deluxe King"
+                      },
+                      {
+                        "name": "Standard Twin Room"
+                      }
                     ]
                   },
                   "Example 3 - supplier and reference attributes": {
@@ -1588,25 +2087,11 @@
                       }
                     }
                   },
-                  "roomNames": {
-                    "type": "array",
-                    "minItems": 1,
-                    "maxItems": 100,
-                    "description": "Supplier room names to map. Blank entries are dropped and normalized duplicates are removed. Max 100 after deduplication. Ignored when `supplierRooms` is non-empty.",
-                    "items": {
-                      "type": "string"
-                    },
-                    "example": [
-                      "Deluxe King",
-                      "Standard Twin Room",
-                      "1 King Junior Suite"
-                    ]
-                  },
                   "supplierRooms": {
                     "type": "array",
                     "minItems": 1,
                     "maxItems": 100,
-                    "description": "Attribute-bearing supplier rooms. When non-empty it replaces `roomNames`. Blank names are dropped and normalized duplicates removed; max 100 after deduplication. Sending attributes lets the audit treat our own catalog attributes as evidence on both sides.",
+                    "description": "Supplier rooms to map. Blank names are dropped and normalized duplicates removed; max 100 after deduplication. Name-only objects are valid. Every job is audited with attributes on both sides: our catalog attributes are added to the references, and facets stated in room names are derived on both sides.",
                     "items": {
                       "type": "object",
                       "required": [
@@ -1618,11 +2103,23 @@
                           "description": "Supplier room name.",
                           "example": "Studio, 2 Queen"
                         },
+                        "provider": {
+                          "type": "string",
+                          "maxLength": 128,
+                          "description": "Source supplier for this room (for example `expedia`, `booking.com`, `agoda`, or any raw provider token). Overrides the job-level `provider` for this room. Copied to the room's `final.p` field. Providers are stored as a sorted, deduplicated, `|`-joined set, so a `|` is rejected here.",
+                          "example": "agoda"
+                        },
                         "attributes": {
                           "$ref": "#/components/schemas/RoomAttributes"
                         }
                       }
                     }
+                  },
+                  "provider": {
+                    "type": "string",
+                    "maxLength": 128,
+                    "description": "Source supplier of the submitted room names (for example `expedia`, `booking.com`, `hotelbeds`). Copied to every decision's `final.p` field, echoed on the job and on the `202` response, and persisted only when the job writes an isolated customer cache. `supplierRooms[].provider` overrides it per room. When the mapping already carries a provider, the supplied one is merged into that set. Must not contain `|`. Leave unset to keep the previous behaviour.",
+                    "example": "expedia"
                   },
                   "attributeDetail": {
                     "type": "string",
@@ -1632,7 +2129,7 @@
                       "full"
                     ],
                     "default": "summary",
-                    "description": "How much attribute context the audit receives. `none` sends names only; `summary` (default) sends structure, tier, bedrooms, beds, bedRelation, occupancy, size, views and accessibility; `full` adds features, amenities and source. Applies to both supplier and reference attributes. The full request is always stored on the job."
+                    "description": "How much attribute context the audit receives. `none` sends names only; `summary` (default) sends structure, tier, bedrooms, beds, bedRelation, occupancy, size, views and accessibility; `full` adds features and amenities. Applies to both supplier and reference attributes. The full request is always stored on the job."
                   }
                 }
               }
@@ -1666,6 +2163,11 @@
                         "hotelId": {
                           "type": "string",
                           "example": "lp32f8b"
+                        },
+                        "provider": {
+                          "type": "string",
+                          "description": "Source supplier echoed from the request, for the rooms that were submitted. Omitted when the request did not set one or when rooms carry different providers.",
+                          "example": "expedia"
                         }
                       }
                     }
@@ -1674,7 +2176,8 @@
                     "data": {
                       "jobId": "dm_1777386480123456789_a1b2c3d4e5f6a7b8",
                       "status": "queued",
-                      "hotelId": "lp32f8b"
+                      "hotelId": "lp32f8b",
+                      "provider": "expedia"
                     }
                   }
                 }
@@ -1682,7 +2185,7 @@
             }
           },
           "400": {
-            "description": "Bad Request - malformed JSON or validation failure. Also returned when `hotelId` is missing, when neither `roomNames` nor a non-empty `supplierRooms` is supplied, when `referenceRooms` is omitted and no catalog can be resolved for the hotel, when a room attribute is invalid (unknown `structure`, `bedRelation` or `size.unit`, negative counts, non-positive sizes, an empty `beds[].type`), when attributes exceed 4 KiB per room or 256 KiB per list, when `attributeDetail` is unknown, or when the supplied or automatically resolved catalog exceeds 500 rooms.",
+            "description": "Bad Request - malformed JSON or validation failure. Also returned when `hotelId` is missing, when `supplierRooms` is missing or empty, when `referenceRooms` is omitted and no catalog can be resolved for the hotel, when a room attribute is unusable (negative counts, non-positive sizes, a size without a unit, an empty `beds[].type`, duplicate feature keys, or attributes over the size caps), when attributes exceed 4 KiB per room or 256 KiB per list, when `attributeDetail` is unknown, when `provider` is over 128 characters or contains `|`, or when the supplied or automatically resolved catalog exceeds 500 rooms. Unfamiliar attribute values are accepted.",
             "content": {
               "application/json": {
                 "schema": {
@@ -1701,7 +2204,7 @@
                   },
                   "invalidRoomAttributes": {
                     "value": {
-                      "error": "deep-map validation error: supplierRooms[0].attributes: structure \"loft\" is not one of: room, suite, studio, apartment, villa, penthouse"
+                      "error": "deep-map validation error: supplierRooms[0].attributes.beds[0].type must not be empty"
                     }
                   },
                   "catalogTooLarge": {
@@ -1752,7 +2255,7 @@
         ],
         "summary": "Get async room mapping job status",
         "operationId": "get_rooms-match-async-jobs-jobid",
-        "description": "## Overview\n\nCheck the status of an async room mapping job and retrieve results. Returns full job details including per-room decisions when complete. Jobs expire 24 hours after completion.\n\n## When to Use\n\n- **Poll for completion** - Check job status until `completed` or `failed`\n- **Retrieve results** - Get mapping decisions with reasoning for each room\n- **Review changes** - See what changed from prior cached mappings\n- **Debug issues** - Inspect why specific rooms were mapped or rejected\n\n## What You Get\n\n- **Job status** - `queued`, `running`, `completed`, or `failed`\n- **Mapping results** - Final decision for each room with confidence\n- **Previous vs final** - Compare with prior mappings\n- **Rejection reasons** - Why unmapped rooms were rejected\n- **Actions taken** - `confirm`, `remap`, `reject`, or `keep_existing`\n\n## Quick Start\n\n**Required**: `jobId` path parameter from the POST response\n\n**Poll interval**: 5-10 seconds recommended",
+        "description": "**What it does:** Job **status** and per-room **`confirm` / `remap` / reject** with `reasonCode`.\n\n**Workflow role:** **Step 2** — poll every 5–10 s after async submit.\n\n**Use when:** You have a `jobId`.\n\n**Do not use when:** You only need the saved dictionary — use `GET /rooms/match/async/matches/{hotelId}`.\n\nDetails, examples, limits, and result codes: **Implementation Workflow** (doc page: `implementation-workflow`).",
         "security": [
           {
             "apikeyAuth": []
@@ -1821,11 +2324,10 @@
                             }
                           }
                         },
-                        "roomNames": {
-                          "type": "array",
-                          "items": {
-                            "type": "string"
-                          }
+                        "provider": {
+                          "type": "string",
+                          "description": "Source supplier supplied with the job, when one was set. Per-room values live on `supplierRooms[].provider`.",
+                          "example": "expedia"
                         },
                         "results": {
                           "type": "array",
@@ -1852,6 +2354,10 @@
                               "name": {
                                 "type": "string"
                               },
+                              "provider": {
+                                "type": "string",
+                                "description": "Source supplier recorded for this room, if any."
+                              },
                               "attributes": {
                                 "$ref": "#/components/schemas/RoomAttributes"
                               }
@@ -1874,6 +2380,7 @@
                     "data": {
                       "jobId": "dm_1777386480123456789_a1b2c3d4e5f6a7b8",
                       "hotelId": "lp32f8b",
+                      "provider": "expedia",
                       "status": "completed",
                       "currentMappingCount": 42,
                       "referenceRooms": [
@@ -1890,11 +2397,6 @@
                           "name": "Junior Suite"
                         }
                       ],
-                      "roomNames": [
-                        "Deluxe King",
-                        "Standard Twin Room",
-                        "1 King Junior Suite"
-                      ],
                       "results": [
                         {
                           "supplierName": "Deluxe King",
@@ -1908,29 +2410,9 @@
                             "id": 1,
                             "confidence": 0.9
                           },
-                          "source": "audit",
-                          "modelAction": "remap",
-                          "modelOutput": {
-                            "selected": "King Room",
-                            "score": 0.87,
-                            "candidates": [
-                              {
-                                "name": "King Room",
-                                "id": 1,
-                                "score": 0.87
-                              },
-                              {
-                                "name": "Junior Suite",
-                                "id": 3,
-                                "score": 0.31
-                              },
-                              {
-                                "name": "Twin Room",
-                                "id": 2,
-                                "score": 0.21
-                              }
-                            ]
-                          }
+                          "source": "internal_llm",
+                          "llmAction": "remap",
+                          "crossEncoder": null
                         },
                         {
                           "supplierName": "Standard Twin Room",
@@ -1940,24 +2422,9 @@
                             "id": 2,
                             "confidence": 0.95
                           },
-                          "source": "audit",
-                          "modelAction": "confirm",
-                          "modelOutput": {
-                            "selected": "Twin Room",
-                            "score": 0.95,
-                            "candidates": [
-                              {
-                                "name": "Twin Room",
-                                "id": 2,
-                                "score": 0.95
-                              },
-                              {
-                                "name": "King Room",
-                                "id": 1,
-                                "score": 0.34
-                              }
-                            ]
-                          }
+                          "source": "internal_llm",
+                          "llmAction": "confirm",
+                          "crossEncoder": null
                         },
                         {
                           "supplierName": "1 King Junior Suite",
@@ -1967,28 +2434,24 @@
                             "id": 3,
                             "confidence": 0.88
                           },
-                          "source": "audit",
-                          "modelAction": "confirm",
-                          "modelOutput": {
-                            "selected": "Junior Suite",
-                            "score": 0.88,
-                            "candidates": [
-                              {
-                                "name": "Junior Suite",
-                                "id": 3,
-                                "score": 0.88
-                              },
-                              {
-                                "name": "King Room",
-                                "id": 1,
-                                "score": 0.42
-                              }
-                            ]
-                          }
+                          "source": "internal_llm",
+                          "llmAction": "confirm",
+                          "crossEncoder": null
                         }
                       ],
                       "createdAt": "2026-07-17T15:30:00Z",
-                      "updatedAt": "2026-07-17T15:30:12Z"
+                      "updatedAt": "2026-07-17T15:30:12Z",
+                      "supplierRooms": [
+                        {
+                          "name": "Deluxe King"
+                        },
+                        {
+                          "name": "Standard Twin Room"
+                        },
+                        {
+                          "name": "1 King Junior Suite"
+                        }
+                      ]
                     }
                   }
                 }
@@ -2031,7 +2494,7 @@
         ],
         "summary": "Get saved room mappings for a hotel",
         "operationId": "get_rooms-match-async-matches-hotelid",
-        "description": "## Overview\n\nRetrieve all saved room mappings for a hotel. Returns the current mapping cache without job details or audit trail.\n\n## When to Use\n\n- **Lookup existing mappings** - Check what mappings already exist for a hotel\n- **Runtime resolution** - Resolve supplier room names to reference rooms during booking\n- **Cache inspection** - View all mappings after async jobs complete\n- **Integration sync** - Pull current mappings into external systems\n\n## What You Get\n\n- **Hotel ID** - Confirmed hotel identifier\n- **Mappings dictionary** - Keyed by normalized supplier name\n- **Final decisions** - Reference room name, ID, and confidence\n- **Rejection reasons** - Why unmapped rooms were rejected\n\n## Quick Start\n\n**Required**: `hotelId` path parameter\n\n**Note**: Returns the full hotel cache from all previous jobs. For job-specific results with audit trail, use the Get async room mapping job status endpoint.",
+        "description": "**What it does:** **Saved mapping dictionary** for your account and hotel.\n\n**Workflow role:** **Step 3** — runtime lookup after mappings exist.\n\n**Use when:** Resolving supplier names in search or book.\n\n**Do not use when:** You need audit detail — use the job endpoint.\n\nDetails, examples, limits, and result codes: **Implementation Workflow** (doc page: `implementation-workflow`).",
         "security": [
           {
             "apikeyAuth": []
@@ -2127,6 +2590,589 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Purge your saved room mappings for a hotel",
+        "operationId": "delete_rooms-match-async-matches-hotelid",
+        "description": "**What it does:** Deletes every saved mapping of **your account** for the hotel, so the next `POST /rooms/match/async` for it grades every room afresh, for example under a new scoring profile. Nothing else is touched. `409` while a job of yours is in flight for the hotel.\n\nDestructive and immediate; every purge is written to your mapping audit log.\n\nAvailable to accounts with their own isolated room-mapping cache; others receive `409`. Details: **Implementation Workflow** (doc page: `implementation-workflow`).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "hotelId",
+            "in": "path",
+            "required": true,
+            "description": "Hotel identifier",
+            "schema": {
+              "type": "string"
+            },
+            "example": "lp32f8b"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PurgeResult"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "hotelId": "lp32f8b",
+                    "hotels": 1,
+                    "fields": 12
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "A job is in flight for this hotel, or your account has no isolated cache",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "hotel has a deep-map job in flight"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/match/async/matches": {
+      "delete": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Purge all your saved room mappings",
+        "operationId": "delete_rooms-match-async-matches",
+        "description": "**What it does:** Deletes every saved mapping of **your account**, across all hotels. Requires `?confirm=<your account id>`; the dispatcher checks it before forwarding and the mapping service checks it again. A hotel with a job of yours in flight is skipped, not purged, and listed in `busyHotels`. One run per minute (`429`).\n\nDestructive and immediate; every purge is written to your mapping audit log.\n\nAvailable to accounts with their own isolated room-mapping cache; others receive `409`. Details: **Implementation Workflow** (doc page: `implementation-workflow`).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "parameters": [
+          {
+            "name": "confirm",
+            "in": "query",
+            "required": true,
+            "description": "Must equal your LiteAPI account id",
+            "schema": {
+              "type": "string"
+            },
+            "example": "368927"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/PurgeResult"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "hotels": 57,
+                    "fields": 1204,
+                    "skippedBusy": 1,
+                    "busyHotels": [
+                      "lp32f8b"
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing or wrong confirmation",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "confirm must equal your account id"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Your account does not have an isolated room-mapping cache; scoring profiles and purges need one (contact LiteAPI to enable it)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "scoring profiles require an isolated customer cache (X-Customer-Cache: customer)"
+                }
+              }
+            }
+          },
+          "429": {
+            "description": "An all-hotels purge ran less than a minute ago",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "an all-hotels purge ran less than a minute ago"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/match/async/scoring-profile": {
+      "get": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Get your scoring profile",
+        "operationId": "get_rooms-match-async-scoring-profile",
+        "description": "**What it does:** Returns the scoring policy your room matches are graded with: every weight with its current value, default and allowed range, the four fails you may soften, the rules nobody can change, and the band thresholds. `isDefault: true` when you have not set one.\n\n**Use when:** Rendering a settings page, or checking which policy a `score.profile` stamp refers to.\n\nAvailable to accounts with their own isolated room-mapping cache; others receive `409`. Details: **Implementation Workflow** (doc page: `implementation-workflow`).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ScoringProfile"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "name": "c368927",
+                    "version": 3,
+                    "isDefault": false,
+                    "updatedAt": "2026-11-06T09:12:38Z",
+                    "updatedBy": "368927",
+                    "weights": [
+                      {
+                        "key": "view",
+                        "value": 0.1,
+                        "default": 0.3,
+                        "min": 0.1,
+                        "max": 0.5,
+                        "adjustable": true,
+                        "description": "Reference promises a view the supplier room does not mention"
+                      }
+                    ],
+                    "softenableFails": [
+                      {
+                        "key": "access",
+                        "softened": true,
+                        "deduction": 0.3,
+                        "adjustable": true,
+                        "description": "Reference promises spa / club / pool / beach access the supplier room never mentions"
+                      }
+                    ],
+                    "fixedRules": [
+                      {
+                        "key": "structure",
+                        "adjustable": false,
+                        "description": "Wrong room type in either direction (Room, Suite, Studio, Apartment, Villa)"
+                      }
+                    ],
+                    "thresholds": [
+                      {
+                        "key": "auto",
+                        "value": 0.95,
+                        "default": 0.9,
+                        "min": 0.9,
+                        "max": 1,
+                        "adjustable": true,
+                        "description": "Lowest score that is still auto. May be raised, never lowered"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Your account does not have an isolated room-mapping cache; scoring profiles and purges need one (contact LiteAPI to enable it)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "scoring profiles require an isolated customer cache (X-Customer-Cache: customer)"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Set your scoring profile",
+        "operationId": "put_rooms-match-async-scoring-profile",
+        "description": "**What it does:** Replaces your scoring profile. The body is validated against the ranges `GET` reports before anything is stored; an out-of-range weight, an unknown knob, a fail that cannot be softened or an `autoThreshold` below 0.90 is refused with `400` and the message names the field. Unknown fields are `400` too.\n\n**Takes effect on new jobs only.** Mappings already stored keep the score they were stored with. To re-score a hotel, purge its matches (`DELETE /rooms/match/async/matches/{hotelId}`) and submit it again. Preview a candidate first with `POST /rooms/match/async/scoring-profile/preview`.\n\nEach change gets a new `version` that is never reused; `score.profile` on results (for example `c368927/v3`) names the exact policy that produced the number.\n\nAvailable to accounts with their own isolated room-mapping cache; others receive `409`. Details: **Implementation Workflow** (doc page: `implementation-workflow`).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringProfileRequest"
+              },
+              "example": {
+                "weights": {
+                  "view": 0.1,
+                  "outdoor": 0.1
+                },
+                "softened": [
+                  "access"
+                ],
+                "autoThreshold": 0.95
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ScoringProfile"
+                    }
+                  }
+                },
+                "example": {
+                  "data": {
+                    "name": "c368927",
+                    "version": 3,
+                    "isDefault": false,
+                    "updatedAt": "2026-11-06T09:12:38Z",
+                    "updatedBy": "368927",
+                    "weights": [
+                      {
+                        "key": "view",
+                        "value": 0.1,
+                        "default": 0.3,
+                        "min": 0.1,
+                        "max": 0.5,
+                        "adjustable": true,
+                        "description": "Reference promises a view the supplier room does not mention"
+                      }
+                    ],
+                    "softenableFails": [
+                      {
+                        "key": "access",
+                        "softened": true,
+                        "deduction": 0.3,
+                        "adjustable": true,
+                        "description": "Reference promises spa / club / pool / beach access the supplier room never mentions"
+                      }
+                    ],
+                    "fixedRules": [
+                      {
+                        "key": "structure",
+                        "adjustable": false,
+                        "description": "Wrong room type in either direction (Room, Suite, Studio, Apartment, Villa)"
+                      }
+                    ],
+                    "thresholds": [
+                      {
+                        "key": "auto",
+                        "value": 0.95,
+                        "default": 0.9,
+                        "min": 0.9,
+                        "max": 1,
+                        "adjustable": true,
+                        "description": "Lowest score that is still auto. May be raised, never lowered"
+                      }
+                    ]
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Validation failed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "weight \"view\" = 0.60 outside allowed range 0.10 to 0.50"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Your account does not have an isolated room-mapping cache; scoring profiles and purges need one (contact LiteAPI to enable it)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "scoring profiles require an isolated customer cache (X-Customer-Cache: customer)"
+                }
+              }
+            }
+          },
+          "413": {
+            "description": "Request body exceeds 1 MiB"
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Reset your scoring profile",
+        "operationId": "delete_rooms-match-async-scoring-profile",
+        "description": "**What it does:** Removes your profile; new jobs are graded with the system default again. The version counter is kept, so a profile set later never reuses an old stamp. Stored mappings are not touched.\n\nAvailable to accounts with their own isolated room-mapping cache; others receive `409`. Details: **Implementation Workflow** (doc page: `implementation-workflow`).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ScoringProfile"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "409": {
+            "description": "Your account does not have an isolated room-mapping cache; scoring profiles and purges need one (contact LiteAPI to enable it)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "scoring profiles require an isolated customer cache (X-Customer-Cache: customer)"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/rooms/match/async/scoring-profile/preview": {
+      "post": {
+        "tags": [
+          "Room Match"
+        ],
+        "summary": "Preview a scoring profile on a completed job",
+        "operationId": "post_rooms-match-async-scoring-profile-preview",
+        "description": "**What it does:** Re-grades a completed job of yours under a candidate profile (or your current one when `profile` is omitted) and reports every room whose score or band would move. It is arithmetic on the checks the job stored: no model call, nothing is changed, and it does not show what the model would have picked differently.\n\nOnly rooms whose outcome the score decided are counted (`graded`); exact matches, kept mappings and guard rejections are reported as `notDecidedByScore` since no profile moves them. A job that is not completed, or one scored before profiles existed, is `400`.\n\nAvailable to accounts with their own isolated room-mapping cache; others receive `409`. Details: **Implementation Workflow** (doc page: `implementation-workflow`).",
+        "security": [
+          {
+            "apikeyAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ScoringPreviewRequest"
+              },
+              "example": {
+                "jobId": "dm_1730000000000000000_a1b2c3d4e5f60718",
+                "profile": {
+                  "weights": {
+                    "view": 0.1
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "OK",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "data": {
+                      "$ref": "#/components/schemas/ScoringPreview"
+                    }
+                  }
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Missing jobId, invalid candidate, or a job that cannot be previewed",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "job is queued; only a completed job can be previewed"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized"
+          },
+          "404": {
+            "description": "Job not found, expired, or belongs to another account",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "job not found"
+                }
+              }
+            }
+          },
+          "409": {
+            "description": "Your account does not have an isolated room-mapping cache; scoring profiles and purges need one (contact LiteAPI to enable it)",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                },
+                "example": {
+                  "error": "scoring profiles require an isolated customer cache (X-Customer-Cache: customer)"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "Internal Server Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/rooms/group": {
@@ -2136,7 +3182,7 @@
         ],
         "summary": "Group rooms without a reference catalog",
         "operationId": "post_rooms-group",
-        "description": "## Overview\n\nGroup similar room listings for a property without needing a reference catalog. Automatically clusters rooms based on attributes like room class, bed type, and view.\n\n## When to Use\n\n- **No reference catalog** - Cluster rooms when you don't have a canonical room list\n- **Multi-supplier aggregation** - Group equivalent rooms across different suppliers\n- **Deduplication** - Identify duplicate or near-duplicate room listings\n- **Content analysis** - Extract structured attributes from room names\n\n## What You Get\n\n- **Room groups** - Clusters with `groupCode`, `groupName`, and member rooms\n- **Unmapped rooms** - Rooms that couldn't be grouped\n- **Display names** - Suggested names for each group\n- **Parsed attributes** - Extracted room details (when `debug: true`)\n\n## Quick Start\n\n**Required fields**: `propertyId`, `propertyName`, `supplierList` with rooms\n\n**Customize grouping**: Set `parameters.outputAggregation` to control which attributes form groups (default: `roomClass`, `roomType`, `bedType`, `roomView`)",
+        "description": "**What it does:** Clusters supplier room names **without** a reference catalog.\n\n**Workflow role:** Outside the main four-step flow — exploration only.\n\n**Use when:** You do not have catalog rooms yet.\n\n**Do not use when:** You have a catalog — use `/rooms/match` or async.\n\nDetails, examples, limits, and result codes: **Implementation Workflow** (doc page: `implementation-workflow`).",
         "security": [
           {
             "apikeyAuth": []
@@ -2420,7 +3466,7 @@
         ],
         "summary": "Group rooms into reference buckets",
         "operationId": "post_rooms-group-with-reference",
-        "description": "## Overview\n\nAssign supplier rooms to reference room buckets. Each supplier room is placed under its best-matching reference room (exclusive assignment - one group per supplier).\n\n## When to Use\n\n- **Catalog-based grouping** - Assign suppliers to your normalized reference rooms\n- **Bulk bucketing** - Quickly categorize many supplier rooms by reference\n- **Strict assignment** - Ensure each supplier maps to exactly one reference (or none)\n- **Quality control** - High default threshold (0.8) ensures confident assignments\n\n## What You Get\n\n- **Groups by reference** - Each reference with its assigned supplier rooms\n- **Match counts** - Number of suppliers per reference group\n- **Unmatched suppliers** - Rooms that didn't meet threshold for any reference\n\n## Quick Start\n\n**Required fields**: `references` (your catalog buckets), `suppliers` (rooms to assign)\n\n**Threshold tuning**: Default 0.8 is strict; lower for more matches, raise it for higher precision",
+        "description": "**What it does:** Assigns each supplier room to **one reference bucket**.\n\n**Workflow role:** Alternate **sync** view (not step 0 of the main flow).\n\n**Use when:** You want reference-centric grouping instead of per-supplier scores.\n\n**Do not use when:** You need ranked candidates or async persistence.\n\nDetails, examples, limits, and result codes: **Implementation Workflow** (doc page: `implementation-workflow`).",
         "security": [
           {
             "apikeyAuth": []
